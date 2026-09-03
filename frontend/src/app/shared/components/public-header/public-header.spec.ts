@@ -21,4 +21,14 @@ describe('PublicHeader', () => {
   it('should create', () => {
     expect(component).toBeTruthy(); // Xác nhận component được tạo thành công
   });
+
+  it('should toggle the mobile menu', () => {
+    expect(component.isMobileMenuOpen()).toBe(false); // Menu đóng khi mới mở trang
+
+    component.toggleMobileMenu(); // Mô phỏng người dùng bấm nút menu
+    expect(component.isMobileMenuOpen()).toBe(true); // Menu được mở
+
+    component.closeMobileMenu(); // Mô phỏng chọn liên kết hoặc đóng menu
+    expect(component.isMobileMenuOpen()).toBe(false); // Menu trở lại trạng thái đóng
+  });
 });

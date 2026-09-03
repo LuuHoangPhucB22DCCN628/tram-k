@@ -1,23 +1,99 @@
-<header class="border-b border-violet-100 bg-white"> <!-- Khu vực đầu trang dùng chung -->
-  <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"> <!-- Giới hạn chiều rộng nội dung -->
+<header class="sticky top-0 z-50 border-b border-violet-100 bg-white/95 backdrop-blur"> <!-- Header luôn dễ truy cập khi cuộn trang -->
+  <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8"> <!-- Khung nội dung căn giữa -->
     <a
       routerLink="/"
-      class="flex items-center gap-2 text-lg font-bold text-violet-700"
+      (click)="closeMobileMenu()"
+      class="flex shrink-0 items-center gap-2 text-lg font-bold text-violet-700"
       aria-label="Trạm K - Trang chủ"
     >
-      <span class="grid size-9 place-items-center rounded-full bg-violet-100">K</span> <!-- Biểu tượng tạm thời của thương hiệu -->
+      <span class="grid size-9 place-items-center rounded-full bg-violet-100" aria-hidden="true">K</span> <!-- Biểu tượng thương hiệu tạm thời -->
       <span>Trạm K</span> <!-- Tên website -->
     </a>
 
-    <nav aria-label="Điều hướng chính"> <!-- Menu dành cho người dùng công khai -->
+    <nav class="hidden items-center gap-5 xl:flex" aria-label="Điều hướng chính"> <!-- Menu dành cho màn hình lớn -->
       <a
         routerLink="/"
         routerLinkActive="text-violet-700"
         [routerLinkActiveOptions]="{ exact: true }"
-        class="text-sm font-medium text-slate-700 transition-colors hover:text-violet-700"
+        class="text-sm font-semibold text-slate-700 transition-colors hover:text-violet-700"
       >
         Trang chủ
       </a>
+
+      @for (item of upcomingMenuItems; track item) {
+        <span
+          class="cursor-not-allowed text-sm font-medium text-slate-400"
+          aria-disabled="true"
+          title="Chức năng đang được xây dựng"
+        >
+          {{ item }}
+        </span> <!-- Giữ đúng cấu trúc menu nhưng chưa tạo liên kết hỏng -->
+      }
     </nav>
+
+    <div class="hidden shrink-0 xl:block"> <!-- Khu vực tài khoản trên desktop -->
+      <button
+        type="button"
+        class="cursor-not-allowed rounded-full bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700"
+        aria-disabled="true"
+        title="Chức năng đăng nhập sẽ được xây dựng ở phase xác thực"
+      >
+        Đăng nhập
+      </button>
+    </div>
+
+    <button
+      type="button"
+      class="grid size-10 place-items-center rounded-lg text-slate-700 transition-colors hover:bg-violet-50 hover:text-violet-700 xl:hidden"
+      aria-label="Mở hoặc đóng menu chính"
+      aria-controls="mobile-navigation"
+      [attr.aria-expanded]="isMobileMenuOpen()"
+      (click)="toggleMobileMenu()"
+    >
+      @if (isMobileMenuOpen()) {
+        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"> <!-- Biểu tượng đóng -->
+          <path stroke-linecap="round" stroke-width="2" d="M6 6l12 12M18 6 6 18" />
+        </svg>
+      } @else {
+        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"> <!-- Biểu tượng menu -->
+          <path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      }
+    </button>
   </div>
+
+  <nav
+    id="mobile-navigation"
+    class="border-t border-violet-100 px-4 py-4 xl:hidden"
+    [class.hidden]="!isMobileMenuOpen()"
+    aria-label="Điều hướng trên thiết bị di động"
+  >
+    <div class="mx-auto flex max-w-7xl flex-col gap-1"> <!-- Danh sách menu mobile -->
+      <a
+        routerLink="/"
+        (click)="closeMobileMenu()"
+        class="rounded-lg px-3 py-2.5 text-sm font-semibold text-violet-700 hover:bg-violet-50"
+      >
+        Trang chủ
+      </a>
+
+      @for (item of upcomingMenuItems; track item) {
+        <span
+          class="cursor-not-allowed rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400"
+          aria-disabled="true"
+          title="Chức năng đang được xây dựng"
+        >
+          {{ item }} · Sắp có
+        </span>
+      }
+
+      <button
+        type="button"
+        class="mt-2 cursor-not-allowed rounded-lg bg-violet-100 px-3 py-2.5 text-left text-sm font-semibold text-violet-700"
+        aria-disabled="true"
+      >
+        Đăng nhập · Sắp có
+      </button>
+    </div>
+  </nav>
 </header>
