@@ -1,0 +1,23 @@
+<header class="border-b border-violet-100 bg-white"> <!-- Khu vực đầu trang dùng chung -->
+  <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"> <!-- Giới hạn chiều rộng nội dung -->
+    <a
+      routerLink="/"
+      class="flex items-center gap-2 text-lg font-bold text-violet-700"
+      aria-label="Trạm K - Trang chủ"
+    >
+      <span class="grid size-9 place-items-center rounded-full bg-violet-100">K</span> <!-- Biểu tượng tạm thời của thương hiệu -->
+      <span>Trạm K</span> <!-- Tên website -->
+    </a>
+
+    <nav aria-label="Điều hướng chính"> <!-- Menu dành cho người dùng công khai -->
+      <a
+        routerLink="/"
+        routerLinkActive="text-violet-700"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="text-sm font-medium text-slate-700 transition-colors hover:text-violet-700"
+      >
+        Trang chủ
+      </a>
+    </nav>
+  </div>
+</header>
