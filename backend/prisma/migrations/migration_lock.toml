@@ -1,0 +1,2 @@
+# Khong sua file nay bang tay sau khi migration da duoc ap dung.
+provider = "postgresql"

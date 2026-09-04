@@ -1,0 +1,9 @@
+export interface ApiErrorResponse {
+  success: false;
+  error: {
+    code: string;
+    message: string | string[];
+  };
+  timestamp: string;
+  path: string;
+}
