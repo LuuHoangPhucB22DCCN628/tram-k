@@ -1,0 +1,21 @@
+@use 'sass:map';
+@use 'tokens';
+
+// Dùng cho nút, liên kết và trường nhập liệu để bàn phím luôn thấy vị trí focus.
+@mixin focus-ring {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+// Ví dụ: @include respond-from(md) { ... }
+@mixin respond-from($name) {
+  $width: map.get(tokens.$breakpoints, $name);
+
+  @if $width == null {
+    @error 'Breakpoint `#{$name}` không tồn tại trong design tokens.';
+  }
+
+  @media (min-width: $width) {
+    @content;
+  }
+}

@@ -1,0 +1,86 @@
+// Màu thương hiệu Trạm K, lấy theo giao diện Figma hiện tại.
+$color-brand-primary: #5e4dcb;
+$color-brand-primary-hover: #4f3db8;
+$color-brand-soft: #f1efff;
+$color-text-heading: #25294a;
+$color-text-body: #46506f;
+$color-text-muted: #5d698e;
+$color-surface: #ffffff;
+$color-surface-subtle: #f8f7ff;
+$color-border: #e2e6f1;
+$color-success: #198754;
+$color-warning: #b76e00;
+$color-danger: #c73535;
+
+// Font hệ thống giúp tiếng Việt hiển thị tốt mà không phụ thuộc mạng.
+$font-family-sans: 'Segoe UI', Arial, sans-serif;
+$font-family-serif: Georgia, 'Times New Roman', serif;
+
+// Khoảng cách dùng theo bội số 4px để các màn hình giữ cùng nhịp bố cục.
+$spacing: (
+  0: 0,
+  1: 0.25rem,
+  2: 0.5rem,
+  3: 0.75rem,
+  4: 1rem,
+  5: 1.25rem,
+  6: 1.5rem,
+  8: 2rem,
+  10: 2.5rem,
+  12: 3rem,
+  16: 4rem,
+  20: 5rem,
+);
+
+// Breakpoint đồng bộ với Tailwind: sm, md, lg, xl và 2xl.
+$breakpoints: (
+  sm: 40rem,
+  md: 48rem,
+  lg: 64rem,
+  xl: 80rem,
+  2xl: 96rem,
+);
+
+:root {
+  color-scheme: light;
+
+  --color-brand-primary: #{$color-brand-primary};
+  --color-brand-primary-hover: #{$color-brand-primary-hover};
+  --color-brand-soft: #{$color-brand-soft};
+  --color-text-heading: #{$color-text-heading};
+  --color-text-body: #{$color-text-body};
+  --color-text-muted: #{$color-text-muted};
+  --color-surface: #{$color-surface};
+  --color-surface-subtle: #{$color-surface-subtle};
+  --color-border: #{$color-border};
+  --color-success: #{$color-success};
+  --color-warning: #{$color-warning};
+  --color-danger: #{$color-danger};
+
+  --font-family-sans: #{$font-family-sans};
+  --font-family-serif: #{$font-family-serif};
+
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-pill: 9999px;
+  --shadow-card: 0 0.5rem 1.5rem rgb(37 41 74 / 10%);
+  --content-max-width: 80rem;
+
+  --focus-ring-color: #{$color-brand-primary};
+  --focus-ring-width: 0.1875rem;
+  --focus-ring-offset: 0.1875rem;
+}

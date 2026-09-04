@@ -1,0 +1,44 @@
+@use 'mixins';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 20rem;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-text-body);
+  font-family: var(--font-family-sans);
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  @include mixins.focus-ring;
+}
+
+::selection {
+  background: var(--color-brand-soft);
+  color: var(--color-text-heading);
+}

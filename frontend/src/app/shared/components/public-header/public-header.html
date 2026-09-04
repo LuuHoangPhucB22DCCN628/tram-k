@@ -1,5 +1,7 @@
-<header class="sticky top-0 z-50 border-b border-[#e2e6f1] bg-white"> <!-- Màu nền và đường viền theo Figma -->
-  <div class="flex items-center justify-between gap-6 px-5 py-4 sm:px-8 xl:px-20 xl:py-6"> <!-- Figma desktop dùng padding ngang 80px, dọc 24px -->
+<header class="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+  <!-- Dùng token màu chung thay vì ghi mã màu trực tiếp -->
+  <div class="flex items-center justify-between gap-6 px-5 py-4 sm:px-8 xl:px-20 xl:py-6">
+    <!-- Figma desktop dùng padding ngang 80px, dọc 24px -->
     <a
       routerLink="/"
       (click)="closeMobileMenu()"
@@ -12,25 +14,29 @@
         height="40"
         class="block h-auto w-full"
         alt="Trạm K"
-      /> <!-- Logo SVG xuất trực tiếp từ Figma -->
+      />
+      <!-- Logo SVG xuất trực tiếp từ Figma -->
     </a>
 
-    <nav class="hidden items-center xl:flex" aria-label="Điều hướng chính"> <!-- Menu desktop đúng thứ tự trong Figma -->
+    <nav class="hidden items-center xl:flex" aria-label="Điều hướng chính">
+      <!-- Menu desktop đúng thứ tự trong Figma -->
       @for (item of menuItems; track item) {
         <span
-          class="whitespace-nowrap px-3 py-2 text-center text-[16px] font-medium leading-5 text-[#5d698e]"
+          class="whitespace-nowrap px-3 py-2 text-center text-[16px] font-medium leading-5 text-[var(--color-text-muted)]"
           aria-disabled="true"
           title="Chức năng đang được xây dựng"
         >
           {{ item }}
-        </span> <!-- Chưa gắn routerLink cho đến khi trang tương ứng tồn tại -->
+        </span>
+        <!-- Chưa gắn routerLink cho đến khi trang tương ứng tồn tại -->
       }
     </nav>
 
-    <div class="hidden shrink-0 xl:block"> <!-- Nút tìm kiếm phía cuối header -->
+    <div class="hidden shrink-0 xl:block">
+      <!-- Nút tìm kiếm phía cuối header -->
       <button
         type="button"
-        class="grid size-[45px] place-items-center rounded-xl border border-[#5e4dcb] bg-white"
+        class="grid size-[45px] place-items-center rounded-xl border border-[var(--color-brand-primary)] bg-[var(--color-surface)]"
         aria-label="Tìm kiếm"
         aria-disabled="true"
         title="Chức năng tìm kiếm đang được xây dựng"
@@ -42,25 +48,35 @@
           class="size-[21px]"
           alt=""
           aria-hidden="true"
-        /> <!-- Icon tìm kiếm xuất trực tiếp từ Figma -->
+        />
+        <!-- Icon tìm kiếm xuất trực tiếp từ Figma -->
       </button>
     </div>
 
     <button
       type="button"
-      class="relative size-10 rounded-xl border border-[#5e4dcb] text-[#5e4dcb] xl:hidden"
+      class="relative size-10 rounded-xl border border-[var(--color-brand-primary)] text-[var(--color-brand-primary)] xl:hidden"
       aria-label="Mở hoặc đóng menu chính"
       aria-controls="mobile-navigation"
       [attr.aria-expanded]="isMobileMenuOpen()"
       (click)="toggleMobileMenu()"
     >
       @if (isMobileMenuOpen()) {
-        <span class="absolute left-1/2 top-1/2 h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-current"></span> <!-- Nét thứ nhất của biểu tượng đóng -->
-        <span class="absolute left-1/2 top-1/2 h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-current"></span> <!-- Nét thứ hai của biểu tượng đóng -->
+        <span
+          class="absolute left-1/2 top-1/2 h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-current"
+        ></span>
+        <!-- Nét thứ nhất của biểu tượng đóng -->
+        <span
+          class="absolute left-1/2 top-1/2 h-0.5 w-5 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-current"
+        ></span>
+        <!-- Nét thứ hai của biểu tượng đóng -->
       } @else {
-        <span class="absolute left-1/2 top-[13px] h-0.5 w-5 -translate-x-1/2 bg-current"></span> <!-- Thanh trên của biểu tượng menu -->
-        <span class="absolute left-1/2 top-[19px] h-0.5 w-5 -translate-x-1/2 bg-current"></span> <!-- Thanh giữa của biểu tượng menu -->
-        <span class="absolute left-1/2 top-[25px] h-0.5 w-5 -translate-x-1/2 bg-current"></span> <!-- Thanh dưới của biểu tượng menu -->
+        <span class="absolute left-1/2 top-[13px] h-0.5 w-5 -translate-x-1/2 bg-current"></span>
+        <!-- Thanh trên của biểu tượng menu -->
+        <span class="absolute left-1/2 top-[19px] h-0.5 w-5 -translate-x-1/2 bg-current"></span>
+        <!-- Thanh giữa của biểu tượng menu -->
+        <span class="absolute left-1/2 top-[25px] h-0.5 w-5 -translate-x-1/2 bg-current"></span>
+        <!-- Thanh dưới của biểu tượng menu -->
       }
     </button>
   </div>
@@ -68,13 +84,14 @@
   @if (isMobileMenuOpen()) {
     <nav
       id="mobile-navigation"
-      class="border-t border-[#e2e6f1] bg-white px-5 py-4 xl:hidden"
+      class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 xl:hidden"
       aria-label="Điều hướng trên thiết bị di động"
     >
-      <div class="mx-auto flex max-w-7xl flex-col gap-1"> <!-- Danh sách menu mobile -->
+      <div class="mx-auto flex max-w-7xl flex-col gap-1">
+        <!-- Danh sách menu mobile -->
         @for (item of menuItems; track item) {
           <span
-            class="rounded-lg px-3 py-2.5 text-[16px] font-medium leading-5 text-[#5d698e]"
+            class="rounded-lg px-3 py-2.5 text-[16px] font-medium leading-5 text-[var(--color-text-muted)]"
             aria-disabled="true"
             title="Chức năng đang được xây dựng"
           >
@@ -84,11 +101,18 @@
 
         <button
           type="button"
-          class="mt-2 flex items-center gap-2 rounded-xl border border-[#5e4dcb] px-3 py-2.5 text-[16px] font-medium text-[#5e4dcb]"
+          class="mt-2 flex items-center gap-2 rounded-xl border border-[var(--color-brand-primary)] px-3 py-2.5 text-[16px] font-medium text-[var(--color-brand-primary)]"
           aria-label="Tìm kiếm"
           aria-disabled="true"
         >
-          <img src="/assets/icons/search.svg" width="21" height="21" class="size-[21px]" alt="" aria-hidden="true" />
+          <img
+            src="/assets/icons/search.svg"
+            width="21"
+            height="21"
+            class="size-[21px]"
+            alt=""
+            aria-hidden="true"
+          />
           Tìm kiếm
         </button>
       </div>
