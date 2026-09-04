@@ -1,11 +1,13 @@
-import { Component} from '@angular/core'
-import { RouterOutlet } from '@angular/router';
+import { Component } from '@angular/core'; // Khai báo Angular component
+import { RouterOutlet } from '@angular/router'; // Hiển thị trang con theo route
+
+import { PublicHeader } from '../../shared/components/public-header/public-header'; // Header dùng chung
 
 @Component({
   selector: 'app-public-layout',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [PublicHeader, RouterOutlet], // Cho phép layout dùng header và router-outlet
   templateUrl: './public-layout.html',
-  styleUrls: ['./public-layout.scss']
+  styleUrl: './public-layout.scss',
 })
-export class PublicLayout{}
+export class PublicLayout {}
