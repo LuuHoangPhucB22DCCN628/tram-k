@@ -1,7 +1,11 @@
-<div class="min-h-screen bg-white text-slate-900">
-    <app-public-header></app-public-header> <!-- Header xuất hiện trên mọi trang công khai -->
+<div class="flex min-h-screen flex-col bg-[var(--color-surface)] text-[var(--color-text-body)]">
+  <app-public-header></app-public-header>
+  <!-- Header xuất hiện trên mọi trang công khai -->
 
-    <main id="main-content">
-        <router-outlet></router-outlet>
-    </main>
+  <main id="main-content" class="flex-1">
+    <router-outlet></router-outlet>
+  </main>
+
+  <app-public-footer></app-public-footer>
+  <!-- Footer luôn nằm sau nội dung, kể cả trang có ít nội dung -->
 </div>

@@ -31,4 +31,8 @@ describe('PublicHeader', () => {
     component.closeMobileMenu(); // Mô phỏng chọn liên kết hoặc đóng menu
     expect(component.isMobileMenuOpen()).toBe(false); // Menu trở lại trạng thái đóng
   });
+
+  it('should expose real routes for every public menu item', () => {
+    expect(component.menuItems.every((item) => item.path.startsWith('/'))).toBe(true);
+  });
 });

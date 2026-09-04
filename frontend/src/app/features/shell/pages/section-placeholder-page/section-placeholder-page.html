@@ -1,0 +1,13 @@
+<section class="placeholder-page">
+  <p class="placeholder-page__eyebrow">Khung chức năng</p>
+  <h1>{{ heading }}</h1>
+  <p>{{ description }}</p>
+  <div class="placeholder-page__notice">
+    <strong>Trạng thái:</strong>
+    Giao diện khung và đường dẫn đã sẵn sàng; dữ liệu thật sẽ được kết nối ở phase chức năng.
+  </div>
+
+  @if (!isMemberPage) {
+    <a routerLink="/" class="placeholder-page__link">Quay về trang chủ</a>
+  }
+</section>

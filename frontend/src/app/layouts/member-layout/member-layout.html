@@ -1,0 +1,33 @@
+<div class="member-shell">
+  <header class="member-shell__header">
+    <a routerLink="/" aria-label="Trạm K - Trang chủ">
+      <img src="/assets/images/brand/tram-k-logo.svg" width="169" height="40" alt="Trạm K" />
+    </a>
+    <div>
+      <span class="member-shell__account">Khu vực thành viên</span>
+      <a routerLink="/">Về trang công khai</a>
+    </div>
+  </header>
+
+  <div class="member-shell__body">
+    <aside class="member-shell__sidebar">
+      <nav aria-label="Điều hướng thành viên">
+        @for (item of menuItems; track item.path) {
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="member-shell__nav-link--active"
+            [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+            ariaCurrentWhenActive="page"
+            class="member-shell__nav-link"
+          >
+            {{ item.label }}
+          </a>
+        }
+      </nav>
+    </aside>
+
+    <main id="member-main-content" class="member-shell__main">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

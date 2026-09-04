@@ -20,26 +20,24 @@
 
     <nav class="hidden items-center xl:flex" aria-label="Điều hướng chính">
       <!-- Menu desktop đúng thứ tự trong Figma -->
-      @for (item of menuItems; track item) {
-        <span
-          class="whitespace-nowrap px-3 py-2 text-center text-[16px] font-medium leading-5 text-[var(--color-text-muted)]"
-          aria-disabled="true"
-          title="Chức năng đang được xây dựng"
+      @for (item of menuItems; track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="bg-[var(--color-brand-soft)] text-[var(--color-brand-primary)]"
+          ariaCurrentWhenActive="page"
+          class="whitespace-nowrap rounded-lg px-3 py-2 text-center text-[16px] font-medium leading-5 text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-brand-primary)]"
         >
-          {{ item }}
-        </span>
-        <!-- Chưa gắn routerLink cho đến khi trang tương ứng tồn tại -->
+          {{ item.label }}
+        </a>
       }
     </nav>
 
     <div class="hidden shrink-0 xl:block">
       <!-- Nút tìm kiếm phía cuối header -->
-      <button
-        type="button"
+      <a
+        routerLink="/tim-kiem"
         class="grid size-[45px] place-items-center rounded-xl border border-[var(--color-brand-primary)] bg-[var(--color-surface)]"
         aria-label="Tìm kiếm"
-        aria-disabled="true"
-        title="Chức năng tìm kiếm đang được xây dựng"
       >
         <img
           src="/assets/icons/search.svg"
@@ -50,7 +48,7 @@
           aria-hidden="true"
         />
         <!-- Icon tìm kiếm xuất trực tiếp từ Figma -->
-      </button>
+      </a>
     </div>
 
     <button
@@ -89,21 +87,23 @@
     >
       <div class="mx-auto flex max-w-7xl flex-col gap-1">
         <!-- Danh sách menu mobile -->
-        @for (item of menuItems; track item) {
-          <span
+        @for (item of menuItems; track item.path) {
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="bg-[var(--color-brand-soft)] text-[var(--color-brand-primary)]"
+            ariaCurrentWhenActive="page"
             class="rounded-lg px-3 py-2.5 text-[16px] font-medium leading-5 text-[var(--color-text-muted)]"
-            aria-disabled="true"
-            title="Chức năng đang được xây dựng"
+            (click)="closeMobileMenu()"
           >
-            {{ item }}
-          </span>
+            {{ item.label }}
+          </a>
         }
 
-        <button
-          type="button"
+        <a
+          routerLink="/tim-kiem"
           class="mt-2 flex items-center gap-2 rounded-xl border border-[var(--color-brand-primary)] px-3 py-2.5 text-[16px] font-medium text-[var(--color-brand-primary)]"
           aria-label="Tìm kiếm"
-          aria-disabled="true"
+          (click)="closeMobileMenu()"
         >
           <img
             src="/assets/icons/search.svg"
@@ -114,7 +114,7 @@
             aria-hidden="true"
           />
           Tìm kiếm
-        </button>
+        </a>
       </div>
     </nav>
   }

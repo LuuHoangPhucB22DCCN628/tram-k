@@ -1,0 +1,37 @@
+<footer class="public-footer">
+  <div class="public-footer__content">
+    <section class="public-footer__brand" aria-labelledby="footer-brand-title">
+      <a routerLink="/" aria-label="Trạm K - Trang chủ">
+        <img src="/assets/images/brand/tram-k-logo.svg" width="169" height="40" alt="Trạm K" />
+      </a>
+      <h2 id="footer-brand-title" class="sr-only">Trạm K</h2>
+      <p>Nơi kết nối thông tin, cộng đồng và các chương trình hỗ trợ bệnh nhân ung thư.</p>
+    </section>
+
+    <nav aria-label="Liên kết thông tin">
+      <h2>Thông tin</h2>
+      <a routerLink="/cam-nang">Cẩm nang</a>
+      <a routerLink="/loai-ung-thu">Loại ung thư</a>
+      <a routerLink="/cau-chuyen">Câu chuyện</a>
+    </nav>
+
+    <nav aria-label="Liên kết cộng đồng">
+      <h2>Cộng đồng</h2>
+      <a routerLink="/cong-dong">Bài viết cộng đồng</a>
+      <a routerLink="/goc-tam-ly">Góc tâm lý</a>
+      <a routerLink="/thanh-vien">Khu vực thành viên</a>
+    </nav>
+
+    <nav aria-label="Liên kết về Trạm K">
+      <h2>Trạm K</h2>
+      <a routerLink="/ve-chung-toi">Về chúng tôi</a>
+      <a routerLink="/tim-kiem">Tìm kiếm</a>
+      <a routerLink="/style-guide">Style Guide</a>
+    </nav>
+  </div>
+
+  <div class="public-footer__bottom">
+    <p>© {{ currentYear }} Trạm K. Đồ án phục vụ mục đích học tập.</p>
+    <p>Thông tin trên website không thay thế tư vấn, chẩn đoán hoặc điều trị y khoa.</p>
+  </div>
+</footer>

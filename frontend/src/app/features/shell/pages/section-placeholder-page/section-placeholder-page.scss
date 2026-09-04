@@ -1,0 +1,40 @@
+.placeholder-page {
+  width: min(calc(100% - (2 * var(--space-5))), 56rem);
+  margin-inline: auto;
+  padding-block: var(--space-16) var(--space-20);
+
+  &__eyebrow {
+    margin: 0 0 var(--space-2);
+    color: var(--color-brand-primary);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0 0 var(--space-4);
+    color: var(--color-text-heading);
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    line-height: 1.15;
+  }
+
+  &__notice {
+    margin-block: var(--space-8);
+    padding: var(--space-5);
+    border-left: 0.25rem solid var(--color-brand-primary);
+    border-radius: var(--radius-sm);
+    background: var(--color-brand-soft);
+  }
+
+  &__link {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    padding-inline: var(--space-5);
+    border-radius: var(--radius-md);
+    background: var(--color-brand-primary);
+    color: var(--color-surface);
+    font-weight: 700;
+    text-decoration: none;
+  }
+}
