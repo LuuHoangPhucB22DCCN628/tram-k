@@ -14,6 +14,14 @@ export const routes: Routes = [
             (component) => component.HomePage,
           ),
       },
+      {
+        path: 'style-guide',
+        title: 'Style Guide | Trạm K',
+        loadComponent: () =>
+          import('@features/style-guide/pages/style-guide-page/style-guide-page').then(
+            (component) => component.StyleGuidePage,
+          ),
+      },
     ],
   },
 ];

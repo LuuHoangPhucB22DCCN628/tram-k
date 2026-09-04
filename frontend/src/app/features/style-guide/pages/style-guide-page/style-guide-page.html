@@ -1,0 +1,64 @@
+<main class="style-guide">
+  <header class="style-guide__intro">
+    <p class="style-guide__eyebrow">Nền tảng giao diện</p>
+    <h1>Style Guide Trạm K</h1>
+    <p>
+      Trang nội bộ giúp cả nhóm sử dụng thống nhất màu sắc, khoảng cách, bo góc và trạng thái tương
+      tác khi xây dựng các chức năng tiếp theo.
+    </p>
+  </header>
+
+  <section class="style-guide__section" aria-labelledby="color-title">
+    <h2 id="color-title">Màu sắc</h2>
+    <div class="color-grid">
+      @for (color of colors; track color.variable) {
+        <article class="token-card">
+          <div
+            class="token-card__swatch"
+            [style.backgroundColor]="'var(' + color.variable + ')'"
+            aria-hidden="true"
+          ></div>
+          <strong>{{ color.label }}</strong>
+          <code>{{ color.variable }}</code>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="style-guide__section" aria-labelledby="type-title">
+    <h2 id="type-title">Chữ và cấp độ nội dung</h2>
+    <div class="type-samples">
+      <p class="type-samples__display">Đồng hành để vững tin hơn</p>
+      <p class="type-samples__heading">Cộng đồng bệnh nhân ung thư</p>
+      <p>
+        Nội dung thông thường cần rõ ràng, dễ đọc và đủ tương phản trên cả máy tính lẫn điện thoại.
+      </p>
+      <p class="type-samples__muted">Thông tin bổ trợ sử dụng màu chữ phụ.</p>
+    </div>
+  </section>
+
+  <section class="style-guide__section" aria-labelledby="spacing-title">
+    <h2 id="spacing-title">Khoảng cách</h2>
+    <div class="spacing-list">
+      @for (space of spacingTokens; track space) {
+        <div class="spacing-item">
+          <code>--space-{{ space }}</code>
+          <span class="spacing-item__bar" [style.width]="'var(--space-' + space + ')'"> </span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="style-guide__section" aria-labelledby="control-title">
+    <h2 id="control-title">Nút và trạng thái focus</h2>
+    <p>Dùng phím Tab để kiểm tra viền focus thống nhất trên các thành phần tương tác.</p>
+    <div class="control-row">
+      <button class="button button--primary" type="button">Nút chính</button>
+      <button class="button button--secondary" type="button">Nút phụ</button>
+      <label class="sample-field">
+        <span>Tìm kiếm</span>
+        <input type="search" placeholder="Nhập nội dung" />
+      </label>
+    </div>
+  </section>
+</main>

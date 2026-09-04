@@ -2,6 +2,8 @@
 
 Design tokens là bộ giá trị dùng chung để giao diện không bị mỗi trang một màu, một khoảng cách hoặc một kiểu focus khác nhau.
 
+Mở `http://localhost:4200/style-guide` khi chạy dự án để xem các token được áp dụng trực tiếp.
+
 ## Cấu trúc
 
 - `src/styles/_tokens.scss`: màu, font, spacing, radius, shadow và breakpoint.
