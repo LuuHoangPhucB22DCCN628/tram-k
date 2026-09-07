@@ -2,7 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 
 import { AuthMockApiService } from './auth-mock-api.service';
-import type { AuthResult, AuthUser, LoginCredentials, UserRole } from './auth.models';
+import type { AuthResult, AuthUser, LoginCredentials, LoginPortal, UserRole } from './auth.models';
 import { AuthSessionStorageService } from './auth-session-storage.service';
 
 @Injectable({ providedIn: 'root' })
@@ -21,9 +21,11 @@ export class AuthService {
     this.restoreSession();
   }
 
-  login(credentials: LoginCredentials): Observable<AuthUser> {
-    return this.api.login(credentials).pipe(
-      tap((result) => this.acceptSession(result, credentials.rememberMe)),
+  login(credentials: LoginCredentials, portal: LoginPortal = 'PUBLIC'): Observable<AuthUser> {
+    return this.api.login(credentials, portal).pipe(
+      tap((result) =>
+        this.acceptSession(result, result.user.role === 'ADMIN' ? false : credentials.rememberMe),
+      ),
       map((result) => result.user),
     );
   }
@@ -96,7 +98,13 @@ export class AuthService {
     this.storage.write({
       user: result.user,
       rememberMe,
-      sessionExpiresAt: Date.now() + (rememberMe ? 30 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000),
+      sessionExpiresAt:
+        Date.now() +
+        (result.user.role === 'ADMIN'
+          ? 30 * 60 * 1000
+          : rememberMe
+            ? 30 * 24 * 60 * 60 * 1000
+            : 8 * 60 * 60 * 1000),
     });
   }
 

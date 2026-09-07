@@ -71,8 +71,36 @@ describe('AuthService', () => {
   ])('should send $email to its role home', ({ email, route }) => {
     const auth = TestBed.inject(AuthService);
 
-    auth.login({ email, password: 'Matkhau123', rememberMe: false }).subscribe();
+    auth
+      .login(
+        { email, password: 'Matkhau123', rememberMe: false },
+        email === 'admin@tramk.vn' ? 'ADMIN' : 'PUBLIC',
+      )
+      .subscribe();
 
     expect(auth.defaultRoute()).toBe(route);
+  });
+
+  it('should reject Admin credentials at the public portal', () => {
+    const auth = TestBed.inject(AuthService);
+    let errorCode = '';
+
+    auth
+      .login({ email: 'admin@tramk.vn', password: 'Matkhau123', rememberMe: true }, 'PUBLIC')
+      .subscribe({ error: (error: { code: string }) => (errorCode = error.code) });
+
+    expect(errorCode).toBe('WRONG_PORTAL');
+    expect(auth.isAuthenticated()).toBe(false);
+  });
+
+  it('should keep an Admin session temporary even when remember-me is requested', () => {
+    const auth = TestBed.inject(AuthService);
+
+    auth
+      .login({ email: 'admin@tramk.vn', password: 'Matkhau123', rememberMe: true }, 'ADMIN')
+      .subscribe();
+
+    expect(sessionStorage.getItem('tram-k.auth.session')).toContain('admin@tramk.vn');
+    expect(localStorage.getItem('tram-k.auth.persistent')).toBeNull();
   });
 });

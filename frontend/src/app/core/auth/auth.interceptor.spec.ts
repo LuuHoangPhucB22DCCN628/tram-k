@@ -54,7 +54,12 @@ describe('authInterceptor', () => {
     (email) => {
       const auth = TestBed.inject(AuthService);
       const http = TestBed.inject(HttpTestingController);
-      auth.login({ email, password: 'Matkhau123', rememberMe: false }).subscribe();
+      auth
+        .login(
+          { email, password: 'Matkhau123', rememberMe: false },
+          email === 'admin@tramk.vn' ? 'ADMIN' : 'PUBLIC',
+        )
+        .subscribe();
 
       TestBed.inject(HttpClient).get('http://localhost:3000/secured-resource').subscribe();
 
@@ -67,7 +72,9 @@ describe('authInterceptor', () => {
   it('should never send the project token to an external URL', () => {
     const auth = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
-    auth.login({ email: 'admin@tramk.vn', password: 'Matkhau123', rememberMe: false }).subscribe();
+    auth
+      .login({ email: 'admin@tramk.vn', password: 'Matkhau123', rememberMe: false }, 'ADMIN')
+      .subscribe();
 
     TestBed.inject(HttpClient).get('https://external.example/resource').subscribe();
 

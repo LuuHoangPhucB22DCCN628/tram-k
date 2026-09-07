@@ -27,6 +27,8 @@ export const roleGuard: CanActivateFn = (route, state) => {
   )[];
 
   if (!auth.isAuthenticated()) {
+    const guestRedirect = route.data['guestRedirect'] as string | undefined;
+    if (guestRedirect) return router.parseUrl(guestRedirect);
     return router.createUrlTree(['/dang-nhap'], { queryParams: { returnUrl: state.url } });
   }
 

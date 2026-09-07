@@ -1,0 +1,18 @@
+<main class="auth-page" aria-labelledby="admin-login-title">
+  <div class="auth-page__card">
+    <p class="auth-page__eyebrow">Khu vực được bảo vệ</p>
+    <h1 id="admin-login-title">Đăng nhập quản trị</h1>
+    <p class="auth-page__intro">Chỉ tài khoản quản trị được cấp quyền mới có thể tiếp tục.</p>
+
+    <app-login-form
+      submitLabel="Vào trang quản trị"
+      [showRememberMe]="false"
+      [showForgotPassword]="false"
+      [isSubmitting]="isSubmitting()"
+      [feedback]="feedback()"
+      (credentialsSubmitted)="login($event)"
+    />
+
+    <p class="auth-page__footer"><a routerLink="/">Quay về trang chủ</a></p>
+  </div>
+</main>

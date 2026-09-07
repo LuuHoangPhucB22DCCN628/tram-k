@@ -1,11 +1,17 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 
-import { AuthApiError, type AuthResult, type AuthUser, type LoginCredentials } from './auth.models';
+import {
+  AuthApiError,
+  type AuthResult,
+  type AuthUser,
+  type LoginCredentials,
+  type LoginPortal,
+} from './auth.models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthMockApiService {
-  login(credentials: LoginCredentials): Observable<AuthResult> {
+  login(credentials: LoginCredentials, portal: LoginPortal): Observable<AuthResult> {
     const email = credentials.email.trim().toLowerCase();
 
     if (email === 'khoa@tramk.vn') {
@@ -18,7 +24,15 @@ export class AuthMockApiService {
       );
     }
 
-    return of(this.createResult(this.createUser(email)));
+    const user = this.createUser(email);
+    const usesCorrectPortal = portal === 'ADMIN' ? user.role === 'ADMIN' : user.role !== 'ADMIN';
+    if (!usesCorrectPortal) {
+      return throwError(
+        () => new AuthApiError('WRONG_PORTAL', 'Tài khoản không có quyền tại cổng đăng nhập này.'),
+      );
+    }
+
+    return of(this.createResult(user));
   }
 
   refresh(user: AuthUser): Observable<AuthResult> {

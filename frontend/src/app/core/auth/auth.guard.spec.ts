@@ -69,11 +69,21 @@ describe('roleGuard access matrix', () => {
     expect(result).toContain('admin');
   });
 
+  it('hides the Admin login path when a guest opens an Admin page', () => {
+    const result = urlOf(runGuard(['ADMIN'], '/admin/nguoi-dung', '/'));
+
+    expect(result).toBe('/');
+    expect(result).not.toContain('login');
+  });
+
   function runGuard(
     allowedRoles: readonly UserRole[],
     url: string,
+    guestRedirect?: string,
   ): boolean | ReturnType<Router['parseUrl']> {
-    const route = { data: { roles: allowedRoles } } as unknown as ActivatedRouteSnapshot;
+    const route = {
+      data: { roles: allowedRoles, guestRedirect },
+    } as unknown as ActivatedRouteSnapshot;
     const state = { url } as RouterStateSnapshot;
     return TestBed.runInInjectionContext(() => roleGuard(route, state)) as
       boolean | ReturnType<Router['parseUrl']>;

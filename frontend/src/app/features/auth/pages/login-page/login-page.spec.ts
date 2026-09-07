@@ -1,7 +1,11 @@
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { LoginPage } from './login-page';
+
+@Component({ standalone: true, template: '' })
+class MemberTestPage {}
 
 describe('LoginPage', () => {
   afterEach(() => {
@@ -12,26 +16,27 @@ describe('LoginPage', () => {
   it('should validate required credentials and accept a valid mock login', async () => {
     await TestBed.configureTestingModule({
       imports: [LoginPage],
-      providers: [provideRouter([])],
+      providers: [provideRouter([{ path: 'thanh-vien', component: MemberTestPage }])],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(LoginPage);
-    const component = fixture.componentInstance as unknown as {
-      loginForm: { setValue(value: object): void; valid: boolean };
-      feedback: () => { type: string } | null;
-      submit(): void;
-    };
+    fixture.detectChanges();
+    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
 
-    component.submit();
-    expect(component.loginForm.valid).toBe(false);
+    form.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Vui lòng nhập email.');
 
-    component.loginForm.setValue({
-      email: 'phuc@tramk.vn',
-      password: 'Matkhau123',
-      rememberMe: true,
-    });
-    component.submit();
+    fill('#login-email', 'phuc@tramk.vn');
+    fill('#login-password', 'Matkhau123');
+    form.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Đăng nhập thành công.');
 
-    expect(component.feedback()?.type).toBe('success');
+    function fill(selector: string, value: string): void {
+      const input = fixture.nativeElement.querySelector(selector) as HTMLInputElement;
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+    }
   });
 });

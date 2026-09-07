@@ -215,9 +215,18 @@ const adminSectionRoutes: Routes = [
 
 export const routes: Routes = [
   {
+    path: 'admin/login',
+    title: 'Đăng nhập quản trị | Trạm K',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('@features/auth/pages/admin-login-page/admin-login-page').then(
+        (component) => component.AdminLoginPage,
+      ),
+  },
+  {
     path: 'admin',
     canActivate: [roleGuard],
-    data: { roles: ['ADMIN'] },
+    data: { roles: ['ADMIN'], guestRedirect: '/' },
     loadComponent: () =>
       import('@layouts/admin-layout/admin-layout').then((component) => component.AdminLayout),
     children: adminSectionRoutes,

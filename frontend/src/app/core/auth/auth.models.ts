@@ -13,6 +13,8 @@ export interface LoginCredentials {
   readonly rememberMe: boolean;
 }
 
+export type LoginPortal = 'PUBLIC' | 'ADMIN';
+
 export interface AuthResult {
   readonly user: AuthUser;
   readonly accessToken: string;
@@ -25,7 +27,8 @@ export interface StoredAuthSession {
   readonly sessionExpiresAt: number;
 }
 
-export type AuthErrorCode = 'ACCOUNT_LOCKED' | 'INVALID_CREDENTIALS' | 'SESSION_EXPIRED';
+export type AuthErrorCode =
+  'ACCOUNT_LOCKED' | 'INVALID_CREDENTIALS' | 'SESSION_EXPIRED' | 'WRONG_PORTAL';
 
 export class AuthApiError extends Error {
   constructor(
