@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 
 import type { StoredAuthSession } from './auth.models';
+import type { AuthUser } from './auth.models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthSessionStorageService {
@@ -30,6 +31,13 @@ export class AuthSessionStorageService {
     const storage = session.rememberMe ? localStorage : sessionStorage;
     const key = session.rememberMe ? this.persistentKey : this.browserSessionKey;
     storage.setItem(key, JSON.stringify(session));
+  }
+
+  updateUser(user: AuthUser): void {
+    const session = this.read();
+    if (!session) return;
+
+    this.write({ ...session, user });
   }
 
   clear(): void {

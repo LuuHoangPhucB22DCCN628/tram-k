@@ -45,4 +45,22 @@ describe('AuthService', () => {
     expect(auth.currentUser()?.email).toBe('phuc@tramk.vn');
     expect(auth.accessToken()).toContain('mock-access');
   });
+
+  it('should update the display name without changing the stored session expiry', () => {
+    const auth = TestBed.inject(AuthService);
+    auth.login({ email: 'phuc@tramk.vn', password: 'Matkhau123', rememberMe: true }).subscribe();
+    const before = JSON.parse(localStorage.getItem('tram-k.auth.persistent') ?? '{}') as {
+      sessionExpiresAt: number;
+    };
+
+    auth.updateDisplayName('Phúc Trạm K');
+
+    const after = JSON.parse(localStorage.getItem('tram-k.auth.persistent') ?? '{}') as {
+      user: { displayName: string };
+      sessionExpiresAt: number;
+    };
+    expect(auth.currentUser()?.displayName).toBe('Phúc Trạm K');
+    expect(after.user.displayName).toBe('Phúc Trạm K');
+    expect(after.sessionExpiresAt).toBe(before.sessionExpiresAt);
+  });
 });

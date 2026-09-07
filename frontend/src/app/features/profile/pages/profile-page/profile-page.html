@@ -1,0 +1,182 @@
+<section class="profile-page" aria-labelledby="profile-title">
+  <header class="profile-page__heading">
+    <p>Thông tin thành viên</p>
+    <h1 id="profile-title">Hồ sơ của tôi</h1>
+    <span>Cập nhật thông tin mà bạn muốn dùng khi tham gia cộng đồng Trạm K.</span>
+  </header>
+
+  <form [formGroup]="profileForm" (ngSubmit)="save()" novalidate>
+    <div class="profile-page__grid">
+      <aside class="profile-card profile-avatar" aria-labelledby="avatar-title">
+        <h2 id="avatar-title">Ảnh đại diện</h2>
+        <div class="profile-avatar__preview" aria-live="polite">
+          @if (avatarDataUrl(); as avatar) {
+            <img [src]="avatar" alt="Avatar đang chọn" />
+          } @else {
+            <span aria-hidden="true">{{ initials() }}</span>
+          }
+        </div>
+        <label class="profile-avatar__upload" for="profile-avatar-input">Chọn ảnh mới</label>
+        <input
+          id="profile-avatar-input"
+          class="profile-avatar__input"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          (change)="selectAvatar($event)"
+        />
+        @if (avatarDataUrl()) {
+          <button type="button" class="profile-avatar__remove" (click)="removeAvatar()">
+            Xóa ảnh
+          </button>
+        }
+        <small>JPG, PNG hoặc WebP, tối đa 1 MB.</small>
+      </aside>
+
+      <div class="profile-page__content">
+        <section class="profile-card" aria-labelledby="personal-title">
+          <div class="profile-card__heading">
+            <h2 id="personal-title">Thông tin cá nhân</h2>
+            <p>Email và vai trò được quản lý theo tài khoản đăng nhập.</p>
+          </div>
+
+          <div class="profile-form__grid">
+            <div class="profile-form__field">
+              <label for="profile-name">Tên hiển thị <span aria-hidden="true">*</span></label>
+              <input
+                id="profile-name"
+                type="text"
+                formControlName="displayName"
+                autocomplete="name"
+              />
+              @if (hasError('displayName', 'required')) {
+                <p class="profile-form__error">Vui lòng nhập tên hiển thị.</p>
+              } @else if (
+                hasError('displayName', 'minlength') || hasError('displayName', 'maxlength')
+              ) {
+                <p class="profile-form__error">Tên hiển thị cần từ 2 đến 50 ký tự.</p>
+              }
+            </div>
+
+            <div class="profile-form__field">
+              <label for="profile-email">Email</label>
+              <input id="profile-email" type="email" [value]="accountEmail" disabled />
+            </div>
+
+            <div class="profile-form__field">
+              <label for="profile-phone">Số điện thoại</label>
+              <input
+                id="profile-phone"
+                type="tel"
+                formControlName="phone"
+                autocomplete="tel"
+                placeholder="0912345678"
+              />
+              @if (hasError('phone', 'pattern')) {
+                <p class="profile-form__error">Nhập 10 số bắt đầu bằng 0 hoặc định dạng +84.</p>
+              }
+            </div>
+
+            <div class="profile-form__field">
+              <label for="profile-city">Tỉnh / Thành phố</label>
+              <input
+                id="profile-city"
+                type="text"
+                formControlName="city"
+                autocomplete="address-level1"
+              />
+              @if (hasError('city', 'maxlength')) {
+                <p class="profile-form__error">Địa chỉ không được vượt quá 100 ký tự.</p>
+              }
+            </div>
+
+            <div class="profile-form__field">
+              <label for="profile-year">Năm sinh</label>
+              <input
+                id="profile-year"
+                type="text"
+                inputmode="numeric"
+                formControlName="birthYear"
+                placeholder="1995"
+              />
+              @if (hasError('birthYear', 'pattern') || hasError('birthYear', 'futureYear')) {
+                <p class="profile-form__error">Nhập năm từ 1900 đến {{ currentYear }}.</p>
+              }
+            </div>
+
+            <div class="profile-form__field">
+              <label for="profile-role">Vai trò</label>
+              <input id="profile-role" type="text" [value]="accountRole" disabled />
+            </div>
+
+            <div class="profile-form__field profile-form__field--full">
+              <label for="profile-bio">Giới thiệu ngắn</label>
+              <textarea
+                id="profile-bio"
+                rows="4"
+                formControlName="bio"
+                placeholder="Một vài điều bạn muốn cộng đồng biết về mình"
+              ></textarea>
+              <div class="profile-form__meta">
+                <small>Không nên nhập thông tin sức khỏe nhạy cảm trong bản demo.</small>
+                <small>{{ profileForm.controls.bio.value.length }}/500</small>
+              </div>
+              @if (hasError('bio', 'maxlength')) {
+                <p class="profile-form__error">Phần giới thiệu không được vượt quá 500 ký tự.</p>
+              }
+            </div>
+          </div>
+        </section>
+
+        <section class="profile-card" aria-labelledby="privacy-title">
+          <div class="profile-card__heading">
+            <h2 id="privacy-title">Quyền riêng tư</h2>
+            <p>Bạn có thể thay đổi các lựa chọn này bất cứ lúc nào.</p>
+          </div>
+
+          <fieldset class="profile-privacy">
+            <legend>Ai có thể xem hồ sơ?</legend>
+            <label
+              ><input type="radio" formControlName="visibility" value="PUBLIC" /> Mọi người</label
+            >
+            <label
+              ><input type="radio" formControlName="visibility" value="MEMBERS" /> Thành viên đã
+              đăng nhập</label
+            >
+            <label
+              ><input type="radio" formControlName="visibility" value="PRIVATE" /> Chỉ mình
+              tôi</label
+            >
+          </fieldset>
+
+          <div class="profile-privacy__switches">
+            <label
+              ><input type="checkbox" formControlName="showEmail" /> Hiển thị email trên hồ
+              sơ</label
+            >
+            <label
+              ><input type="checkbox" formControlName="allowComments" /> Cho phép thành viên bình
+              luận vào câu chuyện của tôi</label
+            >
+          </div>
+        </section>
+
+        @if (feedback(); as result) {
+          <p
+            class="profile-feedback"
+            [class.profile-feedback--error]="result.type === 'error'"
+            [attr.role]="result.type === 'error' ? 'alert' : 'status'"
+          >
+            {{ result.message }}
+          </p>
+        }
+
+        <div class="profile-actions">
+          <app-ui-button type="button" variant="secondary" (buttonClick)="resetForm()"
+            >Hoàn tác</app-ui-button
+          >
+          <app-ui-button type="submit">Lưu thay đổi</app-ui-button>
+        </div>
+      </div>
+    </div>
+  </form>
+</section>

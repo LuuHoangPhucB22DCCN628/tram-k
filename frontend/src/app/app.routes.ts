@@ -120,12 +120,10 @@ const memberSectionRoutes: Routes = [
   {
     path: 'ho-so',
     title: 'Hồ sơ của tôi | Trạm K',
-    data: {
-      area: 'member',
-      heading: 'Hồ sơ của tôi',
-      description: 'Khung quản lý thông tin cá nhân và các thiết lập riêng tư.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/profile/pages/profile-page/profile-page').then(
+        (component) => component.ProfilePage,
+      ),
   },
   {
     path: 'bai-viet',

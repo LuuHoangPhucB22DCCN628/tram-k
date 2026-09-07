@@ -56,6 +56,15 @@ export class AuthService {
     return this.userState()?.role === 'ADMIN' ? '/admin' : '/thanh-vien';
   }
 
+  updateDisplayName(displayName: string): void {
+    const currentUser = this.userState();
+    if (!currentUser) return;
+
+    const updatedUser = { ...currentUser, displayName };
+    this.userState.set(updatedUser);
+    this.storage.updateUser(updatedUser);
+  }
+
   private restoreSession(): void {
     const storedSession = this.storage.read();
     if (!storedSession) return;
