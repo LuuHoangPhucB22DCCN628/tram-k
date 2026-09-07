@@ -1,0 +1,12 @@
+@if (open()) {
+  <div class="ui-modal__backdrop" (click)="handleBackdrop($event)">
+    <section class="ui-modal" role="dialog" aria-modal="true" [attr.aria-labelledby]="titleId">
+      <header class="ui-modal__header">
+        <h2 [id]="titleId">{{ title() }}</h2>
+        <button type="button" aria-label="Đóng hộp thoại" (click)="close()">×</button>
+      </header>
+      <div class="ui-modal__body"><ng-content /></div>
+      <footer class="ui-modal__footer"><ng-content select="[uiModalFooter]" /></footer>
+    </section>
+  </div>
+}

@@ -1,0 +1,27 @@
+.ui-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+
+  &__spinner {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 0.1875rem solid var(--color-brand-soft);
+    border-top-color: var(--color-brand-primary);
+    border-radius: 50%;
+    animation: ui-loading-spin 750ms linear infinite;
+  }
+}
+
+@keyframes ui-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-loading__spinner {
+    animation: none;
+  }
+}

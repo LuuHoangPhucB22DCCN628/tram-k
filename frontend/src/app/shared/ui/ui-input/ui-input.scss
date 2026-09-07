@@ -1,0 +1,50 @@
+.ui-input {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+
+  label {
+    color: var(--color-text-heading);
+    font-weight: 700;
+
+    span {
+      color: var(--color-danger);
+    }
+  }
+
+  input {
+    width: 100%;
+    min-height: 2.75rem;
+    padding-inline: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+
+    &::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      background: var(--color-surface-subtle);
+      opacity: 0.7;
+    }
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+  }
+
+  &__hint {
+    color: var(--color-text-muted);
+  }
+
+  &__error {
+    color: var(--color-danger);
+  }
+
+  &--invalid input {
+    border-color: var(--color-danger);
+  }
+}

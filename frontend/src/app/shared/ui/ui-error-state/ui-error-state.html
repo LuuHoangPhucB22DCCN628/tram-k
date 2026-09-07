@@ -1,0 +1,6 @@
+<section class="ui-error" role="alert">
+  <div class="ui-error__icon" aria-hidden="true">!</div>
+  <h2>{{ title() }}</h2>
+  <p>{{ message() }}</p>
+  <button type="button" (click)="retry.emit()">Thử lại</button>
+</section>

@@ -1,4 +1,16 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+
+import {
+  UiBadge,
+  UiButton,
+  UiCard,
+  UiEmptyState,
+  UiErrorState,
+  UiInput,
+  UiLoading,
+  UiModal,
+  UiPagination,
+} from '@shared/ui';
 
 interface ColorToken {
   readonly label: string;
@@ -8,6 +20,17 @@ interface ColorToken {
 @Component({
   selector: 'app-style-guide-page',
   standalone: true,
+  imports: [
+    UiBadge,
+    UiButton,
+    UiCard,
+    UiEmptyState,
+    UiErrorState,
+    UiInput,
+    UiLoading,
+    UiModal,
+    UiPagination,
+  ],
   templateUrl: './style-guide-page.html',
   styleUrl: './style-guide-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,4 +50,8 @@ export class StyleGuidePage {
   ];
 
   protected readonly spacingTokens = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20] as const;
+  protected readonly sampleName = signal('Nguyễn An');
+  protected readonly currentPage = signal(3);
+  protected readonly isModalOpen = signal(false);
+  protected readonly retryCount = signal(0);
 }

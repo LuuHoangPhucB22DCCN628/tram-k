@@ -1,4 +1,4 @@
-<main class="style-guide">
+<div class="style-guide">
   <header class="style-guide__intro">
     <p class="style-guide__eyebrow">Nền tảng giao diện</p>
     <h1>Style Guide Trạm K</h1>
@@ -50,15 +50,100 @@
   </section>
 
   <section class="style-guide__section" aria-labelledby="control-title">
-    <h2 id="control-title">Nút và trạng thái focus</h2>
-    <p>Dùng phím Tab để kiểm tra viền focus thống nhất trên các thành phần tương tác.</p>
+    <h2 id="control-title">Button và Input</h2>
+    <p>
+      Dùng phím Tab để kiểm tra focus. Giá trị input mẫu hiện tại:
+      <strong>{{ sampleName() || '(trống)' }}</strong>
+    </p>
     <div class="control-row">
-      <button class="button button--primary" type="button">Nút chính</button>
-      <button class="button button--secondary" type="button">Nút phụ</button>
-      <label class="sample-field">
-        <span>Tìm kiếm</span>
-        <input type="search" placeholder="Nhập nội dung" />
-      </label>
+      <app-ui-button>Mặc định</app-ui-button>
+      <app-ui-button variant="secondary">Nút phụ</app-ui-button>
+      <app-ui-button variant="ghost">Nút trong suốt</app-ui-button>
+      <app-ui-button variant="danger">Xóa</app-ui-button>
+      <app-ui-button [loading]="true">Đang gửi</app-ui-button>
+    </div>
+    <div class="input-grid">
+      <app-ui-input
+        label="Họ và tên"
+        hint="Tên này sẽ hiển thị trong cộng đồng."
+        [required]="true"
+        [value]="sampleName()"
+        (valueChange)="sampleName.set($event)"
+      />
+      <app-ui-input
+        label="Email"
+        type="email"
+        value="email-khong-hop-le"
+        error="Email chưa đúng định dạng."
+      />
     </div>
   </section>
-</main>
+
+  <section class="style-guide__section" aria-labelledby="content-title">
+    <h2 id="content-title">Card và Badge</h2>
+    <div class="component-grid">
+      <app-ui-card>
+        <div uiCardHeader class="card-heading">
+          <h3>Chương trình phát cơm yêu thương</h3>
+          <app-ui-badge variant="success">Đã được duyệt</app-ui-badge>
+        </div>
+        <p>Thông tin mẫu để kiểm tra component card trong danh sách chương trình hỗ trợ.</p>
+        <div uiCardFooter>
+          <app-ui-button variant="secondary">Xem chi tiết</app-ui-button>
+        </div>
+      </app-ui-card>
+
+      <app-ui-card>
+        <div uiCardHeader class="card-heading">
+          <h3>Trạng thái kiểm duyệt</h3>
+        </div>
+        <div class="badge-row">
+          <app-ui-badge>Nháp</app-ui-badge>
+          <app-ui-badge variant="primary">Chờ duyệt</app-ui-badge>
+          <app-ui-badge variant="success">Đã duyệt</app-ui-badge>
+          <app-ui-badge variant="warning">Cần sửa</app-ui-badge>
+          <app-ui-badge variant="danger">Từ chối</app-ui-badge>
+        </div>
+      </app-ui-card>
+    </div>
+  </section>
+
+  <section class="style-guide__section" aria-labelledby="navigation-title">
+    <h2 id="navigation-title">Pagination và Modal</h2>
+    <div class="control-row">
+      <app-ui-pagination
+        [page]="currentPage()"
+        [totalPages]="8"
+        (pageChange)="currentPage.set($event)"
+      />
+      <span>Trang đang chọn: {{ currentPage() }}</span>
+      <app-ui-button (buttonClick)="isModalOpen.set(true)">Mở modal</app-ui-button>
+    </div>
+  </section>
+
+  <section class="style-guide__section" aria-labelledby="state-title">
+    <h2 id="state-title">Loading, Empty và Error</h2>
+    <div class="state-grid">
+      <div class="state-example"><app-ui-loading label="Đang tải bài viết..." /></div>
+      <app-ui-empty-state
+        title="Chưa có câu chuyện"
+        message="Hãy là người đầu tiên chia sẻ câu chuyện của bạn."
+      >
+        <app-ui-button variant="secondary">Viết câu chuyện</app-ui-button>
+      </app-ui-empty-state>
+      <app-ui-error-state
+        title="Không tải được cộng đồng"
+        [message]="'Bạn đã thử lại ' + retryCount() + ' lần.'"
+        (retry)="retryCount.update((count) => count + 1)"
+      />
+    </div>
+  </section>
+</div>
+
+<app-ui-modal title="Xác nhận gửi bài" [open]="isModalOpen()" (closed)="isModalOpen.set(false)">
+  <p>Bài viết sẽ chuyển sang trạng thái chờ quản trị viên duyệt trước khi được công khai.</p>
+  <div uiModalFooter class="modal-actions">
+    <app-ui-button variant="ghost" (buttonClick)="isModalOpen.set(false)">Hủy</app-ui-button>
+    <app-ui-button (buttonClick)="isModalOpen.set(false)">Xác nhận</app-ui-button>
+  </div>
+</app-ui-modal>

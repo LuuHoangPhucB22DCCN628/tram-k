@@ -1,0 +1,31 @@
+<nav class="ui-pagination" aria-label="Phân trang">
+  <button
+    type="button"
+    [disabled]="page() <= 1"
+    aria-label="Trang trước"
+    (click)="selectPage(page() - 1)"
+  >
+    ‹
+  </button>
+
+  @for (pageNumber of visiblePages(); track pageNumber) {
+    <button
+      type="button"
+      [class.ui-pagination__page--active]="pageNumber === page()"
+      [attr.aria-current]="pageNumber === page() ? 'page' : null"
+      [attr.aria-label]="'Trang ' + pageNumber"
+      (click)="selectPage(pageNumber)"
+    >
+      {{ pageNumber }}
+    </button>
+  }
+
+  <button
+    type="button"
+    [disabled]="page() >= totalPages()"
+    aria-label="Trang sau"
+    (click)="selectPage(page() + 1)"
+  >
+    ›
+  </button>
+</nav>

@@ -1,0 +1,27 @@
+<div class="ui-input" [class.ui-input--invalid]="error()">
+  <label [for]="inputId">
+    {{ label() }}
+    @if (required()) {
+      <span aria-hidden="true">*</span>
+    }
+  </label>
+
+  <input
+    [id]="inputId"
+    [type]="type()"
+    [value]="value()"
+    [placeholder]="placeholder()"
+    [disabled]="disabled()"
+    [required]="required()"
+    [attr.autocomplete]="autocomplete()"
+    [attr.aria-invalid]="error() ? true : null"
+    [attr.aria-describedby]="describedBy()"
+    (input)="updateValue($event)"
+  />
+
+  @if (error()) {
+    <p [id]="inputId + '-error'" class="ui-input__error">{{ error() }}</p>
+  } @else if (hint()) {
+    <p [id]="inputId + '-hint'" class="ui-input__hint">{{ hint() }}</p>
+  }
+</div>

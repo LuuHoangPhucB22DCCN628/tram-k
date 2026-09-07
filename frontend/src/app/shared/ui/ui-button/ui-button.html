@@ -1,0 +1,14 @@
+<button
+  [attr.type]="type()"
+  [disabled]="disabled() || loading()"
+  [attr.aria-label]="accessibleLabel()"
+  [attr.aria-busy]="loading()"
+  class="ui-button"
+  [class]="'ui-button ui-button--' + variant()"
+  (click)="handleClick()"
+>
+  @if (loading()) {
+    <span class="ui-button__spinner" aria-hidden="true"></span>
+  }
+  <span><ng-content /></span>
+</button>
