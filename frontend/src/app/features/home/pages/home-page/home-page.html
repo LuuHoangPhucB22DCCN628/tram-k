@@ -1,6 +1,197 @@
-<section class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-  <h1 class="text-3xl font-bold text-violet-700 sm:text-4xl">Tram-K</h1>
-  <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-    Nơi kết nối thông tin, cộng đồng và các chương trình hỗ trợ dành cho bệnh nhân ung thư
-  </p>
-</section>
+<main class="home-page">
+  <section class="hero" aria-labelledby="hero-title">
+    <img
+      class="hero__art"
+      src="/assets/images/home/home-hero.png"
+      width="1440"
+      height="800"
+      alt=""
+      fetchpriority="high"
+    />
+    <div class="hero__content">
+      <h1 id="hero-title" class="hero__title">
+        <span>we can<em>cer</em></span>
+        <strong>Survive</strong>
+      </h1>
+      <p class="hero__tagline">Cùng nhau, chúng ta tạo nên sự khác biệt</p>
+
+      <dl class="hero__stats" aria-label="Những con số đồng hành của Trạm K">
+        <div>
+          <dt>1.200+</dt>
+          <dd>hành trình cảm hứng</dd>
+        </div>
+        <div>
+          <dt>10.000+</dt>
+          <dd>nhà hảo tâm đồng hành</dd>
+        </div>
+        <div>
+          <dt>135+</dt>
+          <dd>điểm thiện nguyện trên toàn quốc</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="journey section-shell" aria-labelledby="journey-title">
+    <img
+      src="/assets/images/home/home-journey.png"
+      width="839"
+      height="534"
+      alt="Minh họa những bàn tay nâng đỡ biểu tượng dải ruy băng ung thư"
+      loading="lazy"
+    />
+    <div class="journey__content">
+      <h2 id="journey-title">Hành trình</h2>
+      <p class="section-subtitle">nào cũng cần một người đồng hành</p>
+      <p>
+        Trạm K được tạo nên để người bệnh, gia đình và những tấm lòng sẻ chia có thể tìm thấy nhau.
+        Mỗi câu chuyện được lắng nghe, mỗi thông tin đúng được lan tỏa đều có thể tiếp thêm sức mạnh
+        cho một hành trình.
+      </p>
+      <a class="text-link" routerLink="/ve-chung-toi">Hiểu thêm về Trạm K <span>→</span></a>
+    </div>
+  </section>
+
+  <section class="explore" aria-labelledby="explore-title">
+    <div class="section-heading section-shell">
+      <h2 id="explore-title">Khám phá</h2>
+      <p>Nơi hy vọng kết nối những tấm lòng đồng điệu</p>
+    </div>
+
+    <div class="explore__grid section-shell">
+      <a class="feature-card feature-card--guide" routerLink="/cam-nang">
+        <span class="feature-card__number">01</span>
+        <h3>Cẩm nang</h3>
+        <p>Những kiến thức đáng tin cậy để bạn chủ động hơn trên hành trình điều trị.</p>
+        <img src="/assets/images/home/explore-guide.svg" alt="" loading="lazy" />
+        <span class="feature-card__action">Khám phá <b>→</b></span>
+      </a>
+
+      <a class="feature-card feature-card--story" routerLink="/cau-chuyen">
+        <div>
+          <span class="feature-card__number">02</span>
+          <h3>Câu chuyện truyền cảm hứng</h3>
+          <p>Gặp những con người vẫn sống trọn vẹn, yêu thương và viết tiếp ước mơ.</p>
+          <span class="feature-card__action">Đọc câu chuyện <b>→</b></span>
+        </div>
+        <img src="/assets/images/home/explore-story.png" alt="" loading="lazy" />
+      </a>
+
+      @for (item of exploreItems; track item.title) {
+        <a class="feature-card feature-card--compact" [routerLink]="item.route">
+          <span class="feature-card__number">{{ item.icon }}</span>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.description }}</p>
+          <span class="feature-card__action" aria-hidden="true">Khám phá <b>→</b></span>
+        </a>
+      }
+
+      <a class="feature-card feature-card--cancer" routerLink="/loai-ung-thu">
+        <img src="/assets/images/home/explore-cancer-types.svg" alt="" loading="lazy" />
+        <div>
+          <span class="feature-card__number">05</span>
+          <h3>Các loại ung thư</h3>
+          <p>Tra cứu thông tin nền tảng theo từng nhóm bệnh.</p>
+        </div>
+      </a>
+
+      <a class="feature-card feature-card--support" routerLink="/cong-dong">
+        <div>
+          <span class="feature-card__eyebrow">Cùng sẻ chia</span>
+          <h3>Cộng đồng</h3>
+          <p>Kết nối với cộng đồng và khám phá các hoạt động hỗ trợ đang diễn ra.</p>
+          <span class="feature-card__action">Tham gia cộng đồng <b>→</b></span>
+        </div>
+        <img
+          src="/assets/images/home/explore-donation.png"
+          alt="Hai em nhỏ lan tỏa tinh thần mạnh mẽ"
+          loading="lazy"
+        />
+      </a>
+    </div>
+  </section>
+
+  <section class="guides" aria-labelledby="guides-title">
+    <div class="section-heading section-shell">
+      <h2 id="guides-title">Cẩm nang đồng hành</h2>
+      <p>Kiến thức dễ hiểu để người bệnh và gia đình vững tâm hơn mỗi ngày</p>
+    </div>
+
+    <div class="guide-grid section-shell">
+      @for (article of guideArticles; track article.title) {
+        <article class="guide-card">
+          <a routerLink="/cam-nang" [attr.aria-label]="'Đọc: ' + article.title">
+            <img
+              [src]="article.image"
+              width="265"
+              height="233"
+              [alt]="article.title"
+              loading="lazy"
+            />
+          </a>
+          <span>{{ article.category }}</span>
+          <h3>
+            <a routerLink="/cam-nang">{{ article.title }}</a>
+          </h3>
+          <p>{{ article.summary }}</p>
+        </article>
+      }
+    </div>
+    <a class="outline-button" routerLink="/cam-nang">Xem tất cả cẩm nang</a>
+  </section>
+
+  <section class="faq" aria-labelledby="faq-title">
+    <div class="section-heading section-shell">
+      <h2 id="faq-title">Những câu hỏi thường gặp</h2>
+      <p>Trạm K luôn sẵn sàng giải đáp để bạn an tâm kết nối và sẻ chia</p>
+    </div>
+
+    <div class="faq__content section-shell">
+      <aside>
+        <img
+          src="/assets/images/home/home-faq.png"
+          width="412"
+          height="370"
+          alt=""
+          loading="lazy"
+        />
+        <strong>Hãy liên hệ Trạm nhé!</strong>
+        <a href="mailto:tramk@example.com">tramk@example.com</a>
+      </aside>
+
+      <div class="faq-list">
+        @for (item of faqItems; track item.question; let index = $index) {
+          <article class="faq-item" [class.faq-item--open]="openFaqIndex() === index">
+            <h3>
+              <button
+                type="button"
+                [attr.aria-expanded]="openFaqIndex() === index"
+                [attr.aria-controls]="'faq-answer-' + index"
+                (click)="toggleFaq(index)"
+              >
+                <span>{{ item.question }}</span>
+                <b aria-hidden="true">{{ openFaqIndex() === index ? '−' : '+' }}</b>
+              </button>
+            </h3>
+            @if (openFaqIndex() === index) {
+              <p [id]="'faq-answer-' + index">{{ item.answer }}</p>
+            }
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="partners" aria-labelledby="partners-title">
+    <div class="partners__orbits" aria-hidden="true"></div>
+    <div class="partners__logos" aria-label="Các đơn vị đồng hành cùng Trạm K">
+      @for (partner of partners; track partner) {
+        <span>{{ partner }}</span>
+      }
+    </div>
+    <div class="section-heading">
+      <h2 id="partners-title">Đối tác của Trạm</h2>
+      <p>Cảm ơn những tổ chức và nhà hảo tâm đã cùng chúng tôi lan tỏa điều tử tế</p>
+    </div>
+  </section>
+</main>

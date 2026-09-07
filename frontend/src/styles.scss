@@ -2,3 +2,5 @@
 @use 'styles/tokens';
 @use 'styles/base';
 @use 'styles/auth';
+// Trang chủ có nhiều section theo Figma; nạp ở cấp ứng dụng để không tính vào budget CSS của một component.
+@use 'app/features/home/pages/home-page/home-page';
