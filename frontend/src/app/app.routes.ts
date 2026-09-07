@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { authGuard, guestGuard, roleGuard } from '@core/auth/auth.guard';
+import { guestGuard, roleGuard } from '@core/auth/auth.guard';
 
 const loadSectionPlaceholder = () =>
   import('@features/shell/pages/section-placeholder-page/section-placeholder-page').then(
@@ -223,8 +223,22 @@ export const routes: Routes = [
     children: adminSectionRoutes,
   },
   {
+    path: 'doi-tac',
+    title: 'Khu vực đối tác | Trạm K',
+    canActivate: [roleGuard],
+    data: {
+      roles: ['PARTNER'],
+      area: 'partner',
+      heading: 'Khu vực đối tác',
+      description:
+        'Tài khoản của bạn đã vào đúng khu vực. Chức năng đăng ký và đề xuất chương trình sẽ được hoàn thiện ở Phase 6.',
+    },
+    loadComponent: loadSectionPlaceholder,
+  },
+  {
     path: 'thanh-vien',
-    canActivate: [authGuard],
+    canActivate: [roleGuard],
+    data: { roles: ['PATIENT', 'CARER'] },
     loadComponent: () =>
       import('@layouts/member-layout/member-layout').then((component) => component.MemberLayout),
     children: memberSectionRoutes,

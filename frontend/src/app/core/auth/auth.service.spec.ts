@@ -63,4 +63,16 @@ describe('AuthService', () => {
     expect(after.user.displayName).toBe('Phúc Trạm K');
     expect(after.sessionExpiresAt).toBe(before.sessionExpiresAt);
   });
+
+  it.each([
+    { email: 'phuc@tramk.vn', route: '/thanh-vien' },
+    { email: 'doitac@tramk.vn', route: '/doi-tac' },
+    { email: 'admin@tramk.vn', route: '/admin' },
+  ])('should send $email to its role home', ({ email, route }) => {
+    const auth = TestBed.inject(AuthService);
+
+    auth.login({ email, password: 'Matkhau123', rememberMe: false }).subscribe();
+
+    expect(auth.defaultRoute()).toBe(route);
+  });
 });

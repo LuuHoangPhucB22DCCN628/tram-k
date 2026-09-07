@@ -53,7 +53,17 @@ export class AuthService {
   }
 
   defaultRoute(): string {
-    return this.userState()?.role === 'ADMIN' ? '/admin' : '/thanh-vien';
+    switch (this.userState()?.role) {
+      case 'ADMIN':
+        return '/admin';
+      case 'PARTNER':
+        return '/doi-tac';
+      case 'PATIENT':
+      case 'CARER':
+        return '/thanh-vien';
+      default:
+        return '/';
+    }
   }
 
   updateDisplayName(displayName: string): void {

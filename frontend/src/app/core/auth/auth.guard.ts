@@ -19,7 +19,7 @@ export const guestGuard: CanActivateFn = () => {
   return auth.isAuthenticated() ? router.parseUrl(auth.defaultRoute()) : true;
 };
 
-export const roleGuard: CanActivateFn = (route) => {
+export const roleGuard: CanActivateFn = (route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
   const allowedRoles = route.data['roles'] as readonly (
@@ -27,7 +27,7 @@ export const roleGuard: CanActivateFn = (route) => {
   )[];
 
   if (!auth.isAuthenticated()) {
-    return router.createUrlTree(['/dang-nhap']);
+    return router.createUrlTree(['/dang-nhap'], { queryParams: { returnUrl: state.url } });
   }
 
   return auth.hasRole(allowedRoles) ? true : router.parseUrl(auth.defaultRoute());
