@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { AuthApiError } from '@core/auth/auth.models';
+import { AuthService } from '@core/auth/auth.service';
 import { UiButton } from '@shared/ui';
 
 import { type AuthFeedback, shouldShowError } from '../../auth-form.utils';
@@ -15,8 +17,12 @@ import { type AuthFeedback, shouldShowError } from '../../auth-form.utils';
 })
 export class LoginPage {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   protected readonly submitted = signal(false);
+  protected readonly isSubmitting = signal(false);
   protected readonly feedback = signal<AuthFeedback | null>(null);
   protected readonly loginForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -37,18 +43,28 @@ export class LoginPage {
       return;
     }
 
-    // Mock quy ước: email này đại diện cho lỗi tài khoản bị khóa từ API.
-    if (this.loginForm.controls.email.value.toLowerCase() === 'khoa@tramk.vn') {
-      this.feedback.set({
-        type: 'error',
-        message: 'Tài khoản đang bị khóa. Vui lòng liên hệ quản trị viên.',
-      });
-      return;
-    }
-
-    this.feedback.set({
-      type: 'success',
-      message: 'Đăng nhập mô phỏng thành công. Phiên đăng nhập thật sẽ được nối ở P3-05.',
+    this.isSubmitting.set(true);
+    this.auth.login(this.loginForm.getRawValue()).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.feedback.set({ type: 'success', message: 'Đăng nhập thành công.' });
+        void this.router.navigateByUrl(this.safeReturnUrl());
+      },
+      error: (error: unknown) => {
+        this.isSubmitting.set(false);
+        const message =
+          error instanceof AuthApiError && error.code === 'ACCOUNT_LOCKED'
+            ? 'Tài khoản đang bị khóa. Vui lòng liên hệ quản trị viên.'
+            : 'Email hoặc mật khẩu không đúng.';
+        this.feedback.set({ type: 'error', message });
+      },
     });
+  }
+
+  private safeReturnUrl(): string {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    return returnUrl?.startsWith('/') && !returnUrl.startsWith('//')
+      ? returnUrl
+      : this.auth.defaultRoute();
   }
 }

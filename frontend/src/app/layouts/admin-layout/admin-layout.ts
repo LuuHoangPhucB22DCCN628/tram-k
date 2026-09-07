@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+
+import { AuthService } from '@core/auth/auth.service';
 
 interface AdminMenuItem {
   readonly label: string;
@@ -15,6 +17,8 @@ interface AdminMenuItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminLayout {
+  protected readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   protected readonly isSidebarOpen = signal(false); // Điều khiển sidebar trên màn hình nhỏ.
 
   protected readonly menuItems: readonly AdminMenuItem[] = [
@@ -31,5 +35,10 @@ export class AdminLayout {
 
   protected closeSidebar(): void {
     this.isSidebarOpen.set(false);
+  }
+
+  protected logout(): void {
+    this.auth.logout();
+    void this.router.navigateByUrl('/dang-nhap');
   }
 }

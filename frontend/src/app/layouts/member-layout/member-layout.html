@@ -6,8 +6,13 @@
       <img src="/assets/images/brand/tram-k-logo.svg" width="169" height="40" alt="Trạm K" />
     </a>
     <div>
-      <span class="member-shell__account">Khu vực thành viên</span>
-      <a routerLink="/">Về trang công khai</a>
+      <span class="member-shell__account">
+        Khu vực thành viên · {{ auth.currentUser()?.displayName }}
+      </span>
+      <span class="member-shell__links">
+        <a routerLink="/">Trang công khai</a>
+        <button type="button" (click)="logout()">Đăng xuất</button>
+      </span>
     </div>
   </header>
 

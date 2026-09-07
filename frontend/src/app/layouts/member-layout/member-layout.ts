@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+
+import { AuthService } from '@core/auth/auth.service';
 
 interface MemberMenuItem {
   readonly label: string;
@@ -16,6 +18,9 @@ interface MemberMenuItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MemberLayout {
+  protected readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
   protected readonly menuItems: readonly MemberMenuItem[] = [
     { label: 'Tổng quan', path: '/thanh-vien', exact: true },
     { label: 'Hồ sơ của tôi', path: '/thanh-vien/ho-so' },
@@ -23,4 +28,9 @@ export class MemberLayout {
     { label: 'Bình luận của tôi', path: '/thanh-vien/binh-luan' },
     { label: 'Đăng ký hỗ trợ', path: '/thanh-vien/dang-ky-ho-tro' },
   ];
+
+  protected logout(): void {
+    this.auth.logout();
+    void this.router.navigateByUrl('/dang-nhap');
+  }
 }

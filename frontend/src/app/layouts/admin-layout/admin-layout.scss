@@ -72,6 +72,20 @@
     }
   }
 
+  &__account-links {
+    display: flex;
+    gap: var(--space-2);
+
+    button {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--color-danger);
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+  }
+
   &__avatar {
     display: grid;
     width: 2.5rem;
@@ -183,6 +197,10 @@
 
       span:not(.admin-shell__avatar) {
         display: inline;
+      }
+
+      span.admin-shell__account-links {
+        display: flex;
       }
     }
 

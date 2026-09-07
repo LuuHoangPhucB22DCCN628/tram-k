@@ -4,6 +4,11 @@ import { provideRouter } from '@angular/router';
 import { LoginPage } from './login-page';
 
 describe('LoginPage', () => {
+  afterEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
   it('should validate required credentials and accept a valid mock login', async () => {
     await TestBed.configureTestingModule({
       imports: [LoginPage],

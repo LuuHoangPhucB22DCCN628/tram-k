@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core'; // Component và trạng thái phản ứng cho menu mobile
-import { RouterLink, RouterLinkActive } from '@angular/router'; // Điều hướng nội bộ không tải lại trang
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core'; // Component và trạng thái phản ứng cho menu mobile
+import { Router, RouterLink, RouterLinkActive } from '@angular/router'; // Điều hướng nội bộ không tải lại trang
+
+import { AuthService } from '@core/auth/auth.service';
 
 interface PublicMenuItem {
   readonly label: string;
@@ -15,6 +17,8 @@ interface PublicMenuItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PublicHeader {
+  readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   readonly isMobileMenuOpen = signal(false); // false: đóng menu, true: mở menu
 
   readonly menuItems: readonly PublicMenuItem[] = [
@@ -33,5 +37,11 @@ export class PublicHeader {
 
   closeMobileMenu(): void {
     this.isMobileMenuOpen.set(false); // Đóng menu sau khi chọn một liên kết
+  }
+
+  logout(): void {
+    this.auth.logout();
+    this.closeMobileMenu();
+    void this.router.navigateByUrl('/');
   }
 }

@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { authGuard, guestGuard, roleGuard } from '@core/auth/auth.guard';
+
 const loadSectionPlaceholder = () =>
   import('@features/shell/pages/section-placeholder-page/section-placeholder-page').then(
     (component) => component.SectionPlaceholderPage,
@@ -9,12 +11,14 @@ const publicSectionRoutes: Routes = [
   {
     path: 'dang-nhap',
     title: 'Đăng nhập | Trạm K',
+    canActivate: [guestGuard],
     loadComponent: () =>
       import('@features/auth/pages/login-page/login-page').then((component) => component.LoginPage),
   },
   {
     path: 'dang-ky',
     title: 'Đăng ký | Trạm K',
+    canActivate: [guestGuard],
     loadComponent: () =>
       import('@features/auth/pages/register-page/register-page').then(
         (component) => component.RegisterPage,
@@ -23,6 +27,7 @@ const publicSectionRoutes: Routes = [
   {
     path: 'quen-mat-khau',
     title: 'Quên mật khẩu | Trạm K',
+    canActivate: [guestGuard],
     loadComponent: () =>
       import('@features/auth/pages/forgot-password-page/forgot-password-page').then(
         (component) => component.ForgotPasswordPage,
@@ -213,12 +218,15 @@ const adminSectionRoutes: Routes = [
 export const routes: Routes = [
   {
     path: 'admin',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN'] },
     loadComponent: () =>
       import('@layouts/admin-layout/admin-layout').then((component) => component.AdminLayout),
     children: adminSectionRoutes,
   },
   {
     path: 'thanh-vien',
+    canActivate: [authGuard],
     loadComponent: () =>
       import('@layouts/member-layout/member-layout').then((component) => component.MemberLayout),
     children: memberSectionRoutes,

@@ -20,8 +20,11 @@
 
     <div class="admin-shell__account">
       <span class="admin-shell__avatar" aria-hidden="true">A</span>
-      <span>Admin Trạm K</span>
-      <a routerLink="/">Trang công khai</a>
+      <span>{{ auth.currentUser()?.displayName }}</span>
+      <span class="admin-shell__account-links">
+        <a routerLink="/">Trang công khai</a>
+        <button type="button" (click)="logout()">Đăng xuất</button>
+      </span>
     </div>
   </header>
 

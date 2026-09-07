@@ -33,6 +33,21 @@
     font-weight: 700;
   }
 
+  &__links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-3);
+
+    button {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--color-danger);
+      cursor: pointer;
+    }
+  }
+
   &__body {
     display: grid;
   }
