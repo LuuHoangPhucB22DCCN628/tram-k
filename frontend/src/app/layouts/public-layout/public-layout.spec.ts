@@ -21,4 +21,11 @@ describe('PublicLayout', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should provide a skip link to the main content', () => {
+    const skipLink = fixture.nativeElement.querySelector('.skip-link') as HTMLAnchorElement;
+
+    expect(skipLink.textContent).toContain('Bỏ qua đến nội dung chính');
+    expect(skipLink.getAttribute('href')).toBe('#main-content');
+  });
 });

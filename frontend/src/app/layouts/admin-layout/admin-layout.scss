@@ -92,11 +92,15 @@
     padding: var(--space-6) var(--space-4);
     overflow-y: auto;
     background: var(--color-text-heading);
+    pointer-events: none;
     transform: translateX(-100%);
     transition: transform 180ms ease;
+    visibility: hidden;
 
     &--open {
+      pointer-events: auto;
       transform: translateX(0);
+      visibility: visible;
     }
 
     nav {
@@ -188,7 +192,9 @@
       top: 0;
       width: auto;
       height: 100vh;
+      pointer-events: auto;
       transform: none;
+      visibility: visible;
     }
 
     &__main {

@@ -10,6 +10,25 @@ html {
   scroll-behavior: smooth;
 }
 
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: var(--space-3);
+  left: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-text-heading);
+  color: var(--color-surface);
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(calc(-100% - var(--space-4)));
+  transition: transform 160ms ease;
+
+  &:focus-visible {
+    transform: translateY(0);
+  }
+}
+
 body {
   min-width: 20rem;
   min-height: 100vh;
@@ -41,4 +60,14 @@ a {
 ::selection {
   background: var(--color-brand-soft);
   color: var(--color-text-heading);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .skip-link {
+    transition: none;
+  }
 }

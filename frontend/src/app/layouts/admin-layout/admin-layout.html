@@ -1,9 +1,11 @@
 <div class="admin-shell">
+  <a class="skip-link" href="#admin-main-content">Bỏ qua đến nội dung chính</a>
+
   <header class="admin-shell__topbar">
     <button
       type="button"
       class="admin-shell__menu-button"
-      aria-label="Mở hoặc đóng menu quản trị"
+      [attr.aria-label]="isSidebarOpen() ? 'Đóng menu quản trị' : 'Mở menu quản trị'"
       aria-controls="admin-sidebar"
       [attr.aria-expanded]="isSidebarOpen()"
       (click)="toggleSidebar()"

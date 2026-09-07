@@ -20,4 +20,10 @@ describe('MemberLayout', () => {
     expect(fixture.nativeElement.textContent).toContain('Khu vực thành viên');
     expect(fixture.nativeElement.textContent).toContain('Bài viết của tôi');
   });
+
+  it('should provide a skip link to the member content', () => {
+    const skipLink = fixture.nativeElement.querySelector('.skip-link') as HTMLAnchorElement;
+
+    expect(skipLink.getAttribute('href')).toBe('#member-main-content');
+  });
 });
