@@ -7,6 +7,7 @@ describe('AdminUsersPage', () => {
   let fixture: ComponentFixture<AdminUsersPage>;
 
   beforeEach(async () => {
+    localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [AdminUsersPage],
       providers: [provideRouter([])],
@@ -15,6 +16,8 @@ describe('AdminUsersPage', () => {
     fixture = TestBed.createComponent(AdminUsersPage);
     fixture.detectChanges();
   });
+
+  afterEach(() => localStorage.clear());
 
   it('should filter users by keyword', () => {
     const searchInput = fixture.nativeElement.querySelector(
@@ -38,5 +41,22 @@ describe('AdminUsersPage', () => {
 
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeTruthy();
     expect(fixture.nativeElement.textContent).toContain('Xác nhận khóa');
+  });
+
+  it('should persist the status after Admin confirms', () => {
+    const actionButton = fixture.nativeElement.querySelector(
+      'tbody app-ui-button button',
+    ) as HTMLButtonElement;
+    actionButton.click();
+    fixture.detectChanges();
+
+    const confirmButton = Array.from<HTMLButtonElement>(
+      fixture.nativeElement.querySelectorAll('[role="dialog"] app-ui-button button'),
+    ).find((button) => button.textContent?.includes('Xác nhận khóa'));
+    confirmButton?.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Đã khóa tài khoản Nguyễn Minh Anh.');
+    expect(localStorage.getItem('tram-k.admin.users')).toContain('LOCKED');
   });
 });

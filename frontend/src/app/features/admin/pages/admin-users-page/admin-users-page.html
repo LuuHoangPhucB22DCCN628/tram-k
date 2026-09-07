@@ -61,6 +61,10 @@
       </div>
     </div>
 
+    @if (feedback()) {
+      <p class="user-panel__feedback" role="status">{{ feedback() }}</p>
+    }
+
     @if (pagedUsers().length) {
       <div class="table-scroll" tabindex="0" aria-label="Bảng người dùng có thể cuộn ngang">
         <table>
@@ -130,7 +134,7 @@
       >?
     </p>
     <p class="modal-note">
-      Đây là dữ liệu mock. Thao tác hiện tại chỉ thay đổi trạng thái trong bộ nhớ trình duyệt.
+      Đây là dữ liệu mock. Trạng thái sẽ được lưu trong trình duyệt để phục vụ kiểm thử giao diện.
     </p>
   }
 

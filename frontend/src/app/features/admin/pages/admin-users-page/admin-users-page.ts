@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import {
@@ -12,84 +12,8 @@ import {
   UiPagination,
 } from '@shared/ui';
 
-type UserStatus = 'ACTIVE' | 'PENDING' | 'LOCKED';
-type UserRole = 'Bệnh nhân' | 'Người thân' | 'Đối tác' | 'Admin';
-
-interface AdminUser {
-  readonly id: string;
-  readonly displayName: string;
-  readonly email: string;
-  readonly role: UserRole;
-  readonly joinedAt: string;
-  readonly status: UserStatus;
-}
-
-const MOCK_USERS: readonly AdminUser[] = [
-  {
-    id: 'USR-001',
-    displayName: 'Nguyễn Minh Anh',
-    email: 'minhanh@example.com',
-    role: 'Bệnh nhân',
-    joinedAt: '02/09/2026',
-    status: 'ACTIVE',
-  },
-  {
-    id: 'USR-002',
-    displayName: 'Trần Thu Phương',
-    email: 'phuong@example.com',
-    role: 'Người thân',
-    joinedAt: '01/09/2026',
-    status: 'PENDING',
-  },
-  {
-    id: 'USR-003',
-    displayName: 'Lê Hoàng Nam',
-    email: 'hoangnam@example.com',
-    role: 'Đối tác',
-    joinedAt: '28/08/2026',
-    status: 'ACTIVE',
-  },
-  {
-    id: 'USR-004',
-    displayName: 'Phạm Ngọc Lan',
-    email: 'ngoclan@example.com',
-    role: 'Bệnh nhân',
-    joinedAt: '25/08/2026',
-    status: 'LOCKED',
-  },
-  {
-    id: 'USR-005',
-    displayName: 'Đỗ Văn Bình',
-    email: 'vanbinh@example.com',
-    role: 'Người thân',
-    joinedAt: '22/08/2026',
-    status: 'ACTIVE',
-  },
-  {
-    id: 'USR-006',
-    displayName: 'Vũ Hải Yến',
-    email: 'haiyen@example.com',
-    role: 'Bệnh nhân',
-    joinedAt: '20/08/2026',
-    status: 'ACTIVE',
-  },
-  {
-    id: 'USR-007',
-    displayName: 'Bùi Đức Long',
-    email: 'duclong@example.com',
-    role: 'Đối tác',
-    joinedAt: '18/08/2026',
-    status: 'PENDING',
-  },
-  {
-    id: 'USR-008',
-    displayName: 'Admin Trạm K',
-    email: 'admin@tramk.local',
-    role: 'Admin',
-    joinedAt: '01/08/2026',
-    status: 'ACTIVE',
-  },
-];
+import type { AdminUser, AdminUserStatus } from '../../admin-user.models';
+import { AdminUsersMockService } from '../../admin-users-mock.service';
 
 @Component({
   selector: 'app-admin-users-page',
@@ -101,12 +25,14 @@ const MOCK_USERS: readonly AdminUser[] = [
 })
 export class AdminUsersPage {
   private readonly pageSize = 5;
+  private readonly usersService = inject(AdminUsersMockService);
 
-  protected readonly users = signal<readonly AdminUser[]>(MOCK_USERS);
+  protected readonly users = signal<readonly AdminUser[]>(this.usersService.list());
   protected readonly searchTerm = signal('');
-  protected readonly statusFilter = signal<UserStatus | 'ALL'>('ALL');
+  protected readonly statusFilter = signal<AdminUserStatus | 'ALL'>('ALL');
   protected readonly currentPage = signal(1);
   protected readonly selectedUser = signal<AdminUser | null>(null);
+  protected readonly feedback = signal('');
 
   protected readonly filteredUsers = computed(() => {
     const keyword = this.searchTerm().trim().toLocaleLowerCase('vi');
@@ -149,7 +75,7 @@ export class AdminUsersPage {
   }
 
   protected updateStatusFilter(event: Event): void {
-    this.statusFilter.set((event.target as HTMLSelectElement).value as UserStatus | 'ALL');
+    this.statusFilter.set((event.target as HTMLSelectElement).value as AdminUserStatus | 'ALL');
     this.currentPage.set(1);
   }
 
@@ -165,18 +91,17 @@ export class AdminUsersPage {
     const selectedUser = this.selectedUser();
     if (!selectedUser) return;
 
-    const nextStatus: UserStatus = selectedUser.status === 'LOCKED' ? 'ACTIVE' : 'LOCKED';
-    this.users.update((users) =>
-      users.map((user) => (user.id === selectedUser.id ? { ...user, status: nextStatus } : user)),
-    );
+    const action = selectedUser.status === 'LOCKED' ? 'mở khóa' : 'khóa';
+    this.users.set(this.usersService.toggleLocked(selectedUser.id));
+    this.feedback.set(`Đã ${action} tài khoản ${selectedUser.displayName}.`);
     this.closeStatusConfirmation();
   }
 
-  protected statusLabel(status: UserStatus): string {
+  protected statusLabel(status: AdminUserStatus): string {
     return { ACTIVE: 'Đang hoạt động', PENDING: 'Chờ xác minh', LOCKED: 'Đã khóa' }[status];
   }
 
-  protected statusVariant(status: UserStatus): UiBadgeVariant {
+  protected statusVariant(status: AdminUserStatus): UiBadgeVariant {
     return { ACTIVE: 'success', PENDING: 'warning', LOCKED: 'danger' }[status] as UiBadgeVariant;
   }
 }

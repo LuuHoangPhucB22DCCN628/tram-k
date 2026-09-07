@@ -98,6 +98,15 @@
     border-top: 1px solid var(--color-border);
   }
 
+  &__feedback {
+    margin: var(--space-4) var(--space-5) 0;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--color-success) 8%, white);
+    color: var(--color-success);
+    font-weight: 600;
+  }
+
   app-ui-empty-state {
     display: block;
     padding: var(--space-5);
