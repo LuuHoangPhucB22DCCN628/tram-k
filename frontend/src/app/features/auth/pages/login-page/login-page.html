@@ -1,0 +1,69 @@
+<section class="auth-page" aria-labelledby="login-title">
+  <div class="auth-page__card">
+    <p class="auth-page__eyebrow">Tài khoản Trạm K</p>
+    <h1 id="login-title">Đăng nhập</h1>
+    <p class="auth-page__intro">Tiếp tục chia sẻ, đồng hành và theo dõi các đăng ký hỗ trợ.</p>
+
+    <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
+      <div class="auth-form__field">
+        <label for="login-email">Email</label>
+        <input
+          id="login-email"
+          type="email"
+          formControlName="email"
+          autocomplete="username"
+          placeholder="ban@example.com"
+          [attr.aria-invalid]="loginForm.controls.email.invalid && submitted() ? true : null"
+          [attr.aria-describedby]="loginForm.controls.email.invalid ? 'login-email-error' : null"
+        />
+        @if (hasError('email', 'required')) {
+          <p id="login-email-error" class="auth-form__error">Vui lòng nhập email.</p>
+        } @else if (hasError('email', 'email')) {
+          <p id="login-email-error" class="auth-form__error">Email chưa đúng định dạng.</p>
+        }
+      </div>
+
+      <div class="auth-form__field">
+        <label for="login-password">Mật khẩu</label>
+        <input
+          id="login-password"
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          [attr.aria-invalid]="loginForm.controls.password.invalid && submitted() ? true : null"
+          [attr.aria-describedby]="
+            loginForm.controls.password.invalid ? 'login-password-error' : null
+          "
+        />
+        @if (hasError('password', 'required')) {
+          <p id="login-password-error" class="auth-form__error">Vui lòng nhập mật khẩu.</p>
+        } @else if (hasError('password', 'minlength')) {
+          <p id="login-password-error" class="auth-form__error">Mật khẩu cần ít nhất 8 ký tự.</p>
+        }
+      </div>
+
+      <div class="auth-form__options">
+        <label class="auth-form__checkbox">
+          <input type="checkbox" formControlName="rememberMe" />
+          <span>Ghi nhớ tôi</span>
+        </label>
+        <a routerLink="/quen-mat-khau">Quên mật khẩu?</a>
+      </div>
+
+      @if (feedback(); as result) {
+        <p
+          class="auth-form__alert"
+          [class.auth-form__alert--success]="result.type === 'success'"
+          [class.auth-form__alert--error]="result.type === 'error'"
+          [attr.role]="result.type === 'error' ? 'alert' : 'status'"
+        >
+          {{ result.message }}
+        </p>
+      }
+
+      <app-ui-button type="submit">Đăng nhập</app-ui-button>
+    </form>
+
+    <p class="auth-page__footer">Chưa có tài khoản? <a routerLink="/dang-ky">Đăng ký</a></p>
+  </div>
+</section>

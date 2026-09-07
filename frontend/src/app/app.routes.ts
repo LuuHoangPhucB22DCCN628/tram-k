@@ -7,6 +7,36 @@ const loadSectionPlaceholder = () =>
 
 const publicSectionRoutes: Routes = [
   {
+    path: 'dang-nhap',
+    title: 'Đăng nhập | Trạm K',
+    loadComponent: () =>
+      import('@features/auth/pages/login-page/login-page').then((component) => component.LoginPage),
+  },
+  {
+    path: 'dang-ky',
+    title: 'Đăng ký | Trạm K',
+    loadComponent: () =>
+      import('@features/auth/pages/register-page/register-page').then(
+        (component) => component.RegisterPage,
+      ),
+  },
+  {
+    path: 'quen-mat-khau',
+    title: 'Quên mật khẩu | Trạm K',
+    loadComponent: () =>
+      import('@features/auth/pages/forgot-password-page/forgot-password-page').then(
+        (component) => component.ForgotPasswordPage,
+      ),
+  },
+  {
+    path: 'dat-lai-mat-khau',
+    title: 'Đặt lại mật khẩu | Trạm K',
+    loadComponent: () =>
+      import('@features/auth/pages/reset-password-page/reset-password-page').then(
+        (component) => component.ResetPasswordPage,
+      ),
+  },
+  {
     path: 'cam-nang',
     title: 'Cẩm nang | Trạm K',
     data: {

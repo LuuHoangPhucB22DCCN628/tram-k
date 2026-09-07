@@ -1,0 +1,134 @@
+<section class="auth-page" aria-labelledby="register-title">
+  <div class="auth-page__card">
+    <p class="auth-page__eyebrow">Tham gia cộng đồng</p>
+    <h1 id="register-title">Tạo tài khoản</h1>
+    <p class="auth-page__intro">
+      Đăng ký để chia sẻ câu chuyện, bình luận và theo dõi chương trình hỗ trợ.
+    </p>
+
+    <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="submit()" novalidate>
+      <div class="auth-form__row">
+        <div class="auth-form__field">
+          <label for="register-name">Tên hiển thị</label>
+          <input
+            id="register-name"
+            type="text"
+            formControlName="displayName"
+            autocomplete="name"
+            [attr.aria-invalid]="hasError('displayName', 'required') ? true : null"
+            aria-describedby="register-name-hint register-name-error"
+          />
+          <p id="register-name-hint" class="auth-form__hint">Từ 2 đến 50 ký tự.</p>
+          @if (hasError('displayName', 'required')) {
+            <p id="register-name-error" class="auth-form__error">Vui lòng nhập tên hiển thị.</p>
+          } @else if (
+            hasError('displayName', 'minlength') || hasError('displayName', 'maxlength')
+          ) {
+            <p id="register-name-error" class="auth-form__error">Tên phải có từ 2 đến 50 ký tự.</p>
+          }
+        </div>
+
+        <div class="auth-form__field">
+          <label for="register-role">Bạn là</label>
+          <select id="register-role" formControlName="role">
+            <option value="PATIENT">Bệnh nhân</option>
+            <option value="CARER">Người thân / người chăm sóc</option>
+            <option value="PARTNER">Nhà hảo tâm / đối tác</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="auth-form__field">
+        <label for="register-email">Email</label>
+        <input
+          id="register-email"
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          placeholder="ban@example.com"
+          [attr.aria-invalid]="registerForm.controls.email.invalid && submitted() ? true : null"
+          [attr.aria-describedby]="
+            registerForm.controls.email.invalid ? 'register-email-error' : null
+          "
+        />
+        @if (hasError('email', 'required')) {
+          <p id="register-email-error" class="auth-form__error">Vui lòng nhập email.</p>
+        } @else if (hasError('email', 'email')) {
+          <p id="register-email-error" class="auth-form__error">Email chưa đúng định dạng.</p>
+        }
+      </div>
+
+      <div class="auth-form__row">
+        <div class="auth-form__field">
+          <label for="register-password">Mật khẩu</label>
+          <input
+            id="register-password"
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            [attr.aria-invalid]="
+              registerForm.controls.password.invalid && submitted() ? true : null
+            "
+            aria-describedby="register-password-hint register-password-error"
+          />
+          <p id="register-password-hint" class="auth-form__hint">
+            Ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số.
+          </p>
+          @if (hasError('password', 'required')) {
+            <p id="register-password-error" class="auth-form__error">Vui lòng nhập mật khẩu.</p>
+          } @else if (hasError('password', 'pattern')) {
+            <p id="register-password-error" class="auth-form__error">
+              Mật khẩu chưa đáp ứng yêu cầu.
+            </p>
+          }
+        </div>
+
+        <div class="auth-form__field">
+          <label for="register-confirm-password">Nhập lại mật khẩu</label>
+          <input
+            id="register-confirm-password"
+            type="password"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+            [attr.aria-invalid]="passwordsDoNotMatch() ? true : null"
+            [attr.aria-describedby]="
+              passwordsDoNotMatch() ? 'register-confirm-password-error' : null
+            "
+          />
+          @if (hasError('confirmPassword', 'required')) {
+            <p id="register-confirm-password-error" class="auth-form__error">
+              Vui lòng nhập lại mật khẩu.
+            </p>
+          } @else if (passwordsDoNotMatch()) {
+            <p id="register-confirm-password-error" class="auth-form__error">
+              Hai mật khẩu chưa trùng nhau.
+            </p>
+          }
+        </div>
+      </div>
+
+      <label class="auth-form__checkbox">
+        <input type="checkbox" formControlName="terms" />
+        <span>Tôi đồng ý với quy tắc cộng đồng và chính sách bảo mật của Trạm K.</span>
+      </label>
+      @if (hasError('terms', 'required')) {
+        <p class="auth-form__error">Bạn cần đồng ý trước khi đăng ký.</p>
+      }
+
+      @if (feedback(); as result) {
+        <p
+          class="auth-form__alert"
+          [class.auth-form__alert--success]="result.type === 'success'"
+          [class.auth-form__alert--error]="result.type === 'error'"
+          [attr.role]="result.type === 'error' ? 'alert' : 'status'"
+        >
+          {{ result.message }}
+        </p>
+      }
+
+      <app-ui-button type="submit">Tạo tài khoản</app-ui-button>
+    </form>
+
+    <p class="auth-page__footer">Đã có tài khoản? <a routerLink="/dang-nhap">Đăng nhập</a></p>
+  </div>
+</section>

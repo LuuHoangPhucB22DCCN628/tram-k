@@ -32,7 +32,19 @@
       }
     </nav>
 
-    <div class="hidden shrink-0 xl:block">
+    <div class="hidden shrink-0 items-center gap-2 xl:flex">
+      <a
+        routerLink="/dang-nhap"
+        class="rounded-xl px-3 py-2 text-[15px] font-semibold text-[var(--color-brand-primary)]"
+      >
+        Đăng nhập
+      </a>
+      <a
+        routerLink="/dang-ky"
+        class="rounded-xl bg-[var(--color-brand-primary)] px-4 py-3 text-[15px] font-semibold text-white"
+      >
+        Đăng ký
+      </a>
       <!-- Nút tìm kiếm phía cuối header -->
       <a
         routerLink="/tim-kiem"
@@ -115,6 +127,23 @@
           />
           Tìm kiếm
         </a>
+
+        <div class="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--color-border)] pt-4">
+          <a
+            routerLink="/dang-nhap"
+            class="rounded-xl border border-[var(--color-brand-primary)] px-3 py-2.5 text-center font-semibold text-[var(--color-brand-primary)]"
+            (click)="closeMobileMenu()"
+          >
+            Đăng nhập
+          </a>
+          <a
+            routerLink="/dang-ky"
+            class="rounded-xl bg-[var(--color-brand-primary)] px-3 py-2.5 text-center font-semibold text-white"
+            (click)="closeMobileMenu()"
+          >
+            Đăng ký
+          </a>
+        </div>
       </div>
     </nav>
   }
