@@ -17,7 +17,9 @@ export class SectionPlaceholderPage {
     'description',
     'Nội dung của chức năng này sẽ được triển khai ở phase tiếp theo.',
   );
-  protected readonly isMemberPage = this.route.snapshot.data['area'] === 'member';
+  protected readonly showPublicBackLink = !['member', 'admin'].includes(
+    String(this.route.snapshot.data['area'] ?? 'public'),
+  );
 
   private readRouteText(key: string, fallback: string): string {
     const value: unknown = this.route.snapshot.data[key];

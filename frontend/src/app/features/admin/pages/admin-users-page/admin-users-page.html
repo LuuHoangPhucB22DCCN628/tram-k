@@ -1,0 +1,146 @@
+<div class="admin-users">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a routerLink="/admin">Quản trị</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Người dùng</span>
+  </nav>
+
+  <header class="admin-users__heading">
+    <div>
+      <p class="admin-users__eyebrow">Quản lý hệ thống</p>
+      <h1>Người dùng</h1>
+      <p>Theo dõi trạng thái tài khoản và xử lý trường hợp cần khóa hoặc mở khóa.</p>
+    </div>
+    <app-ui-badge variant="primary">Dữ liệu mẫu</app-ui-badge>
+  </header>
+
+  <section class="stats" aria-label="Thống kê tài khoản">
+    <app-ui-card>
+      <span uiCardHeader>Tổng tài khoản</span>
+      <strong>{{ users().length }}</strong>
+    </app-ui-card>
+    <app-ui-card>
+      <span uiCardHeader>Đang hoạt động</span>
+      <strong>{{ activeUserCount() }}</strong>
+    </app-ui-card>
+    <app-ui-card>
+      <span uiCardHeader>Chờ xác minh</span>
+      <strong>{{ pendingUserCount() }}</strong>
+    </app-ui-card>
+    <app-ui-card>
+      <span uiCardHeader>Đã khóa</span>
+      <strong>{{ lockedUserCount() }}</strong>
+    </app-ui-card>
+  </section>
+
+  <section class="user-panel" aria-labelledby="user-table-title">
+    <div class="user-panel__header">
+      <div>
+        <h2 id="user-table-title">Danh sách tài khoản</h2>
+        <p>{{ filteredUsers().length }} kết quả phù hợp</p>
+      </div>
+
+      <div class="filters">
+        <app-ui-input
+          label="Tìm kiếm người dùng"
+          type="search"
+          placeholder="Tên, email hoặc mã..."
+          [value]="searchTerm()"
+          (valueChange)="updateSearchTerm($event)"
+        />
+
+        <label class="status-filter">
+          <span>Trạng thái</span>
+          <select [value]="statusFilter()" (change)="updateStatusFilter($event)">
+            <option value="ALL">Tất cả</option>
+            <option value="ACTIVE">Đang hoạt động</option>
+            <option value="PENDING">Chờ xác minh</option>
+            <option value="LOCKED">Đã khóa</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    @if (pagedUsers().length) {
+      <div class="table-scroll" tabindex="0" aria-label="Bảng người dùng có thể cuộn ngang">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Người dùng</th>
+              <th scope="col">Vai trò</th>
+              <th scope="col">Ngày tham gia</th>
+              <th scope="col">Trạng thái</th>
+              <th scope="col">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of pagedUsers(); track user.id) {
+              <tr>
+                <td>
+                  <strong>{{ user.displayName }}</strong>
+                  <span>{{ user.email }}</span>
+                  <small>{{ user.id }}</small>
+                </td>
+                <td>{{ user.role }}</td>
+                <td>{{ user.joinedAt }}</td>
+                <td>
+                  <app-ui-badge [variant]="statusVariant(user.status)">
+                    {{ statusLabel(user.status) }}
+                  </app-ui-badge>
+                </td>
+                <td>
+                  <app-ui-button
+                    [variant]="user.status === 'LOCKED' ? 'secondary' : 'ghost'"
+                    (buttonClick)="openStatusConfirmation(user)"
+                  >
+                    {{ user.status === 'LOCKED' ? 'Mở khóa' : 'Khóa' }}
+                  </app-ui-button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="user-panel__pagination">
+        <app-ui-pagination
+          [page]="currentPage()"
+          [totalPages]="totalPages()"
+          (pageChange)="currentPage.set($event)"
+        />
+      </div>
+    } @else {
+      <app-ui-empty-state
+        title="Không tìm thấy người dùng"
+        message="Hãy thay đổi từ khóa hoặc bộ lọc trạng thái."
+      />
+    }
+  </section>
+</div>
+
+<app-ui-modal
+  title="Xác nhận thay đổi trạng thái"
+  [open]="selectedUser() !== null"
+  (closed)="closeStatusConfirmation()"
+>
+  @if (selectedUser(); as user) {
+    <p>
+      Bạn có chắc muốn <strong>{{ user.status === 'LOCKED' ? 'mở khóa' : 'khóa' }}</strong> tài
+      khoản <strong>{{ user.displayName }}</strong
+      >?
+    </p>
+    <p class="modal-note">
+      Đây là dữ liệu mock. Thao tác hiện tại chỉ thay đổi trạng thái trong bộ nhớ trình duyệt.
+    </p>
+  }
+
+  <div uiModalFooter class="modal-actions">
+    <app-ui-button variant="ghost" (buttonClick)="closeStatusConfirmation()">Hủy</app-ui-button>
+    <app-ui-button
+      [variant]="selectedUser()?.status === 'LOCKED' ? 'primary' : 'danger'"
+      (buttonClick)="confirmStatusChange()"
+    >
+      Xác nhận {{ selectedUser()?.status === 'LOCKED' ? 'mở khóa' : 'khóa' }}
+    </app-ui-button>
+  </div>
+</app-ui-modal>

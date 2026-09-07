@@ -7,7 +7,7 @@
     Giao diện khung và đường dẫn đã sẵn sàng; dữ liệu thật sẽ được kết nối ở phase chức năng.
   </div>
 
-  @if (!isMemberPage) {
+  @if (showPublicBackLink) {
     <a routerLink="/" class="placeholder-page__link">Quay về trang chủ</a>
   }
 </section>

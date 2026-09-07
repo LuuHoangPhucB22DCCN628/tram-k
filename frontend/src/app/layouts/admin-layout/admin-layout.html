@@ -1,0 +1,60 @@
+<div class="admin-shell">
+  <header class="admin-shell__topbar">
+    <button
+      type="button"
+      class="admin-shell__menu-button"
+      aria-label="Mở hoặc đóng menu quản trị"
+      aria-controls="admin-sidebar"
+      [attr.aria-expanded]="isSidebarOpen()"
+      (click)="toggleSidebar()"
+    >
+      <span></span><span></span><span></span>
+    </button>
+
+    <a routerLink="/admin" class="admin-shell__brand" aria-label="Trang quản trị Trạm K">
+      <img src="/assets/images/brand/tram-k-logo.svg" width="169" height="40" alt="Trạm K" />
+      <span>Quản trị</span>
+    </a>
+
+    <div class="admin-shell__account">
+      <span class="admin-shell__avatar" aria-hidden="true">A</span>
+      <span>Admin Trạm K</span>
+      <a routerLink="/">Trang công khai</a>
+    </div>
+  </header>
+
+  <aside
+    id="admin-sidebar"
+    class="admin-shell__sidebar"
+    [class.admin-shell__sidebar--open]="isSidebarOpen()"
+  >
+    <nav aria-label="Điều hướng quản trị">
+      <p class="admin-shell__nav-label">Quản lý hệ thống</p>
+      @for (item of menuItems; track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="admin-shell__nav-link--active"
+          ariaCurrentWhenActive="page"
+          class="admin-shell__nav-link"
+          (click)="closeSidebar()"
+        >
+          <span class="admin-shell__nav-dot" aria-hidden="true"></span>
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+  </aside>
+
+  @if (isSidebarOpen()) {
+    <button
+      type="button"
+      class="admin-shell__backdrop"
+      aria-label="Đóng menu quản trị"
+      (click)="closeSidebar()"
+    ></button>
+  }
+
+  <main id="admin-main-content" class="admin-shell__main">
+    <router-outlet></router-outlet>
+  </main>
+</div>

@@ -1,0 +1,215 @@
+.admin-users {
+  width: min(calc(100% - (2 * var(--space-4))), 90rem);
+  margin-inline: auto;
+  padding-block: var(--space-5) var(--space-12);
+
+  &__heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-5);
+    margin-top: var(--space-5);
+
+    h1 {
+      margin: var(--space-1) 0 var(--space-2);
+      color: var(--color-text-heading);
+      font-size: clamp(1.75rem, 5vw, 2.5rem);
+    }
+
+    p:not(.admin-users__eyebrow) {
+      margin: 0;
+      color: var(--color-text-muted);
+    }
+  }
+
+  &__eyebrow {
+    color: var(--color-brand-primary);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+
+  a {
+    color: var(--color-brand-primary);
+  }
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-block: var(--space-8);
+
+  app-ui-card {
+    min-width: 0;
+
+    span {
+      color: var(--color-text-muted);
+      font-size: 0.875rem;
+      font-weight: 700;
+    }
+
+    strong {
+      color: var(--color-text-heading);
+      font-size: 2rem;
+    }
+  }
+}
+
+.user-panel {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+
+  &__header {
+    display: grid;
+    gap: var(--space-5);
+    padding: var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+
+    h2 {
+      margin: 0 0 var(--space-1);
+      color: var(--color-text-heading);
+      font-size: 1.25rem;
+    }
+
+    p {
+      margin: 0;
+      color: var(--color-text-muted);
+      font-size: 0.875rem;
+    }
+  }
+
+  &__pagination {
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--space-5);
+    border-top: 1px solid var(--color-border);
+  }
+
+  app-ui-empty-state {
+    display: block;
+    padding: var(--space-5);
+  }
+}
+
+.filters {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.status-filter {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-text-heading);
+  font-weight: 700;
+
+  select {
+    min-height: 2.75rem;
+    padding-inline: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+}
+
+.table-scroll {
+  overflow-x: auto;
+
+  &:focus-visible {
+    outline-offset: -0.1875rem;
+  }
+}
+
+table {
+  width: 100%;
+  min-width: 48rem;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  th {
+    background: var(--color-surface-subtle);
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  td:first-child {
+    display: grid;
+    gap: var(--space-1);
+
+    strong {
+      color: var(--color-text-heading);
+    }
+
+    span,
+    small {
+      color: var(--color-text-muted);
+    }
+  }
+
+  td:last-child {
+    text-align: right;
+  }
+}
+
+.modal-note {
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-brand-soft);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+@media (min-width: 48rem) {
+  .admin-users {
+    width: min(calc(100% - (2 * var(--space-8))), 90rem);
+    padding-top: var(--space-8);
+  }
+
+  .stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .filters {
+    grid-template-columns: minmax(16rem, 1fr) 12rem;
+    align-items: end;
+  }
+}
+
+@media (min-width: 75rem) {
+  .user-panel__header {
+    grid-template-columns: minmax(0, 1fr) minmax(30rem, 0.9fr);
+    align-items: end;
+  }
+}

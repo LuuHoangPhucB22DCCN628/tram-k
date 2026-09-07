@@ -124,7 +124,69 @@ const memberSectionRoutes: Routes = [
   },
 ];
 
+const adminSectionRoutes: Routes = [
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: 'nguoi-dung',
+  },
+  {
+    path: 'nguoi-dung',
+    title: 'Quản lý người dùng | Trạm K',
+    loadComponent: () =>
+      import('@features/admin/pages/admin-users-page/admin-users-page').then(
+        (component) => component.AdminUsersPage,
+      ),
+  },
+  {
+    path: 'kiem-duyet',
+    title: 'Kiểm duyệt cộng đồng | Trạm K',
+    data: {
+      area: 'admin',
+      heading: 'Kiểm duyệt cộng đồng',
+      description: 'Khung quản lý bài viết và bình luận đang chờ Admin duyệt.',
+    },
+    loadComponent: loadSectionPlaceholder,
+  },
+  {
+    path: 'noi-dung',
+    title: 'Quản lý nội dung | Trạm K',
+    data: {
+      area: 'admin',
+      heading: 'Quản lý nội dung',
+      description: 'Khung quản lý cẩm nang, loại ung thư và câu chuyện truyền cảm hứng.',
+    },
+    loadComponent: loadSectionPlaceholder,
+  },
+  {
+    path: 'chuong-trinh',
+    title: 'Chương trình hỗ trợ | Trạm K',
+    data: {
+      area: 'admin',
+      heading: 'Chương trình hỗ trợ',
+      description: 'Khung duyệt và quản lý các chương trình do nhà hảo tâm đăng ký.',
+    },
+    loadComponent: loadSectionPlaceholder,
+  },
+  {
+    path: 'diem-phat-com',
+    title: 'Điểm phát cơm | Trạm K',
+    data: {
+      area: 'admin',
+      heading: 'Điểm phát cơm',
+      description: 'Khung duyệt địa điểm, lịch phát và thông tin liên hệ của điểm hỗ trợ.',
+    },
+    loadComponent: loadSectionPlaceholder,
+  },
+];
+
 export const routes: Routes = [
+  {
+    path: 'admin',
+    loadComponent: () =>
+      import('@layouts/admin-layout/admin-layout').then((component) => component.AdminLayout),
+    children: adminSectionRoutes,
+  },
   {
     path: 'thanh-vien',
     loadComponent: () =>
