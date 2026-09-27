@@ -1,0 +1,9 @@
+<div class="story-card-decoration" aria-hidden="true">
+  @for (decoration of decorations; track decoration.id) {
+    <img
+      class="story-card-decoration__item story-card-decoration__item--{{ decoration.id }}"
+      [src]="decoration.image"
+      alt=""
+    />
+  }
+</div>

@@ -1,0 +1,22 @@
+<article class="light-story" aria-label="Ánh sáng - Học cách sống sau lời tuyên án">
+  @for (section of sections; track section.src; let first = $first; let last = $last) {
+    <div class="light-story__section">
+      <img
+        class="light-story__image"
+        [src]="section.src"
+        [alt]="section.alt"
+        [attr.loading]="first ? 'eager' : 'lazy'"
+        [attr.fetchpriority]="first ? 'high' : null"
+        width="1440"
+      />
+
+      @if (last) {
+        <a
+          class="light-story__continue-link"
+          routerLink="/cau-chuyen/bong-toi"
+          aria-label="Tiếp tục tới câu chuyện Bóng tối"
+        ></a>
+      }
+    </div>
+  }
+</article>

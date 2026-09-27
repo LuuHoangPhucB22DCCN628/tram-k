@@ -1,0 +1,25 @@
+<article class="hanoi-donation-map-page">
+  <section class="hanoi-map-hero" aria-label="Các điểm quyên góp tại Hà Nội">
+    <app-community-map-background aria-hidden="true" />
+    <app-community-love-title class="hanoi-map-hero__title" />
+
+    <div class="hanoi-map-hero__map-shell">
+      <img
+        class="hanoi-map-hero__map"
+        src="/assets/images/community/community-hanoi-map.svg"
+        alt="Bản đồ Hà Nội với ba điểm quyên góp"
+        width="750"
+        height="847"
+      />
+      @for (marker of markers; track marker.id) {
+        <button
+          class="hanoi-map-hero__marker hanoi-map-hero__marker--{{ marker.id }}"
+          type="button"
+          [attr.aria-label]="marker.label"
+        >
+          <app-community-location-pin />
+        </button>
+      }
+    </div>
+  </section>
+</article>

@@ -1,0 +1,43 @@
+:host {
+  display: block;
+  width: min(522px, 100%);
+  font-family: var(--font-family-sans);
+}
+
+.community-love-title {
+  text-align: center;
+}
+
+img {
+  display: block;
+  width: min(511px, 100%);
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+h1 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+p {
+  margin: 0;
+  color: #394366;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 36px;
+}
+
+@media (max-width: 600px) {
+  p {
+    font-size: 20px;
+    line-height: 28px;
+  }
+}

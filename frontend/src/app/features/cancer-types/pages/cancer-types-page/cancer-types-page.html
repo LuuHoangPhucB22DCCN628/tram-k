@@ -1,0 +1,116 @@
+<section class="cancer-hero" aria-labelledby="cancer-page-title">
+  <div class="cancer-hero__copy">
+    <h1 id="cancer-page-title">Hiểu đúng về ung thư</h1>
+    <h2>để bảo vệ bản thân và người thân</h2>
+    <p>
+      Cập nhật kiến thức đáng tin cậy về các loại ung thư phổ biến, dấu hiệu nhận biết, phương pháp
+      điều trị và những câu chuyện truyền cảm hứng từ cộng đồng bệnh nhân.
+    </p>
+    <div class="cancer-hero__actions">
+      <a
+        class="button button--primary"
+        href="/loai-ung-thu#cancer-types"
+        (click)="scrollToCancerTypes($event)"
+        >Khám phá các loại ung thư →</a
+      >
+      <a class="button button--outline" routerLink="/cau-chuyen">Câu chuyện truyền cảm hứng</a>
+    </div>
+  </div>
+  <img
+    src="/assets/images/cancer-types/cancer-hero.svg"
+    alt="Minh họa dải băng ung thư được nâng đỡ"
+    width="630"
+    height="480"
+  />
+</section>
+
+<section class="cancer-facts" aria-labelledby="cancer-facts-title">
+  <div class="cancer-facts__intro">
+    <h2 id="cancer-facts-title">
+      <small>Những con số biết nói về</small>
+      <span>Ung thư tại</span>
+      <span>Việt Nam</span>
+    </h2>
+    <p>
+      Mỗi con số đều đại diện cho một cuộc đời, một gia đình và những câu chuyện riêng đang tiếp
+      diễn. Dù ung thư vẫn là thách thức lớn đối với cộng đồng, việc hiểu đúng về căn bệnh, nhận
+      biết sớm các dấu hiệu và chủ động chăm sóc sức khỏe có thể tạo nên những thay đổi tích cực.
+    </p>
+  </div>
+  <div class="cancer-facts__grid">
+    @for (fact of facts; track fact.label) {
+      <article class="fact-card">
+        <h3>{{ fact.label }}</h3>
+        <div>
+          <strong>{{ fact.value }}</strong>
+          <p>{{ fact.description }}</p>
+        </div>
+      </article>
+    }
+  </div>
+</section>
+
+<section class="featured-cancers" aria-labelledby="featured-cancers-title">
+  <div class="featured-cancers__visual">
+    <img
+      src="/assets/images/cancer-types/common-cancers-figma.png"
+      alt="Minh họa các loại ung thư phổ biến"
+      width="446"
+      height="446"
+      loading="lazy"
+    />
+    <p>Hãy liên hệ Trạm nhé!</p>
+    <div class="featured-cancers__socials" aria-label="Liên hệ với Trạm K">
+      @for (link of socialLinks; track link.name) {
+        <a
+          [href]="link.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          [attr.aria-label]="'Liên hệ qua ' + link.name"
+        >
+          <img [src]="link.icon" alt="" width="32" height="32" />
+        </a>
+      }
+    </div>
+  </div>
+  <div class="featured-cancers__copy">
+    <h2 id="featured-cancers-title">3 Loại Ung thư<br />Phổ biến</h2>
+    <p>
+      Mỗi năm, có hàng trăm nghìn người Việt Nam cũng đang bước qua cánh cửa phòng khám ấy, nhận
+      cùng một cú sốc, và bắt đầu bước vào một cuộc chiến cam go nhất của cuộc đời. Theo số liệu từ
+      Tổ chức Ung thư toàn cầu (GLOBOCAN), bức tranh ung thư tại Việt Nam đang có nhiều biến động
+      phức tạp.
+    </p>
+    <p>
+      Trong số đó, Ung thư vú, Ung thư phổi và Ung thư tuyến giáp nổi lên như những căn bệnh phổ
+      biến hàng đầu, gõ cửa từ những người trẻ tuổi đang độ thanh xuân đến những người bước vào dốc
+      bên kia của cuộc đời.
+    </p>
+    <a class="featured-cancers__button" routerLink="/loai-ung-thu/ung-thu-vu"
+      >Khám phá 3 loại ung thư →</a
+    >
+  </div>
+</section>
+
+<section id="cancer-types" class="other-cancers" aria-labelledby="other-cancers-title">
+  <header>
+    <h2 id="other-cancers-title">Loại Ung thư khác</h2>
+    <p>
+      Đằng sau mỗi hành trình được tiếp thêm sức mạnh là sự đồng hành của những đối tác cùng chung
+      niềm tin: không ai nên bước qua khó khăn một mình.
+    </p>
+  </header>
+
+  <div class="cancer-grid">
+    @for (item of otherTypes; track item.slug) {
+      <article class="cancer-card">
+        <img [src]="item.image" [alt]="item.imageAlt" loading="lazy" />
+        <div>
+          <h3>{{ item.name }}</h3>
+          <p>Loại ung thư có số ca mắc mới cao nhất tại Việt Nam.</p>
+          <a [routerLink]="['/loai-ung-thu', item.slug]">Xem thêm →</a>
+        </div>
+      </article>
+    }
+  </div>
+</section>

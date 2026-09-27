@@ -1,0 +1,446 @@
+.cancer-hero,
+.cancer-facts,
+.featured-cancers,
+.other-cancers {
+  padding-inline: clamp(1.25rem, 5.5556vw, 5rem);
+}
+
+.cancer-hero h1,
+.featured-cancers__copy h2,
+.other-cancers > header h2 {
+  font-family: var(--font-family-serif);
+  font-size: 4rem;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.cancer-hero h1,
+.other-cancers > header h2 {
+  color: #5e4dcb;
+  line-height: 1.2;
+}
+
+.cancer-hero {
+  display: grid;
+  min-height: 46.244rem;
+  grid-template-columns: minmax(0, 36.125rem) minmax(25rem, 39.375rem);
+  align-items: center;
+  justify-content: space-between;
+  gap: 3rem;
+  overflow: hidden;
+  background: #efedfa;
+
+  h1,
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    color: #394366;
+    font-size: clamp(1.5rem, 1.9444vw, 1.75rem);
+    font-weight: 600;
+    line-height: 1.2857;
+  }
+
+  h1 {
+    font-size: clamp(2.25rem, calc(7.5vw - 3.25rem), 3.5rem);
+    white-space: nowrap;
+  }
+
+  p {
+    max-width: 32.45rem;
+    margin-top: 1.25rem;
+    color: #6d7898;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  > img {
+    width: min(100%, 39.375rem);
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 4rem;
+  }
+}
+
+.button {
+  display: inline-flex;
+  min-height: 2.8125rem;
+  align-items: center;
+  padding-inline: 1.5rem;
+  border: 1px solid #5e4dcb;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+
+  &--primary {
+    background: #5e4dcb;
+    color: white;
+  }
+
+  &--outline {
+    background: white;
+    color: #5e4dcb;
+  }
+}
+
+.cancer-facts {
+  min-height: 47.9375rem;
+  padding-block: 8rem;
+  background: white;
+
+  &__intro {
+    display: grid;
+    max-width: 80rem;
+    grid-template-columns: 25.625rem 46rem;
+    justify-content: space-between;
+    gap: 3rem;
+    margin-inline: auto;
+  }
+
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    color: #5e4dcb;
+    font-family: var(--font-family-serif);
+    font-size: 4rem;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.08;
+
+    small {
+      display: block;
+      color: #394366;
+      font-family: var(--font-family-sans);
+      font-size: 1.5rem;
+      font-style: normal;
+      font-weight: 500;
+      line-height: 1.25;
+    }
+
+    > span {
+      display: block;
+    }
+
+    > span:last-child {
+      margin-left: 7rem;
+    }
+  }
+
+  &__intro > p {
+    align-self: end;
+    color: #5d698e;
+    line-height: 1.5;
+  }
+
+  &__grid {
+    display: grid;
+    max-width: 80rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin: 4rem auto 0;
+  }
+}
+
+.fact-card {
+  display: flex;
+  min-height: 17.75rem;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem;
+  border: 1px solid #bbc4e0;
+  border-radius: 1rem;
+
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h3 {
+    color: #7e71d5;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  strong {
+    display: block;
+    color: #433790;
+    font-size: clamp(2rem, 2.7778vw, 2.5rem);
+    line-height: 1.3;
+  }
+
+  p {
+    color: #6d7898;
+    font-size: 1.15rem;
+    line-height: 1.2;
+  }
+}
+
+.featured-cancers {
+  display: grid;
+  min-height: 48.976rem;
+  grid-template-columns: minmax(25rem, 33.85rem) minmax(0, 39.3rem);
+  align-items: center;
+  justify-content: space-between;
+  gap: 4rem;
+  background: linear-gradient(124deg, #9388dc 6%, #5646b9 89%);
+
+  &__visual > img {
+    width: min(100%, 27.85rem);
+    margin-inline: auto;
+  }
+
+  &__visual > p {
+    margin: 1.25rem 0 0 3rem;
+    color: #cdc8ef;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  &__socials {
+    display: flex;
+    gap: 1.5rem;
+    margin: 0.75rem 0 0 3rem;
+
+    a,
+    img {
+      display: block;
+      width: 2rem;
+      height: 2rem;
+    }
+
+    img {
+      filter: brightness(0) invert(1);
+    }
+  }
+
+  &__copy {
+    margin-left: 1.5rem;
+    color: #f4f6fa;
+
+    h2 {
+      margin: 0;
+      line-height: 1.1;
+    }
+
+    > p {
+      margin: 1.5rem 0 0;
+      line-height: 1.5;
+      text-align: justify;
+    }
+
+    > p + p {
+      margin-top: 0.5rem;
+    }
+  }
+
+  &__button {
+    display: inline-flex;
+    min-height: 2.8125rem;
+    align-items: center;
+    margin-top: 3.5rem;
+    padding: 0.8rem 1.25rem;
+    border-radius: 0.75rem;
+    background: #efedfa;
+    color: #394366;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+}
+
+.other-cancers {
+  min-height: 77.8308rem;
+  padding-block: 8rem;
+  background: white;
+
+  > header {
+    min-height: 9.5rem;
+    max-width: 51rem;
+    margin-inline: auto;
+    text-align: center;
+
+    h2 {
+      margin: 0;
+    }
+
+    p {
+      margin: 0.75rem 0 0;
+      color: #6d7898;
+      line-height: 1.5;
+    }
+  }
+}
+
+.cancer-grid {
+  display: flex;
+  max-width: 80rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 4rem;
+  margin-inline: auto;
+}
+
+.cancer-card {
+  display: flex;
+  min-height: 23.54rem;
+  flex: 0 1 calc((100% - 3.75rem) / 4);
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border: 1px solid #b5ade7;
+  border-radius: 1rem;
+  background: white;
+
+  > img {
+    width: 100%;
+    height: 12.5rem;
+    border-radius: 0.75rem;
+    object-fit: fill;
+  }
+
+  > div {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h3 {
+    color: #5e4dcb;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  p {
+    margin-top: 0.25rem;
+    color: #6d7898;
+    font-size: 0.875rem;
+    line-height: 1.2857;
+  }
+
+  a {
+    align-self: flex-end;
+    margin-top: auto;
+    color: #5e4dcb;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+}
+
+@media (max-width: 64rem) {
+  .cancer-hero,
+  .featured-cancers {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cancer-facts__intro {
+    grid-template-columns: 1fr 1.2fr;
+  }
+
+  .cancer-facts__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cancer-card {
+    flex-basis: calc((100% - 1.25rem) / 2);
+  }
+}
+
+@media (max-width: 48rem) {
+  .cancer-hero,
+  .featured-cancers,
+  .cancer-facts__intro {
+    grid-template-columns: 1fr;
+  }
+
+  .cancer-hero {
+    padding-block: 4rem 0;
+    text-align: center;
+
+    h1 {
+      white-space: normal;
+    }
+
+    &__copy {
+      justify-self: center;
+    }
+
+    &__actions {
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    > img {
+      justify-self: center;
+    }
+  }
+
+  .cancer-facts,
+  .other-cancers {
+    min-height: auto;
+    padding-block: 4rem;
+  }
+
+  .cancer-facts__intro {
+    text-align: center;
+
+    h2 > span:last-child {
+      margin-left: 0;
+    }
+  }
+
+  .featured-cancers {
+    padding-block: 4rem;
+    text-align: center;
+
+    &__copy {
+      margin-left: 0;
+    }
+
+    &__visual > p,
+    &__socials {
+      justify-content: center;
+      margin-left: 0;
+    }
+
+    &__copy > p {
+      text-align: left;
+    }
+
+    &__button {
+      margin-top: 2rem;
+    }
+  }
+}
+
+@media (max-width: 36rem) {
+  .cancer-facts__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fact-card {
+    min-height: 14rem;
+  }
+
+  .cancer-card {
+    flex-basis: 100%;
+  }
+}

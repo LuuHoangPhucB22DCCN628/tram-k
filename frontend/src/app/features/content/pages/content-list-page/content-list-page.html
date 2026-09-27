@@ -1,0 +1,143 @@
+<section class="content-hero" aria-labelledby="content-page-title">
+  <div class="content-hero__inner">
+    <div class="content-hero__copy">
+      <h1 id="content-page-title">{{ config.title }}</h1>
+      <p class="content-hero__subtitle">{{ config.subtitle }}</p>
+      <p class="content-hero__description">{{ config.description }}</p>
+    </div>
+    <img
+      src="/assets/images/guides/guide-hero-figma.svg"
+      alt="Minh họa những bàn tay nâng đỡ biểu tượng dải băng ung thư"
+      width="710"
+      height="763"
+    />
+  </div>
+</section>
+
+<section class="content-search" aria-label="Tìm kiếm và lọc cẩm nang">
+  <div class="content-search__inner">
+    <form class="content-toolbar" (ngSubmit)="applyFilters()">
+      <label class="content-toolbar__search">
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m16.5 16.5 4 4"></path>
+        </svg>
+        <input
+          type="search"
+          aria-label="Tìm kiếm cẩm nang"
+          name="search"
+          [(ngModel)]="search"
+          placeholder="Tìm kiếm cẩm nang..."
+          autocomplete="off"
+        />
+      </label>
+
+      <label class="content-toolbar__select">
+        <select
+          name="category"
+          aria-label="Lọc theo chủ đề"
+          [(ngModel)]="selectedCategory"
+          (change)="applyFilters()"
+        >
+          <option value="">Tất cả chủ đề</option>
+          @for (category of categories(); track category.id) {
+            <option [value]="category.slug">{{ category.name }}</option>
+          }
+        </select>
+      </label>
+
+      <button type="submit">Tìm kiếm</button>
+    </form>
+
+    @if (!loading() && !errorMessage() && items().length > 0 && filteredView()) {
+      <p class="content-count" aria-live="polite">Có {{ totalItems() }} nội dung phù hợp</p>
+    }
+  </div>
+</section>
+
+@if (loading()) {
+  <div class="content-state"><app-ui-loading label="Đang tải cẩm nang..." /></div>
+} @else if (errorMessage()) {
+  <div class="content-state-shell">
+    <app-ui-error-state [message]="errorMessage()" (retry)="retry()" />
+  </div>
+} @else if (items().length === 0) {
+  <div class="content-state-shell">
+    <app-ui-empty-state
+      title="Chưa tìm thấy nội dung phù hợp"
+      message="Bạn hãy thử từ khóa khác hoặc xem lại chủ đề đang chọn."
+    >
+      <button class="content-reset" type="button" (click)="resetFilters()">Xóa bộ lọc</button>
+    </app-ui-empty-state>
+  </div>
+} @else {
+  <div class="content-groups">
+    @for (group of groupedItems(); track group.slug; let groupIndex = $index) {
+      <section class="content-group" [class.content-group--tinted]="groupIndex % 2 === 1">
+        <div class="content-group__inner">
+          <header class="content-group__title">
+            <h2>{{ group.title }}</h2>
+            <p>{{ group.subtitle }}</p>
+          </header>
+
+          <div class="content-grid">
+            @for (item of group.items; track item.id; let cardIndex = $index) {
+              <article class="content-card" [class.content-card--soft]="cardIndex % 2 === 1">
+                <a
+                  class="content-card__image"
+                  [class.content-card__image--cropped]="item.coverImage.crop"
+                  [routerLink]="articleLink(item)"
+                  tabindex="-1"
+                >
+                  <img
+                    [src]="item.coverImage.url"
+                    [alt]="item.coverImage.alt"
+                    [width]="item.coverImage.width"
+                    [height]="item.coverImage.height"
+                    [style.width.%]="item.coverImage.crop?.widthPercent"
+                    [style.height.%]="item.coverImage.crop?.heightPercent"
+                    [style.left.%]="item.coverImage.crop?.leftPercent"
+                    [style.top.%]="item.coverImage.crop?.topPercent"
+                    loading="lazy"
+                  />
+                </a>
+                <div class="content-card__body">
+                  <h3>
+                    <a [routerLink]="articleLink(item)">{{ item.title }}</a>
+                  </h3>
+                  <p>{{ item.excerpt }}</p>
+                  <a class="content-card__link" [routerLink]="articleLink(item)">
+                    Xem thêm
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="M5 12h14M13 6l6 6-6 6"></path>
+                    </svg>
+                  </a>
+                </div>
+              </article>
+            }
+          </div>
+
+          @if (!filteredView()) {
+            <button class="content-group__more" type="button" (click)="filterByGroup(group.slug)">
+              Tìm hiểu thêm
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M5 12h14M13 6l6 6-6 6"></path>
+              </svg>
+            </button>
+          }
+        </div>
+      </section>
+    }
+
+    @if (totalPages() > 1) {
+      <div class="content-pagination-wrap">
+        <app-ui-pagination
+          class="content-pagination"
+          [page]="page()"
+          [totalPages]="totalPages()"
+          (pageChange)="changePage($event)"
+        />
+      </div>
+    }
+  </div>
+}

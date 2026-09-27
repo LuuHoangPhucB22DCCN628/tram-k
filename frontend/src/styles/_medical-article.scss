@@ -1,0 +1,185 @@
+.medical-note {
+  width: min(calc(100% - 2.5rem), 80rem);
+  margin: 0 auto 8rem;
+  padding: 1.5rem 2rem;
+  border-left: 4px solid var(--detail-accent);
+  background: #f4f6fa;
+
+  strong {
+    color: #394366;
+  }
+
+  p {
+    margin: 0.5rem 0 0;
+    color: #687393;
+    line-height: 1.5;
+  }
+}
+
+.medical-article {
+  --detail-accent: #5e4dcb;
+  padding: 5rem 1.25rem 8rem;
+  background: #fff;
+
+  &__shell {
+    display: grid;
+    width: min(100%, 66.5rem);
+    grid-template-columns: minmax(0, 39.375rem) 19.25rem;
+    align-items: start;
+    gap: 7.875rem;
+    margin-inline: auto;
+  }
+
+  &__back {
+    display: inline-flex;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: #efedfa;
+    color: var(--detail-accent);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  &__header {
+    margin-top: 1rem;
+
+    h1 {
+      margin: 0;
+      color: #394366;
+      font-size: clamp(2rem, 2.7778vw, 2.5rem);
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    div {
+      display: flex;
+      gap: 1.25rem;
+      margin-top: 1rem;
+      color: #7b85a2;
+      font-size: 0.75rem;
+    }
+  }
+
+  &__lead,
+  &__section p {
+    color: #394366;
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  &__lead {
+    margin: 2rem 0 0;
+    font-weight: 500;
+  }
+
+  &__section {
+    margin-top: 2.5rem;
+
+    h2 {
+      margin: 0 0 1rem;
+      color: #394366;
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    p {
+      margin: 0;
+      text-align: justify;
+
+      + p {
+        margin-top: 1rem;
+      }
+    }
+
+    img {
+      display: block;
+      width: min(100%, 39.375rem);
+      max-height: 35rem;
+      margin-top: 2rem;
+      border-radius: 0.75rem;
+      object-fit: contain;
+    }
+  }
+
+  .medical-note {
+    width: 100%;
+    margin: 3rem 0 0;
+  }
+}
+
+.related-cancers {
+  position: sticky;
+  top: 7rem;
+
+  > h2 {
+    margin: 0 0 1rem;
+    color: #5e4dcb;
+    font-family: var(--font-family-serif);
+    font-size: 1.5rem;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  > a {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding-block: 0.75rem;
+    border-bottom: 1px solid #e2e6f1;
+    color: #394366;
+    text-decoration: none;
+
+    img {
+      display: block;
+      width: 6rem;
+      height: 4.25rem;
+      border-radius: 0.5rem;
+      object-fit: cover;
+    }
+
+    span,
+    strong {
+      display: block;
+    }
+
+    strong {
+      font-size: 0.875rem;
+      line-height: 1.3;
+    }
+
+    small {
+      display: -webkit-box;
+      margin-top: 0.35rem;
+      overflow: hidden;
+      color: #7b85a2;
+      font-size: 0.7rem;
+      line-height: 1.35;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+  }
+}
+
+@media (max-width: 64rem) {
+  .medical-article__shell {
+    grid-template-columns: minmax(0, 1fr) 17rem;
+    gap: 3rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .medical-article {
+    padding-block: 3rem 5rem;
+
+    &__shell {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .related-cancers {
+    position: static;
+    padding-top: 1rem;
+  }
+}

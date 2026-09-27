@@ -1,0 +1,55 @@
+:host {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.community-map-background__shape {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.community-map-background__shape img {
+  display: block;
+  max-width: none;
+}
+
+.community-map-background__shape--left {
+  top: -137px;
+  left: 0;
+  width: 412px;
+  height: 1724px;
+}
+
+.community-map-background__shape--left img {
+  width: 1724px;
+  height: 412px;
+  transform: rotate(-90deg);
+}
+
+.community-map-background__shape--right {
+  top: -75.76px;
+  right: -49.24px;
+  width: 360.62px;
+  height: 1370.63px;
+}
+
+.community-map-background__shape--right img {
+  width: 1364.7px;
+  height: 335.67px;
+  transform: rotate(-91.05deg);
+}
+
+@media (max-width: 600px) {
+  .community-map-background__shape--left {
+    left: -190px;
+  }
+
+  .community-map-background__shape--right {
+    right: -210px;
+  }
+}

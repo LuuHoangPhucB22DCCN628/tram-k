@@ -2,5 +2,35 @@
 @use 'styles/tokens';
 @use 'styles/base';
 @use 'styles/auth';
-// Trang chủ có nhiều section theo Figma; nạp ở cấp ứng dụng để không tính vào budget CSS của một component.
-@use 'app/features/home/pages/home-page/home-page';
+@use 'styles/medical-article';
+@use 'app/features/cancer-types/pages/cancer-type-detail-page/breast-detail';
+@use 'app/features/cancer-types/pages/cancer-type-detail-page/lung-detail';
+@use 'app/features/cancer-types/pages/cancer-type-detail-page/thyroid-detail';
+@font-face {
+  font-family: 'Tram Display';
+  src: url('/assets/fonts/lora-regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Tram Display';
+  src: url('/assets/fonts/lora-italic.ttf') format('truetype');
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Tram Inter';
+  src: url('/assets/fonts/inter-variable.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Google Sans Flex';
+  src: url('/assets/fonts/google-sans-flex-medium.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}

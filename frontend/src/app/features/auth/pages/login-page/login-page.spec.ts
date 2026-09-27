@@ -1,11 +1,14 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 
 import { LoginPage } from './login-page';
 
 @Component({ standalone: true, template: '' })
 class MemberTestPage {}
+
+@Component({ standalone: true, template: '' })
+class HomeTestPage {}
 
 describe('LoginPage', () => {
   afterEach(() => {
@@ -16,10 +19,17 @@ describe('LoginPage', () => {
   it('should validate required credentials and accept a valid mock login', async () => {
     await TestBed.configureTestingModule({
       imports: [LoginPage],
-      providers: [provideRouter([{ path: 'thanh-vien', component: MemberTestPage }])],
+      providers: [
+        provideRouter([
+          { path: '', component: HomeTestPage },
+          { path: 'thanh-vien', component: MemberTestPage },
+        ]),
+      ],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(LoginPage);
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigateByUrl');
     fixture.detectChanges();
     const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
 
@@ -32,6 +42,7 @@ describe('LoginPage', () => {
     form.dispatchEvent(new Event('submit'));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Đăng nhập thành công.');
+    expect(navigateSpy).toHaveBeenCalledWith('/');
 
     function fill(selector: string, value: string): void {
       const input = fixture.nativeElement.querySelector(selector) as HTMLInputElement;

@@ -1,0 +1,379 @@
+.lung-page {
+  .breast-page__decor-left--signs {
+    top: 602.578px;
+  }
+  .breast-page__decor-right--risks {
+    top: 2017.164px;
+  }
+  .breast-page__decor-left--stages {
+    top: 2475.585px;
+  }
+  .breast-page__decor-right--screening {
+    top: 4117.159px;
+  }
+  .breast-page__decor-left--story {
+    top: 4575.579px;
+  }
+
+  .breast-section__copy strong {
+    font-weight: 700;
+  }
+
+  > .breast-section:nth-of-type(3) .breast-section__copy ul {
+    margin-bottom: 0;
+  }
+
+  .breast-section__risks-image {
+    position: relative;
+    height: 507px;
+    padding: 0;
+    background: none;
+
+    &::before {
+      position: absolute;
+      top: 29px;
+      left: 0;
+      width: calc(100% - 34px);
+      aspect-ratio: 812 / 478;
+      border-radius: 36px;
+      background: #bbc4e0;
+      content: '';
+    }
+
+    img {
+      position: relative;
+      width: calc(100% - 34px);
+      margin-left: 34px;
+    }
+  }
+
+  &__risks-art,
+  &__stages-art,
+  &__treatment-art {
+    display: block;
+    max-width: calc(100% - 40px);
+    height: auto;
+  }
+
+  &__risks-art {
+    width: 612px;
+  }
+  &__stages-art {
+    width: 780.273px;
+    margin-top: 40px;
+  }
+  &__treatment-art {
+    width: 630px;
+  }
+
+  &__treatment {
+    padding-bottom: 52px;
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+
+    .breast-section__heading {
+      height: 228px;
+      padding-block: 20px;
+
+      p {
+        margin-bottom: 4px;
+      }
+
+      img {
+        display: block;
+        width: 479px;
+        max-width: 100%;
+        height: 148px;
+        margin: 0 auto;
+      }
+    }
+
+    .breast-section__copy {
+      min-height: 395.771px;
+    }
+  }
+
+  &__screening {
+    width: min(1064px, calc(100% - 40px));
+    margin: 0 auto 40px;
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    &-mobile {
+      display: none;
+    }
+  }
+}
+
+.lung-story {
+  &__lead {
+    width: min(630px, calc(100% - 40px));
+    min-height: 107px;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 23px;
+    text-align: justify;
+  }
+
+  &__wide-photo {
+    display: block;
+    width: min(846px, calc(100% - 40px));
+    height: auto;
+  }
+
+  &__columns {
+    display: grid;
+    width: min(639px, calc(100% - 40px));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 40px;
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 16px;
+      line-height: 24px;
+      text-align: justify;
+    }
+
+    p + p {
+      margin-top: -28px;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  &__strip {
+    display: block;
+    width: 100%;
+    height: auto;
+
+    &--first,
+    &--second {
+      margin-bottom: 5px;
+    }
+  }
+
+  &__garden-copy {
+    min-height: 272px;
+  }
+
+  &__grid {
+    display: block;
+    width: min(889px, calc(100% - 40px));
+    height: auto;
+  }
+
+  &__closing-row,
+  &__ending {
+    display: grid;
+    width: min(639px, calc(100% - 40px));
+    grid-template-columns: minmax(0, 1fr) 213px;
+    gap: 40px;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: justify;
+
+    p {
+      margin: 0 0 8px;
+    }
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  &__closing-row {
+    min-height: 308px;
+  }
+
+  &__milestone {
+    width: min(843px, calc(100% - 40px));
+    min-height: 163px;
+    padding-top: 6px;
+    text-align: center;
+    color: #394366;
+
+    p {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 24px;
+    }
+
+    em {
+      color: #5e4dcb;
+      font-style: normal;
+    }
+
+    h3 {
+      margin: 12px 0 16px;
+      color: #5e4dcb;
+      font-family: var(--font-family-serif);
+      font-size: 47px;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 64.6px;
+    }
+  }
+
+  &__ending {
+    grid-template-columns: minmax(0, 1fr) 276px;
+    padding-bottom: 128px;
+
+    blockquote {
+      font-size: 26px;
+    }
+
+    > div > div {
+      padding-top: 24px;
+      color: #272055;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 18px;
+    }
+  }
+}
+
+@media (max-width: 700px) {
+  .lung-page {
+    &__stages-art {
+      margin-top: 24px;
+    }
+    &__treatment {
+      padding-bottom: 24px;
+      .breast-section__heading {
+        height: auto;
+        img {
+          height: auto;
+        }
+      }
+      .breast-section__copy {
+        min-height: 0;
+      }
+    }
+    .breast-section__risks-image {
+      height: auto;
+      padding-bottom: 14px;
+
+      &::before {
+        top: 14px;
+        left: 0;
+        width: calc(100% - 16px);
+        border-radius: 20px;
+      }
+      img {
+        width: calc(100% - 16px);
+        margin-left: 16px;
+        border-radius: 20px;
+      }
+    }
+
+    &__screening {
+      width: 100%;
+      margin-bottom: 48px;
+      overflow: hidden;
+      background: #efedfa;
+
+      &-desktop {
+        display: none !important;
+      }
+
+      &-mobile {
+        display: block;
+        padding: 16px 20px 0;
+
+        > div {
+          padding: 24px 20px;
+          border-radius: 24px;
+          background: #fff;
+          color: #1b2034;
+        }
+
+        h2 {
+          margin: 0 0 20px;
+          color: #5e4dcb;
+          font-family: var(--font-family-serif);
+          font-size: 42px;
+          font-style: italic;
+          font-weight: 400;
+          line-height: 1.1;
+          text-align: center;
+        }
+
+        p {
+          margin: 0 0 8px;
+          font-size: 16px;
+          line-height: 24px;
+          text-align: justify;
+        }
+
+        img {
+          width: calc(100% + 40px);
+          max-width: none;
+          margin: -8px -20px 0;
+        }
+      }
+    }
+  }
+
+  .lung-story {
+    &__columns,
+    &__closing-row,
+    &__ending {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    &__columns > div {
+      gap: 16px;
+    }
+    &__columns p + p {
+      margin-top: -8px;
+    }
+    &__strip--first,
+    &__strip--second {
+      margin-bottom: 0;
+    }
+    &__garden-copy,
+    &__closing-row,
+    &__milestone {
+      min-height: 0;
+    }
+    &__milestone {
+      padding-top: 0;
+    }
+    &__closing-row img,
+    &__ending img {
+      max-width: 276px;
+      margin: 0 auto;
+    }
+    &__ending {
+      padding-bottom: 64px;
+    }
+    &__milestone h3 {
+      font-size: 36px;
+    }
+  }
+}

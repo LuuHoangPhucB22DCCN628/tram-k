@@ -1,37 +1,72 @@
 <footer class="public-footer">
-  <div class="public-footer__content">
-    <section class="public-footer__brand" aria-labelledby="footer-brand-title">
-      <a routerLink="/" aria-label="Trạm K - Trang chủ">
-        <img src="/assets/images/brand/tram-k-logo.svg" width="169" height="40" alt="Trạm K" />
-      </a>
-      <h2 id="footer-brand-title" class="sr-only">Trạm K</h2>
-      <p>Nơi kết nối thông tin, cộng đồng và các chương trình hỗ trợ bệnh nhân ung thư.</p>
-    </section>
+  <div class="public-footer__layout">
+    <div class="public-footer__left">
+      <img
+        class="public-footer__fund"
+        src="/assets/images/community/community-footer-fund.svg"
+        width="223"
+        height="296"
+        alt="Mã QR và thông tin Quỹ Nhân ái Trạm K"
+        loading="lazy"
+      />
 
-    <nav aria-label="Liên kết thông tin">
-      <h2>Thông tin</h2>
-      <a routerLink="/cam-nang">Cẩm nang</a>
-      <a routerLink="/loai-ung-thu">Loại ung thư</a>
-      <a routerLink="/cau-chuyen">Câu chuyện</a>
-    </nav>
+      <div class="public-footer__brand">
+        <a routerLink="/" aria-label="Trạm K - Trang chủ">
+          <img
+            src="/assets/images/brand/tram-k-footer-logo.svg"
+            width="169"
+            height="40"
+            alt="Trạm K"
+          />
+        </a>
+        <p>Học viện Công nghệ Bưu chính Viễn thông, Trần Phú, phường Hà Đông, thành phố Hà Nội</p>
+      </div>
+    </div>
 
-    <nav aria-label="Liên kết cộng đồng">
-      <h2>Cộng đồng</h2>
-      <a routerLink="/cong-dong">Bài viết cộng đồng</a>
-      <a routerLink="/goc-tam-ly">Góc tâm lý</a>
-      <a routerLink="/thanh-vien">Khu vực thành viên</a>
-    </nav>
+    <div class="public-footer__right">
+      <div class="public-footer__top">
+        <div class="public-footer__navigation">
+          <nav aria-label="Liên kết thông tin">
+            <h2>Thông tin</h2>
+            <div>
+              @for (link of informationLinks; track link.label) {
+                <a [routerLink]="link.route" [fragment]="link.fragment">{{ link.label }}</a>
+              }
+            </div>
+          </nav>
 
-    <nav aria-label="Liên kết về Trạm K">
-      <h2>Trạm K</h2>
-      <a routerLink="/ve-chung-toi">Về chúng tôi</a>
-      <a routerLink="/tim-kiem">Tìm kiếm</a>
-      <a routerLink="/style-guide">Style Guide</a>
-    </nav>
-  </div>
+          <nav aria-label="Liên kết cộng đồng">
+            <h2>Cộng đồng</h2>
+            <div>
+              @for (link of communityLinks; track link.label) {
+                <a [routerLink]="link.route" [fragment]="link.fragment">{{ link.label }}</a>
+              }
+            </div>
+          </nav>
+        </div>
 
-  <div class="public-footer__bottom">
-    <p>© {{ currentYear }} Trạm K. Đồ án phục vụ mục đích học tập.</p>
-    <p>Thông tin trên website không thay thế tư vấn, chẩn đoán hoặc điều trị y khoa.</p>
+        <section class="public-footer__contact" aria-labelledby="footer-contact">
+          <div>
+            <h2 id="footer-contact">Liên hệ</h2>
+            <div class="public-footer__contact-details">
+              <div>
+                <p>+1 999 888-76-54</p>
+                <p>tramk&#64;gmail.com</p>
+              </div>
+              <a routerLink="/ve-chung-toi">Contact now</a>
+            </div>
+          </div>
+          <img
+            src="/assets/icons/footer-socials.svg"
+            width="119"
+            height="17"
+            alt="YouTube, Instagram, Facebook"
+            loading="lazy"
+          />
+        </section>
+      </div>
+
+      <p class="public-footer__copyright">© {{ currentYear }} — Copyright</p>
+    </div>
   </div>
 </footer>

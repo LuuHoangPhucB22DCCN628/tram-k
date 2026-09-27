@@ -1,0 +1,400 @@
+<article class="hair-registration hair-registration--{{ copy.variant }}">
+  <header class="hair-registration__hero">
+    <img [src]="copy.banner" alt="" aria-hidden="true" width="1440" height="310" />
+    <div class="hair-registration__hero-copy">
+      <h1>{{ copy.title }}</h1>
+      <p>
+        Điền thông tin bên dưới để chúng tôi có thể hỗ trợ bạn tốt nhất trên hành trình chiến đấu
+        cùng ung thư.
+      </p>
+    </div>
+  </header>
+
+  <main class="hair-registration__body">
+    <form class="hair-form" [formGroup]="form" novalidate (ngSubmit)="submit()">
+      <fieldset class="hair-form__section">
+        <legend>Thông tin cá nhân</legend>
+
+        <div class="hair-form__grid hair-form__grid--three">
+          <label class="hair-field" [class.hair-field--invalid]="showError('fullName')">
+            <span>Họ và tên<em>*</em></span>
+            <input
+              id="hair-full-name"
+              type="text"
+              formControlName="fullName"
+              autocomplete="name"
+              placeholder="Nhập họ và tên"
+              required
+              [attr.aria-invalid]="showError('fullName')"
+              [attr.aria-describedby]="showError('fullName') ? 'hair-full-name-error' : null"
+            />
+            @if (showError('fullName')) {
+              <small id="hair-full-name-error" class="hair-field__error">{{
+                errorMessage('fullName')
+              }}</small>
+            }
+          </label>
+          <label class="hair-field" [class.hair-field--invalid]="showError('phone')">
+            <span>Điện thoại<em>*</em></span>
+            <span class="hair-phone">
+              <span aria-hidden="true">🇻🇳</span>
+              <input
+                id="hair-phone"
+                type="tel"
+                formControlName="phone"
+                autocomplete="tel"
+                inputmode="tel"
+                placeholder="VD: 0912345678"
+                required
+                [attr.aria-invalid]="showError('phone')"
+                [attr.aria-describedby]="showError('phone') ? 'hair-phone-error' : null"
+              />
+            </span>
+            @if (showError('phone')) {
+              <small id="hair-phone-error" class="hair-field__error">{{
+                errorMessage('phone')
+              }}</small>
+            }
+          </label>
+          <label class="hair-field" [class.hair-field--invalid]="showError('email')">
+            <span>Email</span>
+            <input
+              id="hair-email"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              placeholder="Nếu có hoặc email người nhận"
+              [attr.aria-invalid]="showError('email')"
+              [attr.aria-describedby]="showError('email') ? 'hair-email-error' : null"
+            />
+            @if (showError('email')) {
+              <small id="hair-email-error" class="hair-field__error">{{
+                errorMessage('email')
+              }}</small>
+            }
+          </label>
+        </div>
+
+        <div class="hair-form__grid hair-form__grid--two">
+          <label class="hair-field" [class.hair-field--invalid]="showError('province')">
+            <span>Tỉnh/Thành phố<em>*</em></span>
+            <input
+              id="hair-province"
+              type="text"
+              formControlName="province"
+              autocomplete="address-level1"
+              placeholder="Tỉnh/Thành phố bạn đang sống"
+              required
+              [attr.aria-invalid]="showError('province')"
+              [attr.aria-describedby]="showError('province') ? 'hair-province-error' : null"
+            />
+            @if (showError('province')) {
+              <small id="hair-province-error" class="hair-field__error">{{
+                errorMessage('province')
+              }}</small>
+            }
+          </label>
+          <label class="hair-field" [class.hair-field--invalid]="showError('district')">
+            <span>Quận/Huyện<em>*</em></span>
+            <input
+              id="hair-district"
+              type="text"
+              formControlName="district"
+              autocomplete="address-level2"
+              placeholder="Quận/Huyện bạn đang sống"
+              required
+              [attr.aria-invalid]="showError('district')"
+              [attr.aria-describedby]="showError('district') ? 'hair-district-error' : null"
+            />
+            @if (showError('district')) {
+              <small id="hair-district-error" class="hair-field__error">{{
+                errorMessage('district')
+              }}</small>
+            }
+          </label>
+        </div>
+
+        <label class="hair-field" [class.hair-field--invalid]="showError('address')">
+          <span>Địa chỉ<em>*</em></span>
+          <input
+            id="hair-address"
+            type="text"
+            formControlName="address"
+            autocomplete="street-address"
+            [placeholder]="copy.addressPlaceholder"
+            required
+            [attr.aria-invalid]="showError('address')"
+            [attr.aria-describedby]="showError('address') ? 'hair-address-error' : null"
+          />
+          @if (showError('address')) {
+            <small id="hair-address-error" class="hair-field__error">{{
+              errorMessage('address')
+            }}</small>
+          }
+        </label>
+
+        <div class="hair-form__grid hair-form__grid--three">
+          <label class="hair-field" [class.hair-field--invalid]="showError('gender')">
+            <span>Giới tính<em>*</em></span>
+            <select
+              id="hair-gender"
+              formControlName="gender"
+              required
+              [attr.aria-invalid]="showError('gender')"
+              [attr.aria-describedby]="showError('gender') ? 'hair-gender-error' : null"
+            >
+              <option value="">Chọn giới tính</option>
+              <option value="female">Nữ</option>
+              <option value="male">Nam</option>
+              <option value="other">Khác</option>
+            </select>
+            @if (showError('gender')) {
+              <small id="hair-gender-error" class="hair-field__error">{{
+                errorMessage('gender')
+              }}</small>
+            }
+          </label>
+
+          @if (copy.variant === 'donate') {
+            <label class="hair-field" [class.hair-field--invalid]="showError('donationLocation')">
+              <span>Nơi hiến tóc<em>*</em></span>
+              <input
+                id="hair-donation-location"
+                type="text"
+                formControlName="donationLocation"
+                placeholder="Helen Salon"
+                required
+                [attr.aria-invalid]="showError('donationLocation')"
+                [attr.aria-describedby]="
+                  showError('donationLocation') ? 'hair-donation-location-error' : null
+                "
+              />
+              @if (showError('donationLocation')) {
+                <small id="hair-donation-location-error" class="hair-field__error">{{
+                  errorMessage('donationLocation')
+                }}</small>
+              }
+            </label>
+            <label class="hair-field" [class.hair-field--invalid]="showError('donatedLength')">
+              <span>Độ dài tóc hiến<em>*</em></span>
+              <input
+                id="hair-donated-length"
+                type="text"
+                formControlName="donatedLength"
+                inputmode="decimal"
+                placeholder="20cm"
+                required
+                [attr.aria-invalid]="showError('donatedLength')"
+                [attr.aria-describedby]="
+                  showError('donatedLength') ? 'hair-donated-length-error' : null
+                "
+              />
+              @if (showError('donatedLength')) {
+                <small id="hair-donated-length-error" class="hair-field__error">{{
+                  errorMessage('donatedLength')
+                }}</small>
+              }
+            </label>
+          } @else {
+            <label class="hair-field" [class.hair-field--invalid]="showError('relativePhone')">
+              <span>Số điện thoại người thân<em>*</em></span>
+              <span class="hair-phone">
+                <span aria-hidden="true">🇻🇳</span>
+                <input
+                  id="hair-relative-phone"
+                  type="tel"
+                  formControlName="relativePhone"
+                  inputmode="tel"
+                  placeholder="Số điện thoại người thân"
+                  required
+                  [attr.aria-invalid]="showError('relativePhone')"
+                  [attr.aria-describedby]="
+                    showError('relativePhone') ? 'hair-relative-phone-error' : null
+                  "
+                />
+              </span>
+              @if (showError('relativePhone')) {
+                <small id="hair-relative-phone-error" class="hair-field__error">{{
+                  errorMessage('relativePhone')
+                }}</small>
+              }
+            </label>
+            <label class="hair-field" [class.hair-field--invalid]="showError('relativeName')">
+              <span>Họ tên người thân<em>*</em></span>
+              <input
+                id="hair-relative-name"
+                type="text"
+                formControlName="relativeName"
+                placeholder="Họ tên người thân"
+                required
+                [attr.aria-invalid]="showError('relativeName')"
+                [attr.aria-describedby]="
+                  showError('relativeName') ? 'hair-relative-name-error' : null
+                "
+              />
+              @if (showError('relativeName')) {
+                <small id="hair-relative-name-error" class="hair-field__error">{{
+                  errorMessage('relativeName')
+                }}</small>
+              }
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      @if (copy.variant === 'donate') {
+        <div class="hair-form__divider"></div>
+        <div class="hair-form__commitments" formArrayName="commitments">
+          @for (commitment of donorCommitments; track commitment; let index = $index) {
+            <div>
+              <label
+                class="hair-commitment"
+                [class.hair-commitment--invalid]="showCommitmentError(index)"
+              >
+                <input
+                  type="checkbox"
+                  [formControlName]="index"
+                  required
+                  [attr.aria-invalid]="showCommitmentError(index)"
+                  [attr.aria-describedby]="
+                    showCommitmentError(index) ? 'hair-commitment-' + index + '-error' : null
+                  "
+                />
+                <span>{{ commitment }}</span>
+              </label>
+              @if (showCommitmentError(index)) {
+                <small [id]="'hair-commitment-' + index + '-error'" class="hair-field__error">
+                  Vui lòng xác nhận cam kết này.
+                </small>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="hair-form__divider"></div>
+        <fieldset class="hair-form__section hair-form__section--registration">
+          <legend>Thông tin đăng ký</legend>
+
+          <div class="hair-form__grid hair-form__grid--three">
+            <label class="hair-field" [class.hair-field--invalid]="showError('duration')">
+              <span>Thời gian sử dụng dự kiến<em>*</em></span>
+              <input
+                id="hair-duration"
+                type="text"
+                formControlName="duration"
+                placeholder="3 tháng"
+                required
+                [attr.aria-invalid]="showError('duration')"
+                [attr.aria-describedby]="showError('duration') ? 'hair-duration-error' : null"
+              />
+              @if (showError('duration')) {
+                <small id="hair-duration-error" class="hair-field__error">{{
+                  errorMessage('duration')
+                }}</small>
+              }
+            </label>
+            <label class="hair-field" [class.hair-field--invalid]="showError('hospital')">
+              <span>Bệnh viện điều trị<em>*</em></span>
+              <input
+                id="hair-hospital"
+                type="text"
+                formControlName="hospital"
+                placeholder="Tên bệnh viện"
+                required
+                [attr.aria-invalid]="showError('hospital')"
+                [attr.aria-describedby]="showError('hospital') ? 'hair-hospital-error' : null"
+              />
+              @if (showError('hospital')) {
+                <small id="hair-hospital-error" class="hair-field__error">{{
+                  errorMessage('hospital')
+                }}</small>
+              }
+            </label>
+            <label class="hair-field" [class.hair-field--invalid]="showError('diagnosis')">
+              <span>Chẩn đoán loại ung thư<em>*</em></span>
+              <input
+                id="hair-diagnosis"
+                type="text"
+                formControlName="diagnosis"
+                placeholder="VD: Ung thư vú, ung thư phổi..."
+                required
+                [attr.aria-invalid]="showError('diagnosis')"
+                [attr.aria-describedby]="showError('diagnosis') ? 'hair-diagnosis-error' : null"
+              />
+              @if (showError('diagnosis')) {
+                <small id="hair-diagnosis-error" class="hair-field__error">{{
+                  errorMessage('diagnosis')
+                }}</small>
+              }
+            </label>
+          </div>
+
+          <div class="hair-form__grid hair-form__grid--two hair-form__grid--half">
+            <label class="hair-field" [class.hair-field--invalid]="showError('borrowDate')">
+              <span>Ngày đăng ký mượn<em>*</em></span>
+              <input
+                id="hair-borrow-date"
+                type="date"
+                formControlName="borrowDate"
+                required
+                [attr.aria-invalid]="showError('borrowDate')"
+                [attr.aria-describedby]="showError('borrowDate') ? 'hair-borrow-date-error' : null"
+              />
+              @if (showError('borrowDate')) {
+                <small id="hair-borrow-date-error" class="hair-field__error">{{
+                  errorMessage('borrowDate')
+                }}</small>
+              }
+            </label>
+          </div>
+
+          <label class="hair-field">
+            <span>Độ dài bạn mong muốn</span>
+            <input
+              id="hair-desired-length"
+              type="text"
+              formControlName="desiredLength"
+              placeholder="Dài, Ngang vai, Ngắn,......"
+            />
+          </label>
+
+          <label class="hair-field" [class.hair-field--invalid]="showError('transparency')">
+            <span>Cam kết những nội dung trên đảm bảo tính minh bạch<em>*</em></span>
+            <textarea
+              id="hair-transparency"
+              rows="3"
+              formControlName="transparency"
+              placeholder="Tôi đã điền đúng thông tin nhận tóc"
+              required
+              [attr.aria-invalid]="showError('transparency')"
+              [attr.aria-describedby]="showError('transparency') ? 'hair-transparency-error' : null"
+            ></textarea>
+            @if (showError('transparency')) {
+              <small id="hair-transparency-error" class="hair-field__error">{{
+                errorMessage('transparency')
+              }}</small>
+            }
+          </label>
+        </fieldset>
+      }
+
+      <footer class="hair-form__actions">
+        <p><em>*</em> Các trường bắt buộc</p>
+        <button type="submit" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Đang gửi...' : 'Gửi đăng ký' }}
+        </button>
+      </footer>
+
+      @if (successMessage()) {
+        <p class="hair-form__status" role="status" aria-live="polite">{{ successMessage() }}</p>
+      }
+      @if (submitError()) {
+        <p class="hair-form__status hair-form__status--error" role="alert">{{ submitError() }}</p>
+      }
+    </form>
+
+    <p class="hair-registration__privacy">
+      Thông tin của bạn sẽ được bảo mật tuyệt đối và chỉ dùng cho mục đích hỗ trợ y tế.
+    </p>
+  </main>
+</article>

@@ -1,0 +1,381 @@
+.breast-hero .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.breast-hero {
+  width: 100%;
+  overflow: hidden;
+  background: #efedfa;
+
+  > img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+}
+
+.breast-page {
+  --breast-purple: #5e4dcb;
+  --breast-ink: #1b2034;
+  --breast-secondary: #394366;
+  --breast-section-gap: 40px;
+  position: relative;
+  color: var(--breast-ink);
+  background: #f4f6fa;
+  overflow: hidden;
+
+  > :not(.breast-page__decor) {
+    position: relative;
+    z-index: 1;
+  }
+
+  &__decor {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+
+    img {
+      position: absolute;
+      display: block;
+      max-width: none;
+      transform: rotate(-90deg);
+      transform-origin: top left;
+    }
+
+    &-left {
+      left: -24px;
+      width: 1218.224px;
+      height: 290.754px;
+
+      &--signs {
+        top: 1645.802px;
+      }
+      &--stages {
+        top: 3518.803px;
+      }
+      &--story {
+        top: 5618.803px;
+      }
+    }
+
+    &-right {
+      left: calc(100% - 273.184px);
+      width: 1414.804px;
+      height: 372.243px;
+
+      &--risks {
+        top: 3256.963px;
+      }
+      &--screening {
+        top: 5356.963px;
+      }
+    }
+  }
+
+  &__intro {
+    margin: 40px auto var(--breast-section-gap);
+    font-weight: 700;
+  }
+}
+
+.breast-page__intro,
+.breast-section__copy,
+.breast-story__copy {
+  width: min(630px, calc(100% - 40px));
+  font-size: 16px;
+  line-height: 24px;
+  text-align: justify;
+}
+
+.breast-section__copy,
+.breast-story__copy {
+  p {
+    margin: 0 0 8px;
+  }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.breast-section {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  margin-bottom: var(--breast-section-gap);
+
+  &__heading {
+    width: min(1280px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 20px 0;
+    text-align: center;
+
+    h2 {
+      margin: 0;
+      color: var(--breast-purple);
+      font-family: var(--font-family-serif);
+      font-size: clamp(42px, 4.45vw, 64px);
+      font-style: italic;
+      font-weight: 400;
+      line-height: 1.2;
+    }
+
+    p {
+      margin: 0;
+      color: var(--breast-secondary);
+      font-size: clamp(20px, 1.95vw, 28px);
+      font-weight: 600;
+      line-height: 36px;
+    }
+  }
+
+  &__copy {
+    ul {
+      margin: 0 0 8px;
+      padding-left: 24px;
+      list-style: disc;
+    }
+  }
+
+  &__signs-image,
+  &__treatment-image,
+  &__stages-image {
+    display: block;
+    max-width: calc(100% - 40px);
+    height: auto;
+  }
+
+  &__risks-image {
+    width: min(846px, calc(100% - 40px));
+    padding: 30px 0 29px 34px;
+    border-radius: 36px;
+    background: linear-gradient(transparent 59px, #bbc4e0 59px);
+
+    img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 812 / 478;
+      height: auto;
+      border-radius: 36px;
+      object-fit: cover;
+    }
+  }
+
+  &__treatment-image {
+    width: min(630px, calc(100% - 40px));
+    aspect-ratio: 630 / 442;
+    object-fit: cover;
+  }
+
+  &--treatment .breast-section__heading h2 {
+    line-height: 67px;
+  }
+}
+
+.breast-screening {
+  position: relative;
+  width: min(1064px, calc(100% - 40px));
+  min-height: 713px;
+  margin: 0 auto var(--breast-section-gap);
+  overflow: hidden;
+  border-radius: 36px;
+  background: url('/assets/images/cancer-types/details/breast/screening.svg') center / 100% 100%
+    no-repeat;
+
+  &__card {
+    width: min(844px, calc(100% - 32px));
+    min-height: 436px;
+    margin: 0 auto;
+    padding: 17px 20px 32px;
+    border-radius: 36px;
+    background: #fff;
+
+    .breast-section__heading {
+      max-width: 412px;
+      margin-bottom: 0;
+      padding: 20px 0;
+
+      p:first-child {
+        text-align: left;
+      }
+
+      p:last-child {
+        text-align: right;
+      }
+    }
+
+    .breast-section__copy {
+      margin: 0 auto;
+    }
+  }
+}
+
+.breast-story {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 24px;
+
+  &__heading {
+    width: min(1280px, calc(100% - 40px));
+    margin: 0;
+    padding: 20px 0;
+
+    h2 {
+      max-width: 900px;
+      margin: 0 auto;
+      color: var(--breast-purple);
+      font-family: var(--font-family-serif);
+      font-size: clamp(42px, 4.45vw, 64px);
+      font-style: italic;
+      font-weight: 400;
+      line-height: 69px;
+      text-align: center;
+    }
+
+    p {
+      max-width: 884px;
+      margin: 0 auto;
+      color: var(--breast-secondary);
+      font-size: 28px;
+      font-style: italic;
+      font-weight: 600;
+      line-height: 36px;
+      text-align: right;
+    }
+  }
+
+  &__dialogue {
+    width: min(630px, calc(100% - 40px));
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+
+    p {
+      margin: 0;
+      padding: 8px 24px;
+      border-radius: 8px;
+      background: #cdc8ef;
+      font-size: 18px;
+      font-style: italic;
+      font-weight: 500;
+      line-height: 23px;
+    }
+
+    p:nth-child(2) {
+      align-self: flex-end;
+      background: #efedfa;
+    }
+  }
+
+  &__copy {
+    margin: 0;
+
+    &--photo {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 276px;
+      gap: 40px;
+    }
+  }
+
+  &__portrait {
+    width: 276px;
+    height: 424px;
+    padding: 20px;
+    border-radius: 4px;
+    background: #9388dc;
+
+    img {
+      display: block;
+      width: 236px;
+      height: 318px;
+      border-radius: 4px;
+      object-fit: cover;
+    }
+  }
+
+  blockquote {
+    max-width: calc(100% - 40px);
+    margin: 0;
+    color: var(--breast-purple);
+    font-family: var(--font-family-serif);
+    font-size: clamp(28px, 2.78vw, 40px);
+    font-style: italic;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  &__outro {
+    width: 100%;
+
+    &-art {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+  }
+}
+
+@media (max-width: 700px) {
+  .breast-page {
+    --breast-section-gap: 48px;
+  }
+
+  .breast-page__decor {
+    display: none;
+  }
+
+  .breast-page__intro {
+    margin-top: 48px;
+  }
+
+  .breast-section {
+    &__heading {
+      padding: 12px 0;
+    }
+
+    &__risks-image {
+      padding: 14px 0 14px 16px;
+      border-radius: 20px;
+
+      img {
+        border-radius: 20px;
+      }
+    }
+
+    &--treatment .breast-section__heading h2 {
+      line-height: 1.2;
+    }
+  }
+
+  .breast-screening {
+    min-height: 580px;
+  }
+
+  .breast-story {
+    &__heading h2 {
+      line-height: 1.2;
+    }
+
+    &__heading p {
+      font-size: 20px;
+    }
+
+    &__copy--photo {
+      grid-template-columns: 1fr;
+      gap: 16px;
+
+      .breast-story__portrait {
+        justify-self: center;
+      }
+    }
+  }
+}

@@ -1,0 +1,118 @@
+@if (loading()) {
+  <div class="detail-state"><app-ui-loading label="Đang tải bài viết..." /></div>
+} @else if (notFound()) {
+  <div class="detail-state detail-state--wide">
+    <app-ui-empty-state
+      title="Không tìm thấy bài viết"
+      message="Bài viết có thể đã được chuyển, gỡ bỏ hoặc chưa được xuất bản."
+    >
+      <a class="detail-action" routerLink="/cam-nang">Quay lại Cẩm nang</a>
+    </app-ui-empty-state>
+  </div>
+} @else if (errorMessage()) {
+  <div class="detail-state detail-state--wide">
+    <app-ui-error-state [message]="errorMessage()" (retry)="retry()" />
+  </div>
+} @else if (content(); as article) {
+  <article class="detail-page">
+    <div class="detail-layout">
+      <div class="detail-main">
+        <header class="detail-header">
+          <p class="detail-category">{{ article.category.name }}</p>
+          <h1>{{ article.title }}</h1>
+          <div class="detail-meta">
+            <span class="detail-date">
+              <img src="/assets/icons/calendar-outline.svg" alt="" width="21" height="21" />
+              {{ article.publishedAt | date: "dd 'Thg' MM, yyyy" }}
+            </span>
+            <button
+              class="detail-icon-button"
+              type="button"
+              [class.detail-icon-button--active]="isFavorite()"
+              [attr.aria-pressed]="isFavorite()"
+              [attr.aria-label]="
+                isFavorite() ? 'Bỏ khỏi danh sách yêu thích' : 'Thêm vào yêu thích'
+              "
+              (click)="toggleFavorite()"
+            >
+              <img src="/assets/icons/heart-outline.svg" alt="" width="21" height="21" />
+            </button>
+            <button
+              class="detail-icon-button"
+              type="button"
+              aria-label="Chia sẻ bài viết"
+              (click)="shareArticle()"
+            >
+              <img src="/assets/icons/share-outline.svg" alt="" width="21" height="21" />
+            </button>
+            <span class="visually-hidden" aria-live="polite">{{ shareFeedback() }}</span>
+          </div>
+        </header>
+
+        <div class="detail-content">
+          <p class="detail-lead">{{ article.detailLead ?? article.excerpt }}</p>
+
+          @for (section of article.sections; track $index) {
+            <section class="detail-section">
+              @if (section.heading) {
+                <h2>{{ section.heading }}</h2>
+              }
+              @for (paragraph of section.paragraphs; track $index) {
+                <p>{{ paragraph }}</p>
+              }
+              @if (section.bullets; as bullets) {
+                <ul>
+                  @for (bullet of bullets; track bullet) {
+                    <li>{{ bullet }}</li>
+                  }
+                </ul>
+              }
+              @if (section.image; as image) {
+                <figure>
+                  <img
+                    [src]="image.url"
+                    [alt]="image.alt"
+                    [width]="image.width"
+                    [height]="image.height"
+                    loading="lazy"
+                  />
+                  @if (section.imageCaption) {
+                    <figcaption>{{ section.imageCaption }}</figcaption>
+                  }
+                </figure>
+              }
+            </section>
+          }
+        </div>
+      </div>
+
+      <aside class="detail-related" aria-label="Bài viết gợi ý">
+        @for (group of sidebarGroups(); track group.title; let last = $last) {
+          <section class="related-group">
+            <h2 [id]="last ? 'related-title' : null">{{ group.title }}</h2>
+            <div class="detail-related__list">
+              @for (item of group.items; track item.id) {
+                <a class="related-card" [routerLink]="articleLink(item)">
+                  <img
+                    [src]="item.coverImage.url"
+                    [alt]="item.coverImage.alt"
+                    [width]="item.coverImage.width"
+                    [height]="item.coverImage.height"
+                    loading="lazy"
+                  />
+                  <span>
+                    <strong>{{ item.title }}</strong>
+                    <small>
+                      <img src="/assets/icons/calendar-outline.svg" alt="" width="21" height="21" />
+                      {{ item.publishedAt | date: "dd 'Thg' MM, yyyy" }}
+                    </small>
+                  </span>
+                </a>
+              }
+            </div>
+          </section>
+        }
+      </aside>
+    </div>
+  </article>
+}

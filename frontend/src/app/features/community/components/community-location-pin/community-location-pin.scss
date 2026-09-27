@@ -1,0 +1,42 @@
+:host {
+  position: relative;
+  display: block;
+  width: 33px;
+  height: 38px;
+  overflow: hidden;
+}
+
+img {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+
+.community-location-pin__top {
+  top: 0;
+  left: 35.95%;
+  width: 39.57%;
+  height: 17.38%;
+}
+
+.community-location-pin__body {
+  top: 4.65%;
+  left: 29.09%;
+  width: 70.91%;
+  height: 95.35%;
+}
+
+.community-location-pin__shadow {
+  top: 31.18%;
+  left: 36.49%;
+  width: 38.24%;
+  height: 41.54%;
+  mix-blend-mode: multiply;
+}
+
+.community-location-pin__group {
+  top: 3.85%;
+  left: 0;
+  width: 83.25%;
+  height: 94.15%;
+}

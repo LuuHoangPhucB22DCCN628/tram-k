@@ -1,0 +1,1419 @@
+@if (detail(); as cancer) {
+  @if (cancer.layout === 'article') {
+    <article class="medical-article">
+      <div class="medical-article__shell">
+        <div>
+          <a class="medical-article__back" routerLink="/loai-ung-thu">Loại ung thư</a>
+          <header class="medical-article__header">
+            <h1>{{ cancer.articleTitle }}</h1>
+            <div>
+              <span>{{ cancer.publishedAt }}</span
+              ><span>{{ cancer.readingTime }}</span>
+            </div>
+          </header>
+          <p class="medical-article__lead">{{ cancer.intro }}</p>
+
+          @for (section of cancer.articleSections ?? []; track section.title) {
+            <section class="medical-article__section">
+              <h2>{{ section.title }}</h2>
+              @for (paragraph of section.paragraphs; track paragraph) {
+                <p>{{ paragraph }}</p>
+              }
+              @if (section.image) {
+                <img [src]="section.image" [alt]="section.imageAlt ?? ''" loading="lazy" />
+              }
+            </section>
+          }
+
+          <aside class="medical-note">
+            <strong>Lưu ý y khoa</strong>
+            <p>
+              Nội dung chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của
+              bác sĩ.
+            </p>
+          </aside>
+        </div>
+
+        <aside class="related-cancers" aria-labelledby="related-cancers-title">
+          <h2 id="related-cancers-title">Chủ đề liên quan</h2>
+          @for (item of relatedTypes(); track item.slug) {
+            <a [routerLink]="['/loai-ung-thu', item.slug]">
+              <img [src]="item.image" [alt]="item.imageAlt" width="96" height="68" loading="lazy" />
+              <span
+                ><strong>{{ item.name }}</strong
+                ><small>{{ item.summary }}</small></span
+              >
+            </a>
+          }
+        </aside>
+      </div>
+    </article>
+  } @else {
+    <article class="cancer-detail" [class]="'cancer-detail cancer-detail--' + cancer.theme">
+      <nav class="cancer-detail__nav" aria-label="Ba loại ung thư phổ biến">
+        <a routerLink="/loai-ung-thu">← Tổng quan</a>
+        @for (item of featuredDetails; track item.slug) {
+          <a
+            [routerLink]="['/loai-ung-thu', item.slug]"
+            routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            >{{ item.name }}</a
+          >
+        }
+      </nav>
+
+      @if (cancer.theme === 'breast') {
+        <header class="breast-hero" aria-labelledby="breast-title">
+          <img [src]="cancer.heroImage" alt="" width="1440" height="773" />
+          <h1 id="breast-title" class="visually-hidden">{{ cancer.name }}</h1>
+          <p class="visually-hidden">{{ cancer.tagline }}</p>
+        </header>
+
+        <div class="breast-page">
+          <div class="breast-page__decor" aria-hidden="true">
+            <img
+              class="breast-page__decor-left breast-page__decor-left--signs"
+              src="/assets/images/cancer-types/details/breast/page-decor-left.svg"
+              alt=""
+              width="1218"
+              height="291"
+            />
+            <img
+              class="breast-page__decor-right breast-page__decor-right--risks"
+              src="/assets/images/cancer-types/details/breast/page-decor-right.svg"
+              alt=""
+              width="1409"
+              height="346"
+            />
+            <img
+              class="breast-page__decor-left breast-page__decor-left--stages"
+              src="/assets/images/cancer-types/details/breast/page-decor-left.svg"
+              alt=""
+              width="1218"
+              height="291"
+            />
+            <img
+              class="breast-page__decor-right breast-page__decor-right--screening"
+              src="/assets/images/cancer-types/details/breast/page-decor-right.svg"
+              alt=""
+              width="1409"
+              height="346"
+            />
+            <img
+              class="breast-page__decor-left breast-page__decor-left--story"
+              src="/assets/images/cancer-types/details/breast/page-decor-left.svg"
+              alt=""
+              width="1218"
+              height="291"
+            />
+          </div>
+          <p class="breast-page__intro">{{ cancer.intro }}</p>
+
+          <section class="breast-section" aria-labelledby="breast-signs-title">
+            <header class="breast-section__heading">
+              <h2 id="breast-signs-title">{{ cancer.signs.title }}</h2>
+              <p>{{ cancer.signs.subtitle }}</p>
+            </header>
+            <div class="breast-section__copy">
+              <p>{{ cancer.signs.intro }}</p>
+              <ul>
+                @for (item of cancer.signs.items; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+              <p>
+                Theo các bác sĩ, khi phát hiện những biểu hiện bất thường này, người bệnh nên đến cơ
+                sở y tế để được thăm khám và chẩn đoán kịp thời.
+              </p>
+            </div>
+            <img
+              class="breast-section__signs-image"
+              src="/assets/images/cancer-types/details/breast/signs.svg"
+              alt="Minh họa các dấu hiệu ung thư vú"
+              width="630"
+              height="592"
+              loading="lazy"
+            />
+          </section>
+
+          <section class="breast-section" aria-labelledby="breast-risks-title">
+            <header class="breast-section__heading">
+              <h2 id="breast-risks-title">{{ cancer.risks.title }}</h2>
+              <p>{{ cancer.risks.subtitle }}</p>
+            </header>
+            <div class="breast-section__copy">
+              <p>{{ cancer.risks.intro }}</p>
+              @for (paragraph of cancer.risks.items; track paragraph) {
+                <p>{{ paragraph }}</p>
+              }
+            </div>
+            <div class="breast-section__risks-image">
+              <img
+                src="/assets/images/cancer-types/details/breast/risks.png"
+                alt="Hình ảnh chụp y khoa tuyến vú"
+                width="812"
+                height="478"
+                loading="lazy"
+              />
+            </div>
+          </section>
+
+          <section
+            class="breast-section breast-section--stages"
+            aria-labelledby="breast-stages-title"
+          >
+            <header class="breast-section__heading">
+              <h2 id="breast-stages-title">{{ cancer.stages.title }}</h2>
+            </header>
+            <div class="breast-section__copy">
+              <p>{{ cancer.stages.intro }}</p>
+              @for (paragraph of cancer.stages.items; track paragraph) {
+                <p>{{ paragraph }}</p>
+              }
+            </div>
+            <img
+              class="breast-section__stages-image"
+              src="/assets/images/cancer-types/details/breast/stages.svg"
+              alt="Sơ đồ năm giai đoạn ung thư vú từ giai đoạn 0 đến giai đoạn 4"
+              width="840"
+              height="675"
+              loading="lazy"
+            />
+          </section>
+
+          <section
+            class="breast-section breast-section--treatment"
+            aria-labelledby="breast-treatment-title"
+          >
+            <header class="breast-section__heading">
+              <h2 id="breast-treatment-title">{{ cancer.treatment.title }}</h2>
+              <p>{{ cancer.treatment.subtitle }}</p>
+            </header>
+            <div class="breast-section__copy">
+              <p>{{ cancer.treatment.intro }}</p>
+            </div>
+            <img
+              class="breast-section__treatment-image"
+              src="/assets/images/cancer-types/details/breast/treatment.png"
+              alt="Minh họa phương pháp điều trị ung thư vú"
+              width="630"
+              height="442"
+              loading="lazy"
+            />
+          </section>
+
+          <section class="breast-screening" aria-labelledby="breast-screening-title">
+            <div class="breast-screening__card">
+              <header class="breast-section__heading">
+                <p>Tầm soát định kỳ</p>
+                <h2 id="breast-screening-title">{{ cancer.prevention.title }}</h2>
+                <p>phòng bệnh</p>
+              </header>
+              <div class="breast-section__copy">
+                <p>{{ cancer.prevention.intro }}</p>
+                @for (paragraph of cancer.prevention.items; track paragraph) {
+                  <p>{{ paragraph }}</p>
+                }
+              </div>
+            </div>
+          </section>
+
+          <section class="breast-story" aria-labelledby="breast-story-title">
+            <header class="breast-story__heading">
+              <h2 id="breast-story-title">“Tôi không còn chiến đấu với ung thư một mình”</h2>
+              <p>Đoàn Thị Ngọc Hồng</p>
+            </header>
+            <div class="breast-story__dialogue">
+              <p>Mẹ biết tại sao lúc trước con không thích mẹ không?</p>
+              <p>Ôh, sao thế con?</p>
+              <p>Tại vì mẹ đi bác sĩ về, đầu mẹ nhìn…</p>
+            </div>
+            <div class="breast-story__copy">
+              <p>
+                Tôi lặng người, con tôi đó, một đứa bé 4 tuổi mà có thể nhớ được những chuyện lúc
+                con 18 tháng tuổi ư?
+              </p>
+              <p>
+                Ngày con tròn 15 tháng tuổi, tôi sờ thấy một "cục cứng" ở ngực trái. Nghĩ chỉ là tắc
+                tia sữa sau cai sữa, tôi chép miệng cho qua. Nhưng dưới sự hối thúc kiên quyết của
+                chồng, hai tháng sau tôi cũng đến bệnh viện với tâm lý "khám cho anh ấy yên tâm".
+              </p>
+              <p>
+                Buổi khám chiều muộn hôm ấy đã thay đổi cuộc đời tôi. Cầm tờ kết quả có dòng chữ
+                <strong>"K Vú"</strong>, tôi vẫn mơ hồ cho đến khi người y tá quen mặt thảng thốt:
+                "Trời ơi! Chẩn đoán ung thư, phải làm sinh thiết lại ngay!". Đất dưới chân như sụt
+                lấp. Tôi bấu víu vào hy vọng máy móc nhầm lẫn, nhưng một tuần sau, kết quả sinh
+                thiết tàn nhẫn dập tắt mọi phép màu. Ung thư là thật.
+              </p>
+            </div>
+            <blockquote>“Con yêu mẹ nhất trên đời”</blockquote>
+            <div class="breast-story__copy breast-story__copy--photo">
+              <div>
+                <p>
+                  Tôi chìm trong tuyệt vọng, mặc cho chồng hết lời động viên, hứa sẽ cùng gánh vác.
+                  Cho đến một ngày, cậu con trai bé bỏng sà vào lòng, ôm chặt lấy cổ mẹ và ngọng
+                  nghịu: "Con yêu mẹ nhất trên đời". Câu nói ngây ngô ấy như gáo nước lạnh đánh thức
+                  tôi khỏi cơn u mê. Số phận đã an bài ngã rẽ này, cớ sao tôi không ngẩng cao đầu
+                  đối diện?
+                </p>
+                <p>
+                  Lúc đó, chỉ còn 10 ngày nữa là đến Tết. Tôi lau khô nước mắt và đưa ra một quyết
+                  định: Bệnh tật có thể đợi, nhưng khoảnh khắc sum vầy thì không. Tôi sẽ đón một cái
+                  Tết thật rực rỡ trọn vẹn bên gia đình.
+                </p>
+                <p>
+                  Cuộc chiến ngày mai có khốc liệt đến đâu thì cứ để ngày mai tính. Còn hôm nay, tôi
+                  chọn nụ cười trước đã!
+                </p>
+              </div>
+              <div class="breast-story__portrait">
+                <img
+                  src="/assets/images/cancer-types/details/breast/story-portrait.png"
+                  alt="Chân dung chị Đoàn Thị Ngọc Hồng"
+                  width="236"
+                  height="318"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+            <div class="breast-story__copy">
+              <p>
+                Qua cái Tết trọn vẹn, tôi nén lòng gửi con vào nhà trẻ để nhập viện, chính thức bước
+                vào cuộc chiến sinh tử.
+              </p>
+              <p>
+                Ngày 1/3/2016, tôi tỉnh dậy sau ca phẫu thuật. Đưa tay chạm lên ngực mình, nước mắt
+                tôi tuôn dài. Cuộc đời tôi từ đây đã rẽ sang một trang khác.
+              </p>
+              <p>
+                Hành trình hóa trị khốc liệt hơn tôi tưởng. Mũi thuốc đầu tiên khiến tôi sốc phản
+                vệ, toàn thân tím tái, nghẹt thở. Cố gượng dậy, tôi tự nhủ: "Cố lên, chỉ còn 5 lần
+                nữa thôi". Nhưng khi những tác dụng phụ vắt kiệt sức lực, miệng khô khốc, da lở loét
+                và tóc rụng lả tả, tôi quyết định cạo trọc. Đau đớn nhất không phải là thể xác, mà
+                là khoảnh khắc đưa tay bế con, thằng bé nhòe nước mắt, sợ hãi quay đi. Lúc ấy, tim
+                tôi như vỡ vụn.
+              </p>
+            </div>
+            <blockquote>“Không! Mình không được phép<br />gục ngã!”</blockquote>
+            <div class="breast-story__copy">
+              <p>
+                Đợt truyền thứ 3 đẩy tôi xuống đáy sâu tuyệt vọng. Tay chân sưng rộp đau nhức, không
+                thể nuốt dù chỉ một ngụm nước. Lần đầu tiên, tôi nghĩ đến cái chết để giải thoát.
+                Nhưng rồi, hình ảnh hai đứa con thơ dại lại hiện lên xót xa. "Mình chết rồi, con sẽ
+                ra sao? Không! Mình không được phép gục ngã!". Chính tình mẫu tử đã vớt tôi lên khỏi
+                ranh giới sinh tử.
+              </p>
+              <p>
+                Tháng 9/2016, tôi kiên cường hoàn thành 6 toa hóa chất và 25 tia xạ. Đi qua giông
+                bão, tôi bình thản chấp nhận sống chung với ung thư như một người bạn. Nhìn lại, tôi
+                thấy mình quá đỗi may mắn khi luôn có chồng, các con, gia đình và bè bạn kề cận che
+                chở trong những ngày tháng tăm tối nhất.
+              </p>
+              <p>
+                Hóa ra, tôi chưa bao giờ đơn độc. Và tôi sẽ không bao giờ chiến đấu với ung thư một
+                mình nữa!
+              </p>
+            </div>
+            <div class="breast-story__outro">
+              <img
+                class="breast-story__outro-art"
+                src="/assets/images/cancer-types/details/breast/story-outro.svg"
+                alt="Gia đình chị Đoàn Thị Ngọc Hồng cùng họa tiết ruy băng tím"
+                width="1440"
+                height="645"
+                loading="lazy"
+              />
+            </div>
+          </section>
+        </div>
+      } @else if (cancer.theme === 'lung') {
+        <header class="breast-hero" aria-labelledby="lung-title">
+          <img [src]="cancer.heroImage" alt="" width="1440" height="598" />
+          <h1 id="lung-title" class="visually-hidden">{{ cancer.name }}</h1>
+          <p class="visually-hidden">{{ cancer.tagline }}</p>
+        </header>
+
+        <div class="breast-page lung-page">
+          <div class="breast-page__decor" aria-hidden="true">
+            <img
+              class="breast-page__decor-left breast-page__decor-left--signs"
+              src="/assets/images/cancer-types/details/breast/page-decor-left.svg"
+              alt=""
+            />
+            <img
+              class="breast-page__decor-right breast-page__decor-right--risks"
+              src="/assets/images/cancer-types/details/breast/page-decor-right.svg"
+              alt=""
+            />
+            <img
+              class="breast-page__decor-left breast-page__decor-left--stages"
+              src="/assets/images/cancer-types/details/breast/page-decor-left.svg"
+              alt=""
+            />
+            <img
+              class="breast-page__decor-right breast-page__decor-right--screening"
+              src="/assets/images/cancer-types/details/breast/page-decor-right.svg"
+              alt=""
+            />
+            <img
+              class="breast-page__decor-left breast-page__decor-left--story"
+              src="/assets/images/cancer-types/details/breast/page-decor-left.svg"
+              alt=""
+            />
+          </div>
+          <p class="breast-page__intro">{{ cancer.intro }}</p>
+
+          <section class="breast-section" aria-labelledby="lung-signs-title">
+            <header class="breast-section__heading">
+              <h2 id="lung-signs-title">Những dấu hiệu</h2>
+              <p>không thể bỏ qua</p>
+            </header>
+            <div class="breast-section__copy">
+              <p>
+                Sự nguy hiểm tột độ của ung thư phổi nằm ở chỗ: Phổi là cơ quan nội tạng có rất ít
+                dây thần kinh cảm giác đau. Ở giai đoạn đầu, các khối u nhỏ thường phát triển trong
+                sự tĩnh lặng tuyệt đối, không gây ra bất kỳ triệu chứng rõ ràng nào. Bệnh nhân
+                thường dễ nhầm lẫn với các bệnh lý viêm nhiễm đường hô hấp thông thường.
+              </p>
+              <p>
+                Khi các triệu chứng bộc phát rầm rộ, bệnh thường đã bước sang giai đoạn muộn. Dưới
+                đây là những dấu hiệu cảnh báo "đỏ" tuyệt đối không được chủ quan:
+              </p>
+              <ul>
+                <li>
+                  <strong>Ho dai dẳng:</strong> Cơn ho kéo dài không dứt, ngày càng trầm trọng hơn
+                  và không đáp ứng với thuốc trị ho thông thường.
+                </li>
+                <li>
+                  <strong>Ho ra máu:</strong> Khạc đờm có lẫn những vệt máu đỏ tươi hoặc màu gỉ sắt.
+                </li>
+                <li>
+                  <strong>Đau tức ngực:</strong> Cơn đau âm ỉ, thắt lại hoặc nhói lên khi hít thở
+                  sâu, khi cười hoặc khi ho.
+                </li>
+                <li>
+                  <strong>Khàn tiếng, khó thở:</strong> Bất ngờ thay đổi giọng nói (khàn đặc), hụt
+                  hơi, thở khò khè do khối u chèn ép đường thở hoặc dây thần kinh thanh quản.
+                </li>
+                <li>
+                  <strong>Suy kiệt toàn thân:</strong> Sụt cân nhanh chóng không rõ nguyên nhân, mệt
+                  mỏi mãn tính, chán ăn.
+                </li>
+              </ul>
+              <p aria-hidden="true">&nbsp;</p>
+            </div>
+            <div class="breast-section__risks-image">
+              <img
+                src="/assets/images/cancer-types/details/lung-signs-image.png"
+                alt="Minh họa phổi và tế bào ung thư"
+                width="812"
+                height="478"
+                loading="lazy"
+              />
+            </div>
+          </section>
+
+          <section class="breast-section" aria-labelledby="lung-risks-title">
+            <header class="breast-section__heading">
+              <h2 id="lung-risks-title">Nguyên nhân</h2>
+              <p>và các yếu tố nguy cơ</p>
+            </header>
+            <div class="breast-section__copy">
+              <p>
+                Ung thư phổi hình thành do sự đột biến DNA của các tế bào niêm mạc phế quản hoặc phế
+                nang. Dù có nhiều tác nhân gây bệnh, nhưng khoa học đã chỉ rõ những yếu tố nguy cơ
+                hàng đầu:
+              </p>
+              <ul>
+                <li>
+                  <strong>Hút thuốc lá:</strong> Là "thủ phạm" số một gây ra 80-90% số ca ung thư
+                  phổi. Khói thuốc chứa hàng nghìn hóa chất độc hại, trong đó có hàng chục chất trực
+                  tiếp gây ung thư.
+                </li>
+                <li>
+                  <strong>Hút thuốc thụ động:</strong> Người không hút thuốc nhưng thường xuyên hít
+                  phải khói thuốc từ người thân hoặc môi trường xung quanh cũng có nguy cơ mắc bệnh
+                  rất cao.
+                </li>
+                <li>
+                  <strong>Môi trường độc hại:</strong> Phơi nhiễm với ô nhiễm không khí, khói bụi
+                  (đặc biệt là bụi mịn PM2.5), hoặc làm việc trong môi trường chứa hóa chất công
+                  nghiệp như amiăng, khí radon, thạch tín.
+                </li>
+                <li>
+                  <strong>Tiền sử y tế và di truyền:</strong> Người có tiền sử gia đình mắc ung thư
+                  phổi, hoặc từng mắc các bệnh phổi mạn tính (như lao phổi, COPD) có nguy cơ tiến
+                  triển thành ung thư cao hơn.
+                </li>
+              </ul>
+              <p aria-hidden="true">&nbsp;</p>
+            </div>
+            <img
+              class="lung-page__risks-art"
+              src="/assets/images/cancer-types/details/lung-risks.svg"
+              alt="Minh họa lá phổi và các yếu tố nguy cơ"
+              width="612"
+              height="390"
+              loading="lazy"
+            />
+          </section>
+
+          <section class="breast-section" aria-labelledby="lung-stages-title">
+            <header class="breast-section__heading">
+              <h2 id="lung-stages-title">Các giai đoạn của bệnh</h2>
+            </header>
+            <div class="breast-section__copy">
+              <p>
+                Ung thư phổi được chia thành hai nhóm chính: Ung thư phổi tế bào nhỏ (phát triển và
+                di căn rất nhanh) và Ung thư phổi không tế bào nhỏ (chiếm 80-85%). Việc đánh giá
+                giai đoạn bệnh (đối với ung thư phổi không tế bào nhỏ) đóng vai trò quyết định trong
+                việc lên phác đồ điều trị:
+              </p>
+              <ul>
+                <li>
+                  <strong>Giai đoạn I:</strong> Khối u còn nhỏ, nằm khu trú hoàn toàn bên trong một
+                  bên phổi và chưa lây lan ra các hạch bạch huyết. Đây là "thời điểm vàng" để phẫu
+                  thuật triệt căn.
+                </li>
+                <li>
+                  <strong>Giai đoạn II:</strong> Khối u bắt đầu phát triển lớn hơn và có thể đã xâm
+                  lấn đến các hạch bạch huyết lân cận ở cùng bên phổi.
+                </li>
+                <li>
+                  <strong>Giai đoạn III:</strong> Khối u lan rộng ra các hạch bạch huyết ở giữa ngực
+                  (trung thất) hoặc các cấu trúc xung quanh phổi. Giai đoạn này việc phẫu thuật trở
+                  nên khó khăn hơn.
+                </li>
+                <li>
+                  <strong>Giai đoạn IV (Giai đoạn cuối):</strong> Tế bào ung thư đã di căn xa đến
+                  phổi đối diện, lây lan ra màng phổi hoặc các cơ quan khác của cơ thể như não, gan,
+                  xương.
+                </li>
+              </ul>
+            </div>
+            <img
+              class="lung-page__stages-art"
+              src="/assets/images/cancer-types/details/lung-stages.svg"
+              alt="Sơ đồ giai đoạn 0 đến IV của ung thư phổi"
+              width="780"
+              height="688"
+              loading="lazy"
+            />
+          </section>
+
+          <section
+            class="breast-section lung-page__treatment"
+            aria-labelledby="lung-treatment-title"
+          >
+            <header class="breast-section__heading">
+              <p>Kỷ nguyên mới trong điều trị:</p>
+              <img
+                src="/assets/images/cancer-types/details/lung-treatment-title.svg"
+                alt=""
+                width="479"
+                height="148"
+                loading="lazy"
+              />
+              <h2 id="lung-treatment-title" class="visually-hidden">Kéo dài sự sống</h2>
+            </header>
+            <div class="breast-section__copy">
+              <p>
+                Nhờ sự tiến bộ vượt bậc của y khoa thế giới, ung thư phổi hiện nay không còn là "án
+                tử" không thể cứu vãn. Dựa vào loại tế bào, giai đoạn bệnh và thể trạng bệnh nhân,
+                các bác sĩ sẽ áp dụng các phương pháp điều trị đa mô thức:
+              </p>
+              <ul>
+                <li>
+                  <strong>Phẫu thuật:</strong> Ưu tiên hàng đầu cho bệnh nhân ở giai đoạn sớm (Giai
+                  đoạn I, II) nhằm cắt bỏ thùy phổi chứa khối u và nạo vét hạch.
+                </li>
+                <li>
+                  <strong>Xạ trị và Hóa trị:</strong> Sử dụng tia bức xạ năng lượng cao hoặc thuốc
+                  hóa chất để tiêu diệt tế bào ác tính. Thường được kết hợp trước phẫu thuật (để thu
+                  nhỏ u) hoặc sau phẫu thuật (để tiêu diệt tế bào sót lại).
+                </li>
+                <li>
+                  <strong>Liệu pháp nhắm trúng đích (Targeted Therapy):</strong> Sử dụng các loại
+                  thuốc đặc trị "khóa" lại quá trình phát triển của các tế bào mang đột biến gen đặc
+                  hiệu (như EGFR, ALK, ROS1), giúp thu nhỏ khối u hiệu quả với ít tác dụng phụ hơn
+                  hóa trị.
+                </li>
+                <li>
+                  <strong>Liệu pháp miễn dịch (Immunotherapy):</strong> Bước tiến mang tính cách
+                  mạng, sử dụng thuốc để đánh thức và tăng cường sức mạnh của chính hệ miễn dịch cơ
+                  thể, giúp hệ miễn dịch tự nhận diện và tiêu diệt tế bào ung thư.
+                </li>
+              </ul>
+            </div>
+            <img
+              class="lung-page__treatment-art"
+              src="/assets/images/cancer-types/details/lung-treatment.svg"
+              alt="Minh họa điều trị ung thư phổi"
+              width="630"
+              height="431"
+              loading="lazy"
+            />
+          </section>
+
+          <section class="lung-page__screening" aria-label="Tầm soát và phòng ngừa">
+            <img
+              class="lung-page__screening-desktop"
+              src="/assets/images/cancer-types/details/lung-screening.svg"
+              alt="Tầm soát và phòng ngừa ung thư phổi: bỏ thuốc lá và tầm soát định kỳ bằng chụp cắt lớp vi tính liều thấp"
+              width="1064"
+              height="807"
+              loading="lazy"
+            />
+            <div class="lung-page__screening-mobile">
+              <div>
+                <h2>Tầm soát<br />&amp; Phòng ngừa</h2>
+                <p>
+                  Cách tốt nhất để chiến thắng ung thư phổi là không để bệnh xảy ra hoặc chặn đứng
+                  nó từ trong trứng nước.
+                </p>
+                <p>
+                  Từ bỏ thuốc lá: Đây là biện pháp phòng ngừa quan trọng và cấp thiết nhất. Đồng
+                  thời, hạn chế tối đa việc tiếp xúc với môi trường khói thuốc và khói bụi công
+                  nghiệp.
+                </p>
+                <p>
+                  Tầm soát định kỳ: Không chờ đến khi ho ra máu mới đi khám. Các chuyên gia khuyến
+                  cáo những người có nguy cơ cao (trên 50 tuổi, có tiền sử hút thuốc lá nhiều năm)
+                  nên thực hiện tầm soát ung thư phổi định kỳ mỗi năm một lần bằng phương pháp Chụp
+                  cắt lớp vi tính liều thấp (Low-Dose CT scan - LDCT). Phương pháp này có thể phát
+                  hiện những nốt mờ nhỏ li ti mà X-quang thông thường bỏ sót, mở ra cơ hội chữa khỏi
+                  bệnh lên tới hơn 90%.
+                </p>
+              </div>
+              <img
+                src="/assets/images/cancer-types/details/lung-screening-art.svg"
+                alt=""
+                width="1064"
+                height="422"
+                loading="lazy"
+              />
+            </div>
+          </section>
+
+          <section class="breast-story lung-story" aria-labelledby="lung-story-title">
+            <header class="breast-story__heading">
+              <h2 id="lung-story-title">Bảy năm<br />không cúi đầu</h2>
+              <p>Vũ Kiều Oanh</p>
+            </header>
+            <p class="lung-story__lead">
+              “20/3/2019 - Ngày bác sĩ nói tôi bị ung thư phổi cũng là ngày Quốc tế Hạnh phúc. Khi
+              ấy, đất dưới chân tôi như sụp lún. Tôi tưởng cuộc đời mình sắp khép lại. Nhưng hóa ra,
+              đó lại là ngày tôi thực sự học được cách sống đàng hoàng và trọn vẹn nhất.”
+            </p>
+            <img
+              class="lung-story__wide-photo"
+              src="/assets/images/cancer-types/details/lung-story-opening.png"
+              alt="Chị Vũ Kiều Oanh trong thời gian điều trị"
+              width="846"
+              height="507"
+              loading="lazy"
+            />
+            <div class="breast-story__copy">
+              <p>
+                Lạ lắm các bạn ạ, người ta hay bảo lúc nhận án tử, não bộ sẽ tua lại những thước
+                phim đẹp nhất của cuộc đời, hoặc người ta sẽ gào thét hỏi ông trời tại sao. Còn tôi,
+                đầu óc tôi lúc đó chỉ quẩn quanh những thứ vụn vặt bám rễ vào một người đàn bà quanh
+                năm xó bếp: "Chết dở, chiều nay chưa mua đồ ăn tối, nồi cá kho hôm qua ăn hết mất
+                rồi. Còn con bé út đang ôn thi lên cấp 3, tôi đổ bệnh thế này ai chăm cho nó thi
+                cử..."
+              </p>
+            </div>
+            <div class="lung-story__columns">
+              <div>
+                <img
+                  src="/assets/images/cancer-types/details/lung-story-card-1.png"
+                  alt="Khoảnh khắc trong hành trình điều trị"
+                  width="300"
+                  height="495"
+                  loading="lazy"
+                />
+                <p>
+                  Những đợt truyền hóa chất đầu tiên đánh gục tôi hoàn toàn. Từ một người đàn bà
+                  nặng 55kg, đi lại thoăn thoắt, tôi rớt xuống còn 40kg, da nhăn nheo xám xịt như
+                  tàu lá chuối khô. Những chai dịch màu sắc lạnh lẽo truyền vào tĩnh mạch mang theo
+                  cảm giác buốt tận xương tủy. Hóa chất tàn phá các tế bào ung thư, và tiện tay, tàn
+                  phá luôn cả phần "người" khỏe mạnh trong tôi.
+                </p>
+              </div>
+              <div>
+                <p>
+                  Đêm đó, tôi thức trắng.Sợ chết ư? Có chứ. Nhưng cái sợ hãi lớn nhất cào xé ruột
+                  gan tôi lúc ấy không phải là lúc mình nằm xuống rồi thân xác sẽ ra sao. Tôi sợ
+                  phải bỏ lại ngôi nhà này. Tôi sợ phải rời xa đôi bàn tay ấm áp của chồng. Tôi sợ
+                  không được nhìn thấy con bé út trưởng thành, không được lo cho nó từng bữa cơm.
+                  Cái cảm giác bị tước đoạt đi tư cách làm mẹ, làm vợ, nó đau đớn hơn ngàn vạn lần
+                  khối u đang gặm nhấm trong phổi tôi.
+                </p>
+                <img
+                  src="/assets/images/cancer-types/details/lung-story-card-2.png"
+                  alt="Khoảnh khắc bên gia đình"
+                  width="300"
+                  height="447"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+            <div class="breast-story__copy">
+              <p>Người ta hay oán trách nghịch cảnh. Tôi cũng từng gào thét hỏi ông trời:</p>
+            </div>
+            <blockquote>“Tại sao lại là con?<br />Con đã làm gì sai?”</blockquote>
+            <div class="breast-story__copy">
+              <p>
+                Nhưng rồi khi nằm bẹp trên giường bệnh ngày này qua tháng khác, khi quỹ thời gian
+                dường như chỉ còn đếm bằng ngày, tôi mới ngộ ra nhiều điều. Ung thư, tàn nhẫn thay,
+                lại là một cú tát thức tỉnh tôi khỏi cơn mê của một cuộc đời sống vội.
+              </p>
+              <p>
+                Tôi học được cách sống chậm lại. Hơn 50 năm qua, tôi cứ lao đi như một con thiêu
+                thân. Tôi luôn vội vã. Chỉ đến khi không thể tự mình đứng dậy, tôi mới bắt đầu biết
+                ngắm mây bay qua ô cửa sổ bệnh viện, biết lắng nghe tiếng mưa rơi rả rích. Hóa ra,
+                khi nhịp sống chậm lại, người ta mới nghe thấy nhịp đập của trái tim mình.
+              </p>
+            </div>
+            <div class="lung-story__columns">
+              <div>
+                <img
+                  src="/assets/images/cancer-types/details/lung-story-card-3.png"
+                  alt="Những thay đổi trong lối sống"
+                  width="300"
+                  height="490"
+                  loading="lazy"
+                />
+                <p>
+                  Bước sang năm thứ hai, khi cơ thể đã chai lỳ hơn với hóa chất, tôi tự nhủ: "Mình
+                  không thể phó mặc mạng sống này cho bác sĩ được". Y học có thể giúp tôi cắt bỏ đi
+                  khối u, nhưng để thực sự sống khỏe, tôi phải tự chữa lành cho chính mình. Tôi bắt
+                  đầu một cuộc đại tu cả về thể chất lẫn tâm hồn.
+                </p>
+                <p>
+                  Ăn uống bằng lòng biết ơn Tôi vào bếp, gạt bỏ hết những chai lọ nước ngọt, đồ hộp,
+                  bột ngọt. Tôi tìm đến thực dưỡng như một chiếc phao cứu sinh. Bữa cơm của tôi giờ
+                  giản dị lắm: lưng bát cơm gạo lứt, chút muối mè, đĩa rau củ luộc, cốc nước ép
+                  xanh. Thay vì ăn lùa ăn vội như ngày xưa, tôi ngồi nhai thật chậm.
+                </p>
+              </div>
+              <div>
+                <p>
+                  Tôi học cách yêu thương bản thân. Giờ đây, tôi vuốt ve lồng ngực gầy guộc của
+                  mình, thầm thì xin lỗi hai lá phổi. Tôi nhận ra, nếu mình không yêu lấy thân mình,
+                  mình chẳng có tư cách gì để đòi hỏi sự chăm sóc từ người khác.
+                </p>
+                <p>
+                  Tôi học cách buông bỏ. Khi đối diện với cửa tử, mọi sân si, hờn giận ở đời trở nên
+                  nhẹ bẫng như bông. Ai đúng ai sai có quan trọng gì khi ngày mai ta không còn được
+                  thở? Tôi thôi cằn nhằn ông chồng và thằng con trai lớn vì cái thói quen vứt bít
+                  tất lung tung. Tôi dọn dẹp lại tâm trí mình, vứt bỏ đi những tủn mủn, nhỏ nhen,
+                  chỉ giữ lại sự tĩnh lặng và tình yêu thương.
+                </p>
+                <img
+                  src="/assets/images/cancer-types/details/lung-story-card-4.png"
+                  alt="Khoảnh khắc sau điều trị"
+                  width="300"
+                  height="490"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+            <div class="breast-story__copy">
+              <p>
+                Bước đi dưới mặt trời, tôi bắt đầu tập thể dục. Cảm giác cởi bỏ đôi dép, để đôi chân
+                trần giẫm lên lớp cỏ mướt mát buổi sớm mai nó diệu kỳ lắm các bạn ạ. Hơi đất truyền
+                lên chân, nắng sớm ấm áp mơn man trên da thịt. Tôi giang tay hít những luồng sinh
+                khí tinh khôi nhất. Tôi phơi nắng để cơ thể tự tổng hợp vitamin, và phơi cả tâm hồn
+                mình để nấm mốc u buồn bị thiêu rụi.
+              </p>
+            </div>
+            <div class="breast-story__copy">
+              <p>
+                Thiền định và dọn rác tâm trí. Tôi lập một góc nhỏ ở ban công, tĩnh tọa ngồi thiền
+                mỗi buổi sáng. Với người ung thư phổi, hơi thở là thứ xa xỉ. Tôi tập trung vào luồng
+                khí ra vào lồng ngực. Tôi nghe pháp thoại, đọc sách thiền. Tôi biến tâm trí mình
+                thành một dòng suối trong vắt, không cho phép bất kỳ năng lượng tiêu cực nào đục
+                khoét.
+              </p>
+            </div>
+            <img
+              class="lung-story__strip lung-story__strip--first"
+              src="/assets/images/cancer-types/details/lung-story-strip-1.png"
+              alt="Dải ảnh ghi lại hành trình hồi phục"
+              width="1440"
+              height="494"
+              loading="lazy"
+            />
+            <div class="breast-story__copy lung-story__garden-copy">
+              <p>
+                "Tôi nhận ra một chân lý rất giản đơn: Phác đồ của bác sĩ là vũ khí giúp tôi đánh
+                đuổi tế bào ác tính, nhưng dinh dưỡng và môi trường sống mới thực sự là tấm khiên
+                bảo vệ những tế bào lành lặn còn sót lại. Tôi không thể dọn dẹp khối u trong người
+                nếu vẫn tiếp tục nạp vào cơ thể những thứ độc hại. Thế là tôi bắt đầu mày mò làm
+                vườn. Góc ban công chật hẹp vốn chỉ dùng để phơi quần áo và chất đồ lặt vặt nay được
+                tôi dọn sạch, lấp đầy bằng những khay đất tơi xốp. Tôi tự tay ươm từng hạt giống rau
+                cải, mồng tơi, dăm ba bụi hành, khóm vạn thọ. Việc luồn những ngón tay gầy guộc vào
+                lớp đất ẩm ướt, hít hà cái mùi ngai ngái nguyên sơ của bùn đất và kiên nhẫn chờ đợi
+                một mầm xanh nhú lên đón nắng... mang lại cho tôi một thứ năng lượng chữa lành kỳ
+                diệu. Trồng một cái cây cũng giống như gieo một niềm hy vọng sống vậy."
+              </p>
+            </div>
+            <img
+              class="lung-story__strip lung-story__strip--second"
+              src="/assets/images/cancer-types/details/lung-story-strip-2.png"
+              alt="Dải ảnh về khu vườn và đời sống gia đình"
+              width="1440"
+              height="463"
+              loading="lazy"
+            />
+            <div class="breast-story__copy">
+              <p>
+                Không chỉ khắt khe với mâm cơm, tôi quyết tâm thanh lọc toàn bộ không gian sống của
+                gia đình. Tôi lôi hết những chai lọ nước tẩy rửa công nghiệp, nước lau nhà nồng nặc
+                mùi hương liệu nhân tạo vứt bỏ. Thay vào đó, tôi lên mạng học cách tự làm nước rửa
+                chén sinh học.
+              </p>
+            </div>
+            <div class="breast-story__copy">
+              <p>
+                Những buổi chiều cuối tuần, góc bếp nhỏ của tôi lại thoang thoảng mùi tinh dầu ấm
+                áp. Tôi cặm cụi đun một nồi nước lớn với những quả bồ hòn nhăn nheo, sả đập dập và
+                dăm ba bộ vỏ bưởi, vỏ cam xin được từ hàng xóm. Nhìn thứ nước sóng sánh chuyển sang
+                màu nâu vàng, tứa ra những lớp bọt tự nhiên êm ái mà không hề làm khô ráp da tay,
+                tôi thấy lòng mình bình yên đến lạ.
+              </p>
+            </div>
+            <img
+              class="lung-story__grid"
+              src="/assets/images/cancer-types/details/lung-story-grid.png"
+              alt="Bốn tấm ảnh về các bữa ăn và sinh hoạt"
+              width="889"
+              height="272"
+              loading="lazy"
+            />
+            <div class="lung-story__closing-row">
+              <div>
+                <p>
+                  Hóa ra, hành trình tự chữa lành và yêu thương bản thân đôi khi chẳng phải tìm kiếm
+                  đâu xa xôi. Nó bắt đầu ngay từ việc ta biết từ chối những thứ độc hại hào nhoáng,
+                  để trả cuộc đời mình về lại với sự thuần khiết và an lành nguyên sơ nhất."
+                </p>
+                <p>
+                  Nhờ những thay đổi nhỏ nhoi mà kiên định ấy, tôi bắt đầu hồi sinh. Tóc tôi mọc
+                  lại, lún phún rồi đen nhánh, xoăn tự nhiên trông lại có nét duyên riêng. Cân nặng
+                  nhích lên từng chút một. Mỗi lần tái khám, nhìn chỉ số miễn dịch tăng lên, bác sĩ
+                  của tôi cũng phải ngạc nhiên mỉm cười.
+                </p>
+              </div>
+              <img
+                src="/assets/images/cancer-types/details/lung-story-card-5.png"
+                alt="Chị Oanh trong hành trình hồi phục"
+                width="213"
+                height="272"
+                loading="lazy"
+              />
+            </div>
+            <img
+              class="lung-story__wide-photo"
+              src="/assets/images/cancer-types/details/lung-story-closing.png"
+              alt="Chị Oanh giữa khu vườn hoa"
+              width="846"
+              height="507"
+              loading="lazy"
+            />
+            <div class="lung-story__milestone">
+              <p>
+                <em>Hơn 7 năm</em> rồi đấy. <em>Hơn 2.500 ngày</em> tôi thức dậy và mỉm cười vì biết
+                mình
+              </p>
+              <h3>Vẫn còn được thở</h3>
+              <p>Nhìn lại bảy năm, tôi thấy mình mất nhiều, nhưng được thì lại vô giá.</p>
+            </div>
+            <div class="breast-story__copy">
+              <p>
+                Cái được lớn nhất là tôi nhận ra gia đình yêu mình đến nhường nào. Chồng tôi giờ đã
+                thành "chuyên gia dinh dưỡng", tối nào cũng lọ mọ nấu nước lá gừng pha chút muối hột
+                cho vợ ngâm chân.
+              </p>
+              <p>
+                Con bé út nhà tôi giờ đã là sinh viên báo chí năm cuối. Vẫn nhảy hiphop trước mặt mẹ
+                dù đã 22 tuổi. Dạo này, nó hay mang cái máy ảnh mới mua về, kê sát vào người tôi rồi
+                rủ rỉ: "Mẹ ơi, mẹ kể lại chuyện ngày xưa cho con nghe đi. Con muốn lưu lại giọng của
+                mẹ làm tư liệu sau này làm phóng sự...". Tôi biết, sâu thẳm bên trong, nó vẫn luôn
+                thường trực một nỗi lo sợ rằng một ngày nào đó sẽ không còn được nghe tôi cằn nhằn
+                nữa. Nó muốn gói ghém tất cả những gì thuộc về tôi vào chiếc máy nhỏ xíu ấy.
+              </p>
+              <p>
+                Hôm trước, con bé về nhà, hào hứng vén tay áo lên khoe tôi một vết mực mới. Ngày xưa
+                tôi ghét bọn trẻ xăm trổ lắm, nhưng nhìn hình xăm của nó, mắt tôi tự nhiên nhòe đi.
+                Đó là một hình xăm nét đơn rất tối giản, nhưng chỉ nhìn lướt qua, tôi nhận ra ngay
+                đó là đường viền khuôn mặt của hai mẹ con tôi đang tựa đầu vào nhau, phác lại từ một
+                bức ảnh chụp từ hồi nó còn bé xíu.
+              </p>
+              <p>
+                "Bảy năm trước, khi cắn răng chịu đựng những mũi kim truyền hóa chất đầu tiên, tôi
+                đã từng khóc và thầm mặc cả với số phận. Lúc ấy, tôi chẳng dám tham lam ước mơ mình
+                sẽ sống đến già. Tôi chỉ chắp tay cầu xin ơn trên cho mình thêm chút thời gian, ráng
+                thoi thóp sống đủ lâu để nhìn thấy con bé út bình an thi đỗ vào cấp ba, và được rưng
+                rưng đứng nhìn thằng anh lớn của nó dắt tay người con gái nó yêu vào lễ đường. Với
+                một người mẹ mang án tử, chỉ cần được thấy hai cột mốc ấy thôi, tôi nghĩ mình nhắm
+                mắt cũng đã mãn nguyện lắm rồi.
+              </p>
+              <p>
+                Thế nhưng, chính vì không đầu hàng, chính vì tôi lỳ lợm bám víu lấy sự sống qua từng
+                cơn đau xé ruột gan, mà ông trời đã trao cho tôi những phần thưởng vượt xa sự mong
+                đợi.
+              </p>
+              <p>
+                Sự kiên cường ấy đã giúp tôi không chỉ thấy con trai cưới vợ, mà còn được run run
+                đón tay bế ẵm, hít hà mùi hương ngai ngái nồng nồng của đứa cháu nội lần lượt cất
+                tiếng khóc chào đời. Tôi không chỉ nhìn con gái út lọt qua cánh cổng cấp ba, mà còn
+                tự hào tiễn nó bước chân vào đại học. Để rồi khi con bé lao về nhà, ôm chầm lấy tôi
+                và dúi vào tay mẹ tháng lương đầu tiên từ công việc mơ ước của nó, nước mắt tôi cứ
+                thế tuôn trào.
+              </p>
+            </div>
+            <div class="lung-story__ending">
+              <div>
+                <p>
+                  Lúc ấy, tôi biết mình đã chiến thắng. Không phải chiến thắng căn bệnh ung thư, mà
+                  là chiến thắng số phận để sống một cuộc đời thực sự đáng sống. Hạnh phúc với tôi
+                  bây giờ không phải là thứ gì đao to búa lớn. Hạnh phúc là sáng dậy tưới chậu hoa
+                  nhài thấy một mầm sương đọng lại, là hít hà mùi thơm của bát cơm gạo lứt, là nhìn
+                  thấy chồng và các con bình an. Tôi sống chung với ung thư như một người bạn khó
+                  tính, tôn trọng nó và để nó ngủ yên.
+                </p>
+                <div>
+                  <p>Thương chúc bạn thật nhiều bình an, và xin hãy tin rằng,</p>
+                  <blockquote>bạn không hề đơn độc.</blockquote>
+                  <p>Hà Nội, những ngày tôi vẫn còn đang say đắm cuộc đời.</p>
+                </div>
+              </div>
+              <img
+                src="/assets/images/cancer-types/details/lung-story-card-6.png"
+                alt="Chị Oanh bên gia đình"
+                width="276"
+                height="469"
+                loading="lazy"
+              />
+            </div>
+          </section>
+        </div>
+      } @else if (cancer.theme === 'thyroid') {
+        <header class="breast-hero thyroid-hero" aria-labelledby="thyroid-title">
+          <img [src]="cancer.heroImage" alt="" width="1440" height="749" />
+          <div class="thyroid-hero__copy">
+            <h1 id="thyroid-title">{{ cancer.name }}</h1>
+            <p>{{ cancer.tagline }}</p>
+          </div>
+        </header>
+
+        <div class="breast-page thyroid-page">
+          <div class="breast-page__decor" aria-hidden="true">
+            <img
+              class="breast-page__decor-left breast-page__decor-left--signs"
+              src="/assets/images/cancer-types/details/breast/page-decor-left.svg"
+              alt=""
+            />
+            <img
+              class="breast-page__decor-right breast-page__decor-right--risks"
+              src="/assets/images/cancer-types/details/breast/page-decor-right.svg"
+              alt=""
+            />
+            <img
+              class="breast-page__decor-left breast-page__decor-left--stages"
+              src="/assets/images/cancer-types/details/breast/page-decor-left.svg"
+              alt=""
+            />
+            <img
+              class="breast-page__decor-right breast-page__decor-right--screening"
+              src="/assets/images/cancer-types/details/breast/page-decor-right.svg"
+              alt=""
+            />
+            <img
+              class="breast-page__decor-left breast-page__decor-left--story"
+              src="/assets/images/cancer-types/details/breast/page-decor-left.svg"
+              alt=""
+            />
+          </div>
+
+          <p class="breast-page__intro">{{ cancer.intro }}</p>
+
+          <section class="breast-section" aria-labelledby="thyroid-signs-title">
+            <header class="breast-section__heading">
+              <h2 id="thyroid-signs-title">Những dấu hiệu</h2>
+              <p>không thể bỏ qua</p>
+            </header>
+            <div class="breast-section__copy">
+              <p>
+                Sự nguy hiểm của ung thư tuyến giáp nằm ở chỗ: Bệnh thường tiến triển rất âm thầm
+                trong giai đoạn đầu. Các khối u nhỏ thường phát triển trong sự tĩnh lặng tuyệt đối,
+                không gây ra cảm giác đau đớn hay triệu chứng bất thường nào. Người bệnh thường dễ
+                nhầm lẫn với các vấn đề viêm họng hay bướu cổ thông thường.
+              </p>
+            </div>
+            <img
+              class="thyroid-page__signs-art"
+              src="/assets/images/cancer-types/details/thyroid/signs.svg"
+              alt="Minh họa vị trí tuyến giáp và khối u"
+              width="630"
+              height="428"
+              loading="lazy"
+            />
+            <div class="breast-section__copy">
+              <p>
+                Khi các triệu chứng bộc phát rầm rộ, khối u thường đã lớn và chèn ép các cơ quan
+                xung quanh. Dưới đây là những dấu hiệu cảnh báo "đỏ" tuyệt đối không được chủ quan:
+              </p>
+              <ul>
+                <li>
+                  <strong>Khối u ở vùng cổ:</strong> Xuất hiện khối u cứng, bờ rõ, bề mặt nhẵn hoặc
+                  gồ ghề, thường di chuyển lên xuống theo nhịp nuốt ở ngay trước cổ.
+                </li>
+                <li>
+                  <strong>Nổi hạch bất thường:</strong> Hạch vùng cổ nhỏ, mềm, di động và thường
+                  xuất hiện cùng bên với vị trí khối u.
+                </li>
+                <li>
+                  <strong>Khàn tiếng, thay đổi giọng nói:</strong> Đột ngột khàn đặc, hụt hơi do
+                  khối u phát triển lớn chèn ép vào dây thần kinh thanh quản.
+                </li>
+                <li>
+                  <strong>Khó nuốt, vướng víu:</strong> Cảm giác nghẹn, vướng ở cổ họng do thực quản
+                  bị khối u chèn ép.
+                </li>
+                <li>
+                  <strong>Khó thở:</strong> Xảy ra khi khối u thâm nhiễm và chèn ép trực tiếp vào
+                  khí quản.
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="breast-section" aria-labelledby="thyroid-risks-title">
+            <header class="breast-section__heading">
+              <h2 id="thyroid-risks-title">Nguyên nhân</h2>
+              <p>và các yếu tố nguy cơ</p>
+            </header>
+            <div class="breast-section__copy">
+              <p>
+                Ung thư tuyến giáp hình thành khi các tế bào tại tuyến giáp trải qua biến đổi gen và
+                tăng sinh mất kiểm soát. Dù nguyên nhân cốt lõi chưa hoàn toàn rõ ràng, y học đã chỉ
+                rõ những yếu tố nguy cơ hàng đầu:
+              </p>
+              <ul>
+                <li>
+                  <strong>Nhiễm phóng xạ:</strong> Là một trong những "thủ phạm" lớn nhất. Phơi
+                  nhiễm với tia phóng xạ (qua đường hô hấp, tiêu hóa hoặc môi trường làm việc chứa
+                  bức xạ liều cao không được che chắn vùng cổ) làm biến đổi mạnh mẽ tế bào tuyến
+                  giáp.
+                </li>
+                <li>
+                  <strong>Rối loạn hệ miễn dịch:</strong> Khi hệ miễn dịch suy yếu, "hàng rào" bảo
+                  vệ cơ thể giảm sút, tạo điều kiện thuận lợi cho các yếu tố gây hại tấn công tuyến
+                  giáp.
+                </li>
+                <li>
+                  <strong>Di truyền và tiền sử gia đình:</strong> Khoảng 70% bệnh nhân ung thư tuyến
+                  giáp có người thân trong gia đình (bố, mẹ, anh chị em) từng mắc căn bệnh này.
+                </li>
+                <li>
+                  <strong>Tuổi tác và sự thay đổi hormone:</strong> Phụ nữ ở độ tuổi 30 - 50 có nguy
+                  cơ mắc bệnh cao gấp 2-4 lần nam giới do những thay đổi phức tạp về hormone kích
+                  thích hình thành bướu, hạch.
+                </li>
+                <li>
+                  <strong>Tiền sử bệnh lý:</strong> Những người từng mắc bướu cổ, viêm tuyến giáp,
+                  Basedow hay từng điều trị bằng i-ốt phóng xạ cho các bệnh lý khác có nguy cơ tiến
+                  triển thành ung thư cao hơn.
+                </li>
+              </ul>
+            </div>
+            <img
+              class="thyroid-page__risks-art"
+              src="/assets/images/cancer-types/details/thyroid/risks.svg"
+              alt="Minh họa tuyến giáp và các yếu tố nguy cơ"
+              width="848"
+              height="564"
+              loading="lazy"
+            />
+          </section>
+
+          <section class="breast-section" aria-labelledby="thyroid-stages-title">
+            <header class="breast-section__heading">
+              <h2 id="thyroid-stages-title">Các giai đoạn của bệnh</h2>
+            </header>
+            <div class="breast-section__copy">
+              <p>
+                Ung thư tuyến giáp được phân loại chủ yếu dựa trên đặc điểm tế bào học, điều này
+                đóng vai trò quyết định trong việc đánh giá mức độ ác tính và lên phác đồ điều trị:
+              </p>
+              <ul>
+                <li>
+                  <strong>Ung thư thể nhú (Giai đoạn nhẹ nhất):</strong> Là dạng phổ biến nhất
+                  (chiếm tỷ lệ cao nhất) nhưng lại có tiên lượng tốt nhất. Khối u thường khu trú ở
+                  một thùy của tuyến giáp, phát triển chậm và cơ hội chữa khỏi vô cùng cao.
+                </li>
+                <li>
+                  <strong>Ung thư thể nang:</strong> Tế bào ung thư phát triển nhanh hơn và có khả
+                  năng xâm lấn vào mạch máu, di căn sang các cơ quan khác như xương, phổi. Tuy
+                  nhiên, bệnh vẫn đáp ứng rất tốt với điều trị nếu can thiệp kịp thời.
+                </li>
+                <li>
+                  <strong>Ung thư thể tủy:</strong> Khối u xuất phát từ tế bào C của tuyến giáp,
+                  thường liên quan chặt chẽ đến yếu tố di truyền (mang gen đột biến RET). Việc phẫu
+                  thuật ở giai đoạn này đòi hỏi sự triệt để hơn.
+                </li>
+                <li>
+                  <strong>Ung thư thể không biệt hóa (Giai đoạn cuối/Nguy hiểm nhất):</strong> Tế
+                  bào ung thư phát triển, xâm lấn và di căn cực kỳ nhanh ra vùng cổ và các cơ quan
+                  xa. Đây là thể bệnh khó điều trị nhất, ít đáp ứng với các phương pháp thông thường
+                  và có tỷ lệ tử vong cao.
+                </li>
+              </ul>
+            </div>
+            <img
+              class="thyroid-page__stages-art"
+              src="/assets/images/cancer-types/details/thyroid/stages.svg"
+              alt="Sơ đồ các giai đoạn ung thư tuyến giáp"
+              width="846"
+              height="614"
+              loading="lazy"
+            />
+          </section>
+
+          <section class="thyroid-treatment" aria-labelledby="thyroid-treatment-title">
+            <div class="thyroid-treatment__card">
+              <header class="breast-section__heading">
+                <p>Kỷ nguyên mới trong điều trị</p>
+                <h2 id="thyroid-treatment-title">Không chỉ là kéo dài sự sống</h2>
+              </header>
+              <div class="breast-section__copy">
+                <p>
+                  Nhờ sự tiến bộ vượt bậc của y khoa thế giới, ung thư tuyến giáp được đánh giá là
+                  một trong những loại ung thư "lành" nhất với tỷ lệ chữa khỏi có thể lên tới 90%.
+                  Dựa vào loại tế bào và tình trạng bệnh, các bác sĩ sẽ áp dụng các phương pháp điều
+                  trị đa mô thức:
+                </p>
+                <ul>
+                  <li>
+                    <strong>Phẫu thuật:</strong> Ưu tiên hàng đầu và mang tính triệt căn cao nhất.
+                    Tùy theo mức độ xâm lấn, bệnh nhân sẽ được cắt bỏ một thùy, cắt gần toàn bộ hoặc
+                    toàn bộ tuyến giáp kết hợp nạo vét hạch cổ.
+                  </li>
+                  <li>
+                    <strong>Điều trị bằng I-ốt phóng xạ (I-131):</strong> Phương pháp "đặc sản" của
+                    ung thư tuyến giáp, được dùng như một liệu pháp bổ trợ sau phẫu thuật nhằm tiêu
+                    diệt triệt để các tế bào ác tính hoặc các tổn thương di căn còn sót lại.
+                  </li>
+                  <li>
+                    <strong>Liệu pháp nội tiết (Hormone):</strong> Sử dụng thuốc hormone tuyến giáp
+                    suốt đời (đối với bệnh nhân đã cắt toàn bộ tuyến giáp) vừa để bù đắp lượng nội
+                    tiết tố thiếu hụt, vừa giúp ức chế và ngăn chặn tế bào ung thư tái phát.
+                  </li>
+                  <li>
+                    <strong>Xạ trị, Hóa trị và Miễn dịch:</strong> Thường chỉ được áp dụng cho các
+                    trường hợp ung thư thể tủy, thể không biệt hóa hoặc khi bệnh đã ở giai đoạn muộn
+                    không thể phẫu thuật. Liệu pháp tăng cường hệ miễn dịch tự thân cũng đang mở ra
+                    hướng đi mới giúp cơ thể chủ động tiêu diệt tế bào bệnh.
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <img
+              src="/assets/images/cancer-types/details/thyroid/treatment.svg"
+              alt="Kỷ nguyên mới trong điều trị ung thư tuyến giáp: không chỉ là kéo dài sự sống"
+              width="1064"
+              height="885"
+              loading="lazy"
+            />
+          </section>
+
+          <section
+            class="breast-section thyroid-prevention"
+            aria-labelledby="thyroid-prevention-title"
+          >
+            <header class="breast-section__heading">
+              <h2 id="thyroid-prevention-title">Tầm soát và phòng ngừa</h2>
+            </header>
+            <div class="breast-section__copy">
+              <p>
+                Cách tốt nhất để chiến thắng ung thư tuyến giáp là bảo vệ cơ quan này từ sớm và chặn
+                đứng mầm bệnh từ trong trứng nước.
+              </p>
+              <ul>
+                <li>
+                  Lối sống và Dinh dưỡng: Tránh xa các khu vực có tia phóng xạ độc hại. Bổ sung đầy
+                  đủ i-ốt qua bữa ăn hàng ngày (muối i-ốt, rong biển, hải sản), duy trì cân nặng hợp
+                  lý và từ bỏ rượu bia, thuốc lá.
+                </li>
+                <li>
+                  Tầm soát định kỳ: Không chờ đến khi sờ thấy u hay khàn tiếng mới đi khám. Các
+                  chuyên gia khuyến cáo những người có nguy cơ cao (phụ nữ 30-50 tuổi, có tiền sử
+                  gia đình mắc bệnh) nên thực hiện tầm soát định kỳ 6 tháng - 1 năm/lần. Việc Siêu
+                  âm tuyến giáp kết hợp Chọc hút tế bào bằng kim nhỏ (FNA) là "tiêu chuẩn vàng" giúp
+                  phát hiện chính xác các nốt mờ nhỏ nhất, mở ra cơ hội chữa khỏi hoàn toàn căn bệnh
+                  này.
+                </li>
+              </ul>
+            </div>
+            <img
+              class="thyroid-page__prevention-art"
+              src="/assets/images/cancer-types/details/thyroid/prevention.svg"
+              alt="Minh họa tầm soát ung thư tuyến giáp"
+              width="634"
+              height="498"
+              loading="lazy"
+            />
+          </section>
+
+          <section class="breast-story thyroid-story" aria-labelledby="thyroid-story-title">
+            <header class="thyroid-story__heading">
+              <p>MC Hoài Hương</p>
+              <h2 id="thyroid-story-title">Hành trình đi qua<br />“bản án” ung thư tuyến giáp</h2>
+              <p>Cuộc chiến giữ lại giọng nói và nụ cười</p>
+            </header>
+            <div class="breast-story__copy">
+              <p>
+                Là một người dẫn chương trình truyền hình, giọng nói không chỉ là công cụ làm việc,
+                mà còn là sinh mệnh, là niềm tự hào của tôi. Tôi luôn tự tin khi đứng trước ống
+                kính, mỉm cười và kể cho khán giả nghe những câu chuyện muôn màu của cuộc sống. Cho
+                đến một ngày, chính tôi lại trở thành nhân vật chính trong một câu chuyện mà mình
+                chưa bao giờ muốn viết kịch bản: Tôi mắc ung thư tuyến giáp.
+              </p>
+            </div>
+            <blockquote>
+              “Tôi đã ngồi gục ở hành lang bệnh viện<br />và khóc như một đứa trẻ”
+            </blockquote>
+            <div class="thyroid-story__row thyroid-story__row--text-first">
+              <div>
+                <p>
+                  Mọi thứ bắt đầu vào một ngày cuối tuần bình thường, khi tôi quyết định đi khám sức
+                  khỏe định kỳ. Cơ thể tôi lúc đó không có bất kỳ dấu hiệu mệt mỏi nào, không đau
+                  đớn, giọng nói vẫn trong trẻo và lịch trình ghi hình vẫn dày đặc. Khi bác sĩ siêu
+                  âm dừng lại khá lâu ở vùng cổ, tôi bắt đầu thấy gợn một chút bất an. Và rồi, kết
+                  quả chọc hút tế bào (FNA) trả về như một gáo nước lạnh tát thẳng vào mặt tôi: Ung
+                  thư tuyến giáp thể nhú.
+                </p>
+                <p>
+                  Lúc nghe bác sĩ thông báo, tai tôi ù đi. Chữ "ung thư" vang lên như một bản án tử
+                  hình. Tôi mới ngoài 30, sự nghiệp đang độ chín, con cái còn nhỏ dại. Tại sao lại
+                  là tôi? Tôi đã ngồi gục ở hành lang bệnh viện và khóc như một đứa trẻ. Sự kiêu
+                  hãnh của một nữ MC hoàn toàn sụp đổ trước tờ giấy xét nghiệm mỏng manh.
+                </p>
+              </div>
+              <img
+                src="/assets/images/cancer-types/details/thyroid/story-card-1.png"
+                alt="MC Hoài Hương trong hành trình điều trị"
+                width="276"
+                height="464"
+                loading="lazy"
+              />
+            </div>
+            <blockquote>“Tôi sợ rằng sẽ không bao giờ được nghe<br />giọng nói ấy nữa”</blockquote>
+            <div class="breast-story__copy">
+              <p>
+                Điều khiến tôi sợ hãi nhất không chỉ là căn bệnh, mà là những rủi ro của ca phẫu
+                thuật. Bác sĩ giải thích rằng, để lấy được khối u, họ phải cắt bỏ toàn bộ tuyến
+                giáp. Do tuyến giáp nằm ngay sát dây thần kinh thanh quản, rủi ro khàn tiếng, thay
+                đổi giọng nói, hoặc thậm chí mất giọng vĩnh viễn là hoàn toàn có thể xảy ra.
+              </p>
+              <p>
+                Với một người bình thường, điều đó đã là một đả kích. Với một MC, đó là sự tước đoạt
+                đi cả sự nghiệp và đam mê. Những đêm trước ngày lên bàn mổ, tôi thức trắng. Tôi lấy
+                điện thoại ra, tự thu âm lại giọng nói của mình khi đọc một vài đoạn tin tức, chỉ vì
+                sợ rằng sau ca phẫu thuật, tôi sẽ không bao giờ còn được nghe âm thanh nguyên bản ấy
+                nữa.
+              </p>
+            </div>
+            <img
+              class="thyroid-story__wide"
+              src="/assets/images/cancer-types/details/thyroid/story-wide.png"
+              alt="MC Hoài Hương sau điều trị"
+              width="838"
+              height="510"
+              loading="lazy"
+            />
+            <div class="breast-story__copy">
+              <p>
+                Ngày bước vào phòng mổ, tôi nhắm mắt lại và tự nhủ: "Phải sống trước đã, mọi thứ
+                khác tính sau".
+              </p>
+              <p>
+                Khi tỉnh dậy sau ca phẫu thuật dài, điều đầu tiên tôi làm, dù vết mổ đang đau buốt,
+                là cố gắng phát ra một âm thanh. "A..." – âm thanh phát ra hơi khàn đục và yếu ớt,
+                nhưng tôi đã khóc trong hạnh phúc. Tôi vẫn còn giọng nói! Cảm giác lúc đó giống như
+                tôi vừa được sinh ra thêm một lần nữa.
+              </p>
+              <p>Sáu tháng sau ca phẫu thuật, tôi chính thức quay trở lại trường quay.</p>
+              <p>
+                Lần đầu tiên bước lên sân khấu sau bạo bệnh, tay tôi run lên khi cầm micro. Dưới ánh
+                đèn rực rỡ, tôi không còn cố gắng dùng phấn trang điểm để che đi vết sẹo dài ở cổ
+                nữa. Tôi gọi đó là "vết sẹo hình nụ cười" – huy chương của lòng dũng cảm mà cuộc đời
+                đã trao tặng. Giọng nói của tôi có thể không còn độ vang và trong vắt như xưa, thỉnh
+                thoảng tôi vẫn bị hụt hơi nếu nói quá dài, nhưng giờ đây, mỗi lời tôi nói ra đều
+                mang sức nặng của sự trân trọng và lòng biết ơn sự sống.
+              </p>
+              <p>
+                Từ một người cuồng công việc, tôi học cách sống chậm lại. Tôi uống thuốc hormone đều
+                đặn mỗi sáng, ăn uống khoa học hơn, và không bao giờ bỏ lỡ các lịch hẹn tái khám.
+              </p>
+            </div>
+            <blockquote>“Vết sẹo hình nụ cười”</blockquote>
+            <div class="thyroid-story__row">
+              <img
+                src="/assets/images/cancer-types/details/thyroid/story-card-2.png"
+                alt="MC Hoài Hương sau phẫu thuật"
+                width="276"
+                height="400"
+                loading="lazy"
+              />
+              <div>
+                <p>
+                  Tôi kể câu chuyện này vì biết rằng, ngoài kia, có thể có ai đó cũng vừa nhận được
+                  một tờ kết quả chẩn đoán tương tự và đang chìm trong hố sâu của sự tuyệt vọng.
+                </p>
+                <p>
+                  Xin hãy bình tĩnh! Ung thư tuyến giáp, nếu phát hiện sớm như tôi, là căn bệnh có
+                  tỷ lệ chữa khỏi cực kỳ cao. Đừng sợ hãi đến mức từ chối điều trị, cũng đừng để
+                  bệnh tiến triển trong im lặng.
+                </p>
+                <p>
+                  Hãy đi khám sức khỏe định kỳ, hãy yêu cầu bác sĩ siêu âm vùng cổ của bạn. Đừng đợi
+                  đến khi khàn tiếng hay sờ thấy u mới đi khám. Cơ thể chúng ta là một cỗ máy kỳ
+                  diệu, nhưng nó cũng cần được bảo dưỡng và yêu thương.
+                </p>
+              </div>
+            </div>
+            <div class="breast-story__copy">
+              <p>
+                Ung thư đã cướp đi của tôi một phần sức khỏe và để lại một vết sẹo, nhưng nó lại trả
+                cho tôi một lăng kính mới để nhìn cuộc đời: Trân trọng từng hơi thở, từng âm thanh
+                mình phát ra, và từng ngày được sống trọn vẹn bên những người mình yêu thương.
+              </p>
+            </div>
+            <img
+              class="thyroid-story__outro"
+              src="/assets/images/cancer-types/details/thyroid/story-outro.png"
+              alt="MC Hoài Hương cùng họa tiết dải ruy băng"
+              width="1440"
+              height="645"
+              loading="lazy"
+            />
+          </section>
+        </div>
+      } @else {
+        <header class="cancer-detail__hero">
+          <img [src]="cancer.heroImage" [alt]="cancer.heroAlt" />
+          <div>
+            <p>Hiểu đúng để chủ động</p>
+            <h1>{{ cancer.name }}</h1>
+            <h2>{{ cancer.tagline }}</h2>
+          </div>
+        </header>
+
+        <p class="cancer-detail__intro">{{ cancer.intro }}</p>
+
+        <div class="cancer-detail__body">
+          <section class="detail-section detail-section--center" aria-labelledby="signs-title">
+            <header>
+              <h2 id="signs-title">{{ cancer.signs.title }}</h2>
+              @if (cancer.signs.subtitle) {
+                <p>{{ cancer.signs.subtitle }}</p>
+              }
+            </header>
+            <p class="detail-section__intro">{{ cancer.signs.intro }}</p>
+            <ul class="detail-grid">
+              @for (item of cancer.signs.items; track item; let number = $index) {
+                <li>
+                  <span>{{ number + 1 }}</span
+                  >{{ item }}
+                </li>
+              }
+            </ul>
+          </section>
+
+          <section class="detail-section detail-section--split" aria-labelledby="risks-title">
+            <header>
+              <h2 id="risks-title">{{ cancer.risks.title }}</h2>
+              @if (cancer.risks.subtitle) {
+                <p>{{ cancer.risks.subtitle }}</p>
+              }
+            </header>
+            <div>
+              <p class="detail-section__intro">{{ cancer.risks.intro }}</p>
+              <ul class="detail-list">
+                @for (item of cancer.risks.items; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          </section>
+
+          <section class="detail-section detail-section--center" aria-labelledby="stages-title">
+            <header>
+              <h2 id="stages-title">{{ cancer.stages.title }}</h2>
+            </header>
+            <p class="detail-section__intro">{{ cancer.stages.intro }}</p>
+            <ol class="stage-grid">
+              @for (item of cancer.stages.items; track item; let number = $index) {
+                <li>
+                  <strong>0{{ number + 1 }}</strong>
+                  <p>{{ item }}</p>
+                </li>
+              }
+            </ol>
+          </section>
+
+          <section
+            class="detail-section detail-section--treatment"
+            aria-labelledby="treatment-title"
+          >
+            <header>
+              <h2 id="treatment-title">{{ cancer.treatment.title }}</h2>
+              @if (cancer.treatment.subtitle) {
+                <p>{{ cancer.treatment.subtitle }}</p>
+              }
+            </header>
+            <p class="detail-section__intro">{{ cancer.treatment.intro }}</p>
+            <ul class="treatment-grid">
+              @for (item of cancer.treatment.items; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          </section>
+
+          <section
+            class="detail-section detail-section--prevention"
+            aria-labelledby="prevention-title"
+          >
+            <div>
+              <p>Chủ động hôm nay</p>
+              <h2 id="prevention-title">{{ cancer.prevention.title }}</h2>
+              <p>{{ cancer.prevention.intro }}</p>
+            </div>
+            <ul class="detail-list">
+              @for (item of cancer.prevention.items; track item) {
+                <li>{{ item }}</li>
+              }
+            </ul>
+          </section>
+
+          <aside class="medical-note">
+            <strong>Lưu ý y khoa</strong>
+            <p>
+              Nội dung trên Trạm K chỉ mang tính tham khảo, không thay thế việc thăm khám, chẩn đoán
+              hoặc điều trị của bác sĩ. Hãy liên hệ cơ sở y tế khi cơ thể có biểu hiện bất thường.
+            </p>
+          </aside>
+        </div>
+      }
+    </article>
+  }
+} @else {
+  <section class="cancer-not-found">
+    <h1>Không tìm thấy loại ung thư</h1>
+    <a routerLink="/loai-ung-thu">Quay lại danh sách</a>
+  </section>
+}

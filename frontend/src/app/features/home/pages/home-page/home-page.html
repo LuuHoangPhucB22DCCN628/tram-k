@@ -1,197 +1,289 @@
-<main class="home-page">
+<div class="home-page">
   <section class="hero" aria-labelledby="hero-title">
     <img
       class="hero__art"
-      src="/assets/images/home/home-hero.png"
+      src="/assets/images/home/home-hero.svg"
       width="1440"
       height="800"
       alt=""
       fetchpriority="high"
     />
     <div class="hero__content">
-      <h1 id="hero-title" class="hero__title">
-        <span>we can<em>cer</em></span>
-        <strong>Survive</strong>
+      <h1 id="hero-title">
+        <span class="hero__eyebrow">we can<em>cer</em></span
+        ><span class="hero__word">Survive</span>
       </h1>
       <p class="hero__tagline">Cùng nhau, chúng ta tạo nên sự khác biệt</p>
-
-      <dl class="hero__stats" aria-label="Những con số đồng hành của Trạm K">
+      <dl class="hero__stats">
         <div>
           <dt>1.200+</dt>
-          <dd>hành trình cảm hứng</dd>
+          <dd>hành trình<br />cảm hứng</dd>
         </div>
         <div>
           <dt>10.000+</dt>
-          <dd>nhà hảo tâm đồng hành</dd>
+          <dd>nhà hảo tâm<br />đồng hành</dd>
         </div>
         <div>
           <dt>135+</dt>
-          <dd>điểm thiện nguyện trên toàn quốc</dd>
+          <dd>điểm thiện nguyện<br />trên toàn quốc</dd>
         </div>
       </dl>
     </div>
   </section>
-
-  <section class="journey section-shell" aria-labelledby="journey-title">
+  <section class="journey" aria-labelledby="journey-title">
     <img
-      src="/assets/images/home/home-journey.png"
+      class="journey__art"
+      src="/assets/images/home/home-journey.svg"
       width="839"
       height="534"
-      alt="Minh họa những bàn tay nâng đỡ biểu tượng dải ruy băng ung thư"
+      alt=""
       loading="lazy"
     />
-    <div class="journey__content">
-      <h2 id="journey-title">Hành trình</h2>
-      <p class="section-subtitle">nào cũng cần một người đồng hành</p>
+    <div class="journey__copy">
+      <h2 id="journey-title" class="display-title">Hành trình</h2>
+      <p class="journey__subtitle">nào cũng cần một người đồng hành</p>
       <p>
-        Trạm K được tạo nên để người bệnh, gia đình và những tấm lòng sẻ chia có thể tìm thấy nhau.
-        Mỗi câu chuyện được lắng nghe, mỗi thông tin đúng được lan tỏa đều có thể tiếp thêm sức mạnh
-        cho một hành trình.
+        Mỗi hành trình đều mang theo những cảm xúc, thử thách và khoảnh khắc đáng nhớ. Nếu bạn đang
+        đọc trang này vì bản thân, vì người thân, hay chỉ vì muốn hiểu hơn, chúng tôi mừng vì bạn đã
+        ở đây.<br />Hành trình phía trước không dễ dàng. Nhưng bạn không phải đi một mình.
       </p>
-      <a class="text-link" routerLink="/ve-chung-toi">Hiểu thêm về Trạm K <span>→</span></a>
     </div>
   </section>
-
-  <section class="explore" aria-labelledby="explore-title">
-    <div class="section-heading section-shell">
-      <h2 id="explore-title">Khám phá</h2>
-      <p>Nơi hy vọng kết nối những tấm lòng đồng điệu</p>
-    </div>
-
-    <div class="explore__grid section-shell">
+  <section class="explore section-shell" aria-labelledby="explore-title">
+    <header class="section-heading">
+      <h2 id="explore-title" class="display-title">Khám phá</h2>
+      <p class="explore__subtitle">Nơi hy vọng bắt đầu từ những hành động nhỏ</p>
+    </header>
+    <div class="explore__grid">
       <a class="feature-card feature-card--guide" routerLink="/cam-nang">
-        <span class="feature-card__number">01</span>
         <h3>Cẩm nang</h3>
-        <p>Những kiến thức đáng tin cậy để bạn chủ động hơn trên hành trình điều trị.</p>
-        <img src="/assets/images/home/explore-guide.svg" alt="" loading="lazy" />
-        <span class="feature-card__action">Khám phá <b>→</b></span>
-      </a>
-
-      <a class="feature-card feature-card--story" routerLink="/cau-chuyen">
-        <div>
-          <span class="feature-card__number">02</span>
-          <h3>Câu chuyện truyền cảm hứng</h3>
-          <p>Gặp những con người vẫn sống trọn vẹn, yêu thương và viết tiếp ước mơ.</p>
-          <span class="feature-card__action">Đọc câu chuyện <b>→</b></span>
-        </div>
-        <img src="/assets/images/home/explore-story.png" alt="" loading="lazy" />
-      </a>
-
-      @for (item of exploreItems; track item.title) {
-        <a class="feature-card feature-card--compact" [routerLink]="item.route">
-          <span class="feature-card__number">{{ item.icon }}</span>
-          <h3>{{ item.title }}</h3>
-          <p>{{ item.description }}</p>
-          <span class="feature-card__action" aria-hidden="true">Khám phá <b>→</b></span>
-        </a>
-      }
-
-      <a class="feature-card feature-card--cancer" routerLink="/loai-ung-thu">
-        <img src="/assets/images/home/explore-cancer-types.svg" alt="" loading="lazy" />
-        <div>
-          <span class="feature-card__number">05</span>
-          <h3>Các loại ung thư</h3>
-          <p>Tra cứu thông tin nền tảng theo từng nhóm bệnh.</p>
-        </div>
-      </a>
-
-      <a class="feature-card feature-card--support" routerLink="/cong-dong">
-        <div>
-          <span class="feature-card__eyebrow">Cùng sẻ chia</span>
-          <h3>Cộng đồng</h3>
-          <p>Kết nối với cộng đồng và khám phá các hoạt động hỗ trợ đang diễn ra.</p>
-          <span class="feature-card__action">Tham gia cộng đồng <b>→</b></span>
-        </div>
+        <p>Những kiến thức và hướng dẫn hữu ích để đồng hành cùng bệnh nhân và gia đình.</p>
         <img
-          src="/assets/images/home/explore-donation.png"
-          alt="Hai em nhỏ lan tỏa tinh thần mạnh mẽ"
+          src="/assets/images/home/guide-illustration.svg"
+          width="279"
+          height="356"
+          alt=""
           loading="lazy"
         />
       </a>
+      <a class="feature-card feature-card--story" routerLink="/cau-chuyen">
+        <img
+          src="/assets/images/home/explore-story.svg"
+          width="848"
+          height="302"
+          alt=""
+          loading="lazy"
+        />
+        <div>
+          <h3>Câu chuyện truyền cảm hứng</h3>
+          <p>
+            Những hành trình đầy nghị lực và hy vọng từ bệnh nhân, người thân và các nhà hảo tâm.
+          </p>
+          <span class="home-button home-button--lavender"
+            >Hành trình cảm hứng <span aria-hidden="true">⟶</span></span
+          >
+        </div>
+      </a>
+      <button
+        type="button"
+        class="feature-card feature-card--chat"
+        (click)="chatNoticeOpen.set(!chatNoticeOpen())"
+        [attr.aria-expanded]="chatNoticeOpen()"
+        aria-controls="chat-notice"
+      >
+        <div>
+          <h3>Chat bot AI</h3>
+          <p>
+            Kết nối và trò chuyện với chatbot của chúng tôi để nhận được sự hỗ trợ trong hành trình
+            chống chọi với ung thư, mọi lúc mọi nơi
+          </p>
+        </div>
+        <img
+          src="/assets/images/home/chat-ribbon.svg"
+          width="118"
+          height="137"
+          alt=""
+          loading="lazy"
+        />
+      </button>
+      <a class="feature-card feature-card--mind" routerLink="/goc-tam-ly"
+        ><h3>Góc tâm lý và tinh thần</h3>
+        <p>Lắng nghe các podcast của Trạm và các đối tác. Trạm luôn đồng hành cùng bạn.</p></a
+      >
+      <a class="feature-card feature-card--cancer" routerLink="/loai-ung-thu">
+        <img
+          src="/assets/images/home/explore-cancer-types.svg"
+          width="580"
+          height="239"
+          alt=""
+          loading="lazy"
+        />
+        <div>
+          <h3>Loại ung thư</h3>
+          <p>
+            Tìm hiểu về các loại ung thư phổ biến, dấu hiệu nhận biết và thông tin cần thiết cho
+            từng tình trạng bệnh.
+          </p>
+        </div>
+      </a>
+      <a class="feature-card feature-card--support" routerLink="/cong-dong">
+        <div>
+          <h3>Cộng đồng</h3>
+          <p>
+            Mỗi đóng góp là một tia hy vọng, giúp bệnh nhân có thêm cơ hội tiếp tục điều trị và vững
+            bước phía trước.
+          </p>
+        </div>
+        <span class="home-button">Gieo một tia hy vọng <span aria-hidden="true">⟶</span></span>
+        <span class="feature-card__kids" aria-hidden="true">
+          <img
+            class="feature-card__kid feature-card__kid--back"
+            src="/assets/images/home/donation-child-left.png"
+            alt=""
+            loading="lazy"
+          />
+          <img
+            class="feature-card__kids-shadow"
+            src="/assets/images/home/donation-shadow.svg"
+            alt=""
+            loading="lazy"
+          />
+          <img
+            class="feature-card__kid feature-card__kid--front"
+            src="/assets/images/home/donation-child-right.png"
+            alt=""
+            loading="lazy"
+          />
+        </span>
+      </a>
     </div>
+    <p id="chat-notice" class="chat-notice" [hidden]="!chatNoticeOpen()" role="status">
+      Chatbot đang được hoàn thiện. Bạn có thể xem <a routerLink="/cam-nang">cẩm nang</a> hoặc kết
+      nối với <a routerLink="/cong-dong">cộng đồng Trạm K</a>.
+    </p>
   </section>
-
   <section class="guides" aria-labelledby="guides-title">
-    <div class="section-heading section-shell">
-      <h2 id="guides-title">Cẩm nang đồng hành</h2>
-      <p>Kiến thức dễ hiểu để người bệnh và gia đình vững tâm hơn mỗi ngày</p>
-    </div>
-
+    <header class="section-heading">
+      <h2 id="guides-title" class="display-title">Cẩm nang đồng hành</h2>
+      <p>
+        Đằng sau mỗi hành trình được tiếp thêm sức mạnh là sự đồng hành của những đối tác cùng chung
+        niềm tin: không ai nên bước qua khó khăn một mình.
+      </p>
+    </header>
     <div class="guide-grid section-shell">
-      @for (article of guideArticles; track article.title) {
+      @for (article of guideArticles; track article.title; let index = $index) {
         <article class="guide-card">
-          <a routerLink="/cam-nang" [attr.aria-label]="'Đọc: ' + article.title">
-            <img
-              [src]="article.image"
+          <a
+            class="guide-card__photo"
+            [class.guide-card__photo--first]="index === 0"
+            [class.guide-card__photo--third]="index === 2"
+            [routerLink]="article.route"
+            [attr.aria-label]="article.title"
+            ><img
+              [src]="'/assets/images/home/' + article.image"
               width="265"
               height="233"
-              [alt]="article.title"
+              alt=""
               loading="lazy"
-            />
-          </a>
-          <span>{{ article.category }}</span>
+          /></a>
+          <span
+            class="guide-card__badge"
+            [class.guide-card__badge--dark]="index === 1"
+            [class.guide-card__badge--purple]="index === 3"
+            >{{ article.category }}</span
+          >
           <h3>
-            <a routerLink="/cam-nang">{{ article.title }}</a>
+            <a [routerLink]="article.route">{{ article.title }}</a>
           </h3>
           <p>{{ article.summary }}</p>
         </article>
       }
     </div>
-    <a class="outline-button" routerLink="/cam-nang">Xem tất cả cẩm nang</a>
+    <a class="home-button home-button--outline" routerLink="/cam-nang"
+      >Tìm hiểu thêm <span aria-hidden="true">⟶</span></a
+    >
   </section>
-
   <section class="faq" aria-labelledby="faq-title">
-    <div class="section-heading section-shell">
-      <h2 id="faq-title">Những câu hỏi thường gặp</h2>
-      <p>Trạm K luôn sẵn sàng giải đáp để bạn an tâm kết nối và sẻ chia</p>
-    </div>
-
+    <header class="section-heading">
+      <h2 id="faq-title" class="display-title">Những câu hỏi thường gặp</h2>
+      <p>
+        Đằng sau mỗi hành trình được tiếp thêm sức mạnh là sự đồng hành của những đối tác cùng chung
+        niềm tin: không ai nên bước qua khó khăn một mình.
+      </p>
+    </header>
     <div class="faq__content section-shell">
       <aside>
         <img
-          src="/assets/images/home/home-faq.png"
+          class="faq__art"
+          src="/assets/images/home/home-faq.svg"
           width="412"
           height="370"
           alt=""
           loading="lazy"
         />
-        <strong>Hãy liên hệ Trạm nhé!</strong>
-        <a href="mailto:tramk@example.com">tramk@example.com</a>
+        <p>Hãy liên hệ Trạm nhé!</p>
+        <nav class="faq__social" aria-label="Kênh liên hệ Trạm K">
+          @for (social of socialLinks; track social.name) {
+            <a
+              [href]="social.url"
+              [attr.aria-label]="social.name + ' — liên hệ tạm qua Facebook, mở tab mới'"
+              [title]="social.name + ' — liên hệ tạm qua Facebook'"
+              target="_blank"
+              rel="noopener noreferrer"
+              ><img [src]="social.icon" width="32" height="32" alt="" loading="lazy"
+            /></a>
+          }
+        </nav>
       </aside>
-
       <div class="faq-list">
         @for (item of faqItems; track item.question; let index = $index) {
-          <article class="faq-item" [class.faq-item--open]="openFaqIndex() === index">
+          <article class="faq-item">
             <h3>
               <button
                 type="button"
+                [id]="'faq-question-' + index"
                 [attr.aria-expanded]="openFaqIndex() === index"
                 [attr.aria-controls]="'faq-answer-' + index"
                 (click)="toggleFaq(index)"
               >
-                <span>{{ item.question }}</span>
-                <b aria-hidden="true">{{ openFaqIndex() === index ? '−' : '+' }}</b>
+                <span>{{ item.question }}</span
+                ><span class="faq-caret" aria-hidden="true">{{
+                  openFaqIndex() === index ? '⌃' : '⌄'
+                }}</span>
               </button>
             </h3>
-            @if (openFaqIndex() === index) {
-              <p [id]="'faq-answer-' + index">{{ item.answer }}</p>
-            }
+            <p
+              [id]="'faq-answer-' + index"
+              [hidden]="openFaqIndex() !== index"
+              [attr.aria-labelledby]="'faq-question-' + index"
+            >
+              {{ item.answer }}
+            </p>
           </article>
         }
       </div>
     </div>
   </section>
-
-  <section class="partners" aria-labelledby="partners-title">
-    <div class="partners__orbits" aria-hidden="true"></div>
-    <div class="partners__logos" aria-label="Các đơn vị đồng hành cùng Trạm K">
-      @for (partner of partners; track partner) {
-        <span>{{ partner }}</span>
+  <section class="partners" id="home-partners" aria-labelledby="partners-title">
+    <div class="partners__orbit partners__orbit--outer" aria-hidden="true"></div>
+    <div class="partners__orbit partners__orbit--inner" aria-hidden="true"></div>
+    <div class="partners__logos">
+      @for (partner of partners; track partner; let index = $index) {
+        <img
+          [src]="'/assets/images/home/759-3423-imgAva' + partner + '.png'"
+          width="100"
+          height="100"
+          [alt]="'Logo đơn vị đồng hành ' + (index + 1)"
+          loading="lazy"
+        />
       }
     </div>
-    <div class="section-heading">
-      <h2 id="partners-title">Đối tác của Trạm</h2>
-      <p>Cảm ơn những tổ chức và nhà hảo tâm đã cùng chúng tôi lan tỏa điều tử tế</p>
-    </div>
+    <header class="section-heading">
+      <h2 id="partners-title" class="display-title">Đối tác của Trạm</h2>
+      <p>
+        Đằng sau mỗi hành trình được tiếp thêm sức mạnh là sự đồng hành của những đối tác cùng chung
+        niềm tin: không ai nên bước qua khó khăn một mình.
+      </p>
+    </header>
   </section>
-</main>
+</div>

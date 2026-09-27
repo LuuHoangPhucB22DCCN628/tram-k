@@ -1,0 +1,208 @@
+<article class="community-page">
+  <section class="community-hero" aria-labelledby="community-hero-title">
+    <img
+      class="community-hero__art"
+      src="/assets/images/community/community-hero.svg"
+      alt="Dải ruy băng tím và những nhành lá tượng trưng cho sự đồng hành cùng bệnh nhân ung thư"
+      width="1141"
+      height="742"
+    />
+    <div class="community-hero__content">
+      <app-community-love-title id="community-hero-title" />
+      <p class="community-hero__description">
+        Mỗi suất cơm không chỉ mang đến bữa ăn đầy đủ dinh dưỡng mà còn gửi gắm sự quan tâm và sẻ
+        chia đến các bệnh nhân đang điều trị. Những hành động nhỏ bé ấy góp phần lan tỏa yêu thương
+        và tiếp thêm động lực trên hành trình vượt qua bệnh tật.
+      </p>
+      <a class="community-button community-button--filled" routerLink="/cong-dong/diem-quyen-gop">
+        <span>Trao gửi yêu thương</span>
+        <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  </section>
+
+  <section id="community-hair-library" class="hair-library" aria-labelledby="hair-library-title">
+    <header class="community-section-title">
+      <img
+        class="community-section-title__art"
+        src="/assets/images/community/community-hair-title.svg"
+        alt=""
+        aria-hidden="true"
+        width="1280"
+        height="77"
+      />
+      <h2 id="hair-library-title" class="visually-hidden">Thư viện tóc</h2>
+      <p>Mái tóc trao đi - Niềm tin ở lại</p>
+    </header>
+
+    <div class="hair-library__grid">
+      @for (card of hairLibraryCards; track card.title) {
+        <article class="hair-library-card hair-library-card--{{ card.tone }}">
+          <div>
+            <h3>{{ card.title }}</h3>
+            <p>{{ card.description }}</p>
+          </div>
+          <a class="community-button community-button--outlined" [routerLink]="card.route">
+            <span>{{ card.action }}</span>
+            <span aria-hidden="true">→</span>
+          </a>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section id="community-donations" class="community-donations" aria-labelledby="donation-title">
+    <header class="community-section-title">
+      <img
+        class="community-section-title__art"
+        src="/assets/images/community/community-donation-title.svg"
+        alt=""
+        aria-hidden="true"
+        width="1280"
+        height="77"
+      />
+      <h2 id="donation-title" class="visually-hidden">Quyên góp</h2>
+      <p>Chung tay yêu thương</p>
+    </header>
+
+    <div class="donation-layout">
+      <div class="donation-main">
+        <div class="donation-stats" aria-label="Số liệu đóng góp">
+          @for (stat of donationStats; track stat.label) {
+            <article class="donation-stat">
+              <img [src]="stat.icon" alt="" aria-hidden="true" width="86" height="86" />
+              <div>
+                <strong>{{ stat.value }}</strong>
+                <span>{{ stat.label }}</span>
+              </div>
+            </article>
+          }
+        </div>
+
+        <section class="recent-donations" aria-labelledby="recent-donations-title">
+          <header class="recent-donations__header">
+            <h3 id="recent-donations-title">Danh sách quyên góp gần đây</h3>
+            <button class="community-button community-button--outlined" type="button">
+              <span>Chi tiết sao kê</span>
+              <span aria-hidden="true">↗</span>
+            </button>
+          </header>
+
+          <div class="donation-table-scroll">
+            <table class="donation-table">
+              <thead>
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">Họ và tên</th>
+                  <th scope="col">Thời gian</th>
+                  <th scope="col">Số tiền</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (donation of donations; track donation.id) {
+                  <tr>
+                    <td>{{ donation.id }}</td>
+                    <td>{{ donation.name }}</td>
+                    <td>{{ donation.time }}</td>
+                    <td>{{ donation.amount }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <aside class="donation-card" aria-labelledby="donation-card-title">
+        <header>
+          <h3 id="donation-card-title">Quét mã để quyên góp</h3>
+          <p>Mọi đóng góp đều được chúng tôi trân trọng</p>
+        </header>
+
+        <div class="donation-card__qr">
+          <img
+            src="/assets/images/community/community-donation-qr.svg"
+            alt="Mã QR quyên góp cho Quỹ Nhân ái Trạm K"
+            width="229"
+            height="229"
+          />
+        </div>
+
+        <div class="donation-card__fund">
+          <h4>Quỹ Nhân ái Trạm K</h4>
+          <div class="donation-card__details">
+            @for (detail of fundDetails; track detail.value) {
+              <p>
+                <img [src]="detail.icon" alt="" aria-hidden="true" width="21" height="21" />
+                <span>{{ detail.value }}</span>
+              </p>
+            }
+          </div>
+        </div>
+
+        <button
+          class="community-button community-button--filled donation-card__copy"
+          type="button"
+          (click)="copyDonationDetails()"
+        >
+          <span>{{ copyLabel() }}</span>
+          <span class="copy-icon" aria-hidden="true"></span>
+        </button>
+
+        <p class="donation-card__assurance">
+          <img
+            src="/assets/images/community/community-shield.svg"
+            alt=""
+            aria-hidden="true"
+            width="32"
+            height="32"
+          />
+          <span>Cam kết sử dụng 100% nguồn đóng góp đúng mục đích và minh bạch</span>
+        </p>
+      </aside>
+    </div>
+  </section>
+
+  <section
+    id="community-direct-donations"
+    class="direct-donations"
+    aria-labelledby="direct-donations-title"
+  >
+    <header class="direct-donations__title">
+      <img
+        src="/assets/images/community/community-direct-title.svg"
+        alt=""
+        aria-hidden="true"
+        width="1280"
+        height="127"
+      />
+      <h2 id="direct-donations-title" class="visually-hidden">
+        Quyên góp trực tiếp - Chung tay yêu thương
+      </h2>
+    </header>
+
+    <div class="direct-donations__grid">
+      @for (brand of directDonationBrands; track brand.name) {
+        <article class="brand-card">
+          <div class="brand-card__image brand-card__image--{{ brand.imageStyle }}">
+            <img [src]="brand.image" [alt]="'Logo ' + brand.name" />
+          </div>
+          <div class="brand-card__content">
+            <h3>{{ brand.name }}</h3>
+            <p>{{ brand.description }}</p>
+          </div>
+          <button class="brand-card__action" type="button">
+            <span>Chi tiết</span>
+            <img
+              src="/assets/images/community/community-brand-arrow.svg"
+              alt=""
+              aria-hidden="true"
+              width="21"
+              height="21"
+            />
+          </button>
+        </article>
+      }
+    </div>
+  </section>
+</article>

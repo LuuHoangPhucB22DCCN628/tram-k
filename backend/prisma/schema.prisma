@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  ADMIN
+  PATIENT
+  PARTNER
+}
+
+enum HairRegistrationMode {
+  RECEIVE
+  DONATE
+}
+
+enum HairRegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+model Role {
+  id        String   @id @default(cuid())
+  name      RoleName @unique
+  users     User[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  isActive     Boolean  @default(true) @map("is_active")
+  roleId       String   @map("role_id")
+  role         Role     @relation(fields: [roleId], references: [id])
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([roleId])
+  @@map("users")
+}
+
+model HairRegistration {
+  id                  String                 @id @default(cuid())
+  reference           String                 @unique
+  mode                HairRegistrationMode
+  status              HairRegistrationStatus @default(PENDING)
+  fullName            String                 @map("full_name")
+  phone               String
+  email               String?
+  province            String
+  district            String
+  address             String
+  gender              String
+  relativePhone       String?                @map("relative_phone")
+  relativeName        String?                @map("relative_name")
+  duration            String?
+  hospital            String?
+  diagnosis           String?
+  borrowDate          DateTime?              @map("borrow_date") @db.Date
+  desiredLength       String?                @map("desired_length")
+  transparency        String?
+  donationLocation    String?                @map("donation_location")
+  donatedLength       String?                @map("donated_length")
+  acceptedCommitments String[]               @default([]) @map("accepted_commitments")
+  createdAt           DateTime               @default(now()) @map("created_at")
+  updatedAt           DateTime               @updatedAt @map("updated_at")
+
+  @@index([mode, status])
+  @@index([createdAt])
+  @@map("hair_registrations")
+}

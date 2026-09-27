@@ -1,0 +1,29 @@
+<section class="destiny-hero" aria-labelledby="destiny-title">
+  <img
+    class="destiny-hero__art"
+    src="/assets/images/stories/hero-visual.png"
+    alt="Người phụ nữ kiên cường trong hành trình vượt qua ung thư"
+  />
+  <div class="destiny-hero__content">
+    <img
+      class="destiny-hero__title-art"
+      src="/assets/images/stories/hero-title.svg"
+      alt=""
+      aria-hidden="true"
+    />
+    <p class="visually-hidden">LÁ BÀI ĐỊNH MỆNH</p>
+    <h1 id="destiny-title" class="visually-hidden">
+      Người phụ nữ lật ngược quân bài mang tên Ung thư
+    </h1>
+    <blockquote>
+      “Ra trận thì chỉ có chiến thắng thôi. Nếu không chiến thắng, chắc chắn là tử trận. Cho nên
+      bằng mọi giá là phải chiến thắng.”
+    </blockquote>
+    @if (showCta()) {
+      <a class="destiny-hero__button" routerLink="/cau-chuyen/la-bai-dinh-menh">
+        <span>Đọc thêm</span>
+        <img src="/assets/images/stories/arrow-light.svg" alt="" aria-hidden="true" />
+      </a>
+    }
+  </div>
+</section>

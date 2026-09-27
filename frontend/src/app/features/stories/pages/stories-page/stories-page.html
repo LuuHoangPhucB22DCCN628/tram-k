@@ -1,0 +1,49 @@
+<article class="stories-page">
+  <app-destiny-story-hero [showCta]="true" />
+
+  <section class="story-feature story-feature--kitchen" aria-labelledby="kitchen-title">
+    <img
+      class="story-feature__art story-feature__art--kitchen"
+      src="/assets/images/stories/kitchen-visual.png"
+      alt="Bếp An Yên đồng hành cùng bệnh nhân tại Bệnh viện K Tân Triều"
+    />
+    <div class="story-feature__content story-feature__content--kitchen">
+      <img
+        class="story-feature__title-art story-feature__title-art--kitchen"
+        src="/assets/images/stories/kitchen-title.svg"
+        alt=""
+        aria-hidden="true"
+      />
+      <p class="visually-hidden">Bếp An Yên - cho đi là còn mãi</p>
+      <h2 id="kitchen-title" class="visually-hidden">Nơi tình người sưởi ấm bệnh nhân viện K</h2>
+      <p>
+        “Trái tim có những lý lẽ mà lí trí không bao giờ biết tới”. Câu nói khuyết danh ấy dường như
+        là lời giải đáp hoàn hảo nhất cho câu hỏi: Tại sao giữa cuộc sống hối hả, xô bồ và đầy rẫy
+        những lo toan cá nhân, lại có những con người sẵn sàng dành trọn tâm huyết, thời gian và sức
+        lực của mình vì người khác? Câu trả lời ấy đang được viết lên mỗi ngày bởi chị Nguyễn Thị
+        Vân và những cộng sự tại “Bếp An Yên” – một trạm dừng chân ấm áp nằm kề bên Bệnh viện K Tân
+        Triều.
+      </p>
+      <button class="story-button story-button--light" type="button" (click)="scrollToStories()">
+        <span>Đọc thêm</span>
+        <img src="/assets/images/stories/arrow-light.svg" alt="" aria-hidden="true" />
+      </button>
+    </div>
+  </section>
+
+  <section id="story-list" class="story-list" aria-label="Những câu chuyện truyền cảm hứng khác">
+    @for (story of stories; track story.image) {
+      <article class="story-card">
+        <img [src]="story.image" [alt]="story.title" />
+        <div class="story-card__body">
+          <h2>{{ story.title }}</h2>
+          <p>{{ story.description }}</p>
+          <button class="story-card__button" type="button">
+            <span>Xem thêm</span>
+            <img src="/assets/images/stories/arrow-primary.svg" alt="" aria-hidden="true" />
+          </button>
+        </div>
+      </article>
+    }
+  </section>
+</article>

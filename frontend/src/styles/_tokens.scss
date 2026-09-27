@@ -12,9 +12,9 @@ $color-success: #198754;
 $color-warning: #b76e00;
 $color-danger: #c73535;
 
-// Font hệ thống giúp tiếng Việt hiển thị tốt mà không phụ thuộc mạng.
-$font-family-sans: 'Segoe UI', Arial, sans-serif;
-$font-family-serif: Georgia, 'Times New Roman', serif;
+// Font lưu trong dự án, có font hệ thống dự phòng khi chưa tải xong.
+$font-family-sans: 'Tram Inter', 'Segoe UI', Arial, sans-serif;
+$font-family-serif: 'Tram Display', Georgia, serif;
 
 // Khoảng cách dùng theo bội số 4px để các màn hình giữ cùng nhịp bố cục.
 $spacing: (

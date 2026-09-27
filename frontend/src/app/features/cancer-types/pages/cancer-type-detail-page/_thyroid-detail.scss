@@ -1,0 +1,271 @@
+.thyroid-hero {
+  position: relative;
+
+  &__copy {
+    position: absolute;
+    z-index: 1;
+    top: 13.94%;
+    right: 0;
+    left: 0;
+    color: #5e4dcb;
+    text-align: center;
+
+    h1 {
+      width: min(1041px, 100%);
+      margin: 0 auto;
+      font-family: var(--font-family-serif);
+      font-size: min(6.667vw, 96px);
+      font-style: italic;
+      font-weight: 400;
+      line-height: 0.8;
+      transform: translateY(-20%);
+      white-space: nowrap;
+    }
+
+    p {
+      width: min(702px, calc(100% - 40px));
+      margin: 12px auto 0;
+      font-size: min(1.916vw, 27.586px);
+      font-weight: 600;
+      line-height: 1.3;
+    }
+  }
+}
+
+.thyroid-page {
+  --breast-section-gap: 40px;
+
+  .breast-page__intro {
+    margin-top: 40px;
+    font-weight: 700;
+  }
+
+  .breast-page__decor-left--signs {
+    top: 1645.802px;
+  }
+  .breast-page__decor-right--risks {
+    top: 3256.963px;
+  }
+  .breast-page__decor-left--stages {
+    top: 3715.383px;
+  }
+  .breast-page__decor-right--screening {
+    top: 5356.963px;
+  }
+  .breast-page__decor-left--story {
+    top: 5815.383px;
+  }
+
+  .breast-section__copy strong {
+    font-weight: 700;
+  }
+
+  &__signs-art,
+  &__risks-art,
+  &__stages-art,
+  &__prevention-art {
+    display: block;
+    max-width: calc(100% - 40px);
+    height: auto;
+  }
+
+  &__signs-art {
+    width: 630px;
+  }
+  &__risks-art {
+    width: 848px;
+  }
+  &__stages-art {
+    width: 846px;
+  }
+  &__prevention-art {
+    width: 634px;
+  }
+}
+
+.thyroid-treatment {
+  position: relative;
+  width: min(1064px, calc(100% - 40px));
+  height: 885px;
+  margin: 0 auto 40px;
+  overflow: hidden;
+  border-radius: 36px;
+
+  > img {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+  }
+
+  &__card {
+    position: relative;
+    z-index: 1;
+    width: 79.32%;
+    min-height: 661px;
+    margin: 0 auto;
+    padding: 22px 0 28px;
+    border-radius: 36px;
+    background: #fff;
+
+    .breast-section__heading {
+      p {
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 36px;
+      }
+
+      h2 {
+        line-height: 76.8px;
+      }
+    }
+
+    .breast-section__copy {
+      width: min(630px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+  }
+}
+
+.thyroid-prevention {
+  margin-bottom: 40px;
+}
+
+.thyroid-story {
+  &__heading {
+    width: min(1280px, calc(100% - 40px));
+    padding: 20px 0;
+
+    p {
+      width: min(844px, 100%);
+      margin: 0 auto;
+      color: #394366;
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 36px;
+    }
+
+    p:first-child {
+      font-style: italic;
+    }
+
+    p:last-child {
+      text-align: right;
+    }
+
+    h2 {
+      margin: 0 auto;
+      color: #5e4dcb;
+      font-family: var(--font-family-serif);
+      font-size: clamp(42px, 4.45vw, 64px);
+      font-style: italic;
+      font-weight: 400;
+      line-height: 76.8px;
+      text-align: center;
+    }
+  }
+
+  &__row {
+    display: grid;
+    width: min(630px, calc(100% - 40px));
+    grid-template-columns: 276px minmax(0, 1fr);
+    gap: 40px;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: justify;
+
+    &--text-first {
+      grid-template-columns: minmax(0, 1fr) 276px;
+    }
+
+    p {
+      margin: 0 0 8px;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    img {
+      display: block;
+      width: 276px;
+      height: auto;
+    }
+  }
+
+  &__wide {
+    display: block;
+    width: min(838px, calc(100% - 40px));
+    height: auto;
+  }
+
+  &__outro {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .thyroid-hero__copy {
+    top: 12%;
+
+    h1 {
+      font-size: clamp(34px, 9vw, 48px);
+    }
+
+    p {
+      margin-top: 8px;
+      font-size: clamp(13px, 3.8vw, 18px);
+    }
+  }
+
+  .thyroid-treatment {
+    height: auto;
+    padding-bottom: 25vw;
+    overflow: hidden;
+
+    > img {
+      top: auto;
+      bottom: 0;
+      height: auto;
+      object-fit: contain;
+    }
+
+    &__card {
+      width: 100%;
+      min-height: 0;
+      border-radius: 24px;
+    }
+  }
+
+  .thyroid-story {
+    &__heading {
+      p {
+        font-size: 20px;
+        line-height: 28px;
+      }
+
+      h2 {
+        line-height: 1.2;
+      }
+    }
+
+    &__row,
+    &__row--text-first {
+      grid-template-columns: 1fr;
+      gap: 24px;
+
+      img {
+        justify-self: center;
+      }
+    }
+
+    &__row--text-first img {
+      order: -1;
+    }
+  }
+}

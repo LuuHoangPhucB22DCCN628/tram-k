@@ -1,0 +1,71 @@
+<article class="destiny-story-page">
+  <app-destiny-story-hero />
+
+  <div class="story-transition" aria-hidden="true"></div>
+
+  <section class="story-introduction" aria-labelledby="story-question">
+    <img
+      class="story-introduction__title"
+      src="/assets/images/stories/article-question-title.svg"
+      alt=""
+      aria-hidden="true"
+    />
+    <h2 id="story-question" class="visually-hidden">
+      Liệu rằng, ung thư có thực sự đồng nghĩa với dấu chấm hết?
+    </h2>
+    <div class="story-introduction__copy">
+      <p>
+        Trong suy nghĩ của nhiều người, ung thư từ lâu vẫn được xem như một “bản án tử hình” không
+        có cơ hội kháng cáo. Chỉ cần nghe hai chữ "ung thư", không ít bệnh nhân và gia đình lập tức
+        nghĩ đến đau đớn, mất mát, những đợt hóa trị kéo dài hay viễn cảnh phải từ bỏ những dự định
+        còn dang dở.
+      </p>
+      <p>
+        Thế nhưng, cùng với sự phát triển của y học hiện đại, nhiều loại ung thư ngày nay đã có thể
+        được phát hiện sớm, điều trị hiệu quả và kiểm soát như một bệnh mạn tính. Không ít bệnh nhân
+        vẫn tiếp tục học tập, làm việc, xây dựng gia đình và theo đuổi ước mơ của mình sau nhiều năm
+        chung sống với căn bệnh tưởng chừng đáng sợ ấy.
+      </p>
+      <p>
+        Dẫu vậy, những hiểu lầm, định kiến và nỗi sợ về ung thư vẫn còn tồn tại trong xã hội. Nhiều
+        người né tránh việc tầm soát, giấu bệnh hoặc đánh mất hy vọng ngay từ thời điểm nhận chẩn
+        đoán.
+      </p>
+      <p>
+        Dưới đây, chúng tôi muốn dẫn dắt quý độc giả bước vào hành trình của những con người đã và
+        đang sống cùng ung thư — từ khoảnh khắc nhận tin dữ, những ngày chiến đấu với bệnh tật cho
+        đến hành trình tìm lại niềm tin và ý nghĩa cuộc sống.
+      </p>
+      <p>
+        Cùng bóc tách từng lớp cảm xúc, từng câu chuyện đời thực để hiểu rằng ung thư không chỉ là
+        câu chuyện của bệnh tật, mà còn là câu chuyện về nghị lực, hy vọng và khát vọng được sống
+        của con người.
+      </p>
+    </div>
+  </section>
+
+  <section class="card-choice" aria-label="Chọn một lá bài để tiếp tục câu chuyện">
+    <app-story-card-decoration />
+    <div class="card-choice__title" aria-hidden="true">
+      <p>Chọn một lá bài</p>
+      <span>để tiếp tục</span>
+    </div>
+    @for (choice of cardChoices; track choice.id) {
+      <button
+        class="card-choice__button card-choice__button--{{ choice.id }}"
+        [class.card-choice__button--selected]="selectedCardId === choice.id"
+        [class.card-choice__button--muted]="selectedCardId !== null && selectedCardId !== choice.id"
+        type="button"
+        [disabled]="selectedCardId !== null"
+        [attr.aria-label]="choice.label"
+        [attr.aria-pressed]="selectedCardId === choice.id"
+        (click)="selectCard(choice)"
+      >
+        <span class="card-choice__face">
+          <img [src]="choice.image" alt="" aria-hidden="true" />
+        </span>
+      </button>
+    }
+    <p class="visually-hidden" aria-live="polite">{{ selectionMessage }}</p>
+  </section>
+</article>

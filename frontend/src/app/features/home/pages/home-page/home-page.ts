@@ -1,111 +1,84 @@
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-
-interface ExploreItem {
-  title: string;
-  description: string;
-  route: string;
-  icon: string;
-}
-
-interface GuideArticle {
-  category: string;
-  title: string;
-  summary: string;
-  image: string;
-}
-
-interface FaqItem {
-  question: string;
-  answer: string;
-}
+import { SOCIAL_LINKS } from '../../../../core/config/social-links';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
   imports: [RouterLink],
   templateUrl: './home-page.html',
+  // Một component; chia SCSS theo vùng và responsive để dễ theo dõi.
+  styleUrls: ['./home-page.scss', './home-page-sections.scss', './home-page-responsive.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomePage {
-  protected readonly exploreItems: ExploreItem[] = [
-    {
-      title: 'Góc tâm lý và tinh thần',
-      description: 'Chăm sóc cảm xúc cho người bệnh và người đồng hành.',
-      route: '/goc-tam-ly',
-      icon: '03',
-    },
-    {
-      title: 'Cộng đồng',
-      description: 'Kết nối, sẻ chia trải nghiệm và cùng nhau lan tỏa hy vọng.',
-      route: '/cong-dong',
-      icon: '04',
-    },
-    {
-      title: 'Các loại ung thư',
-      description: 'Tra cứu thông tin nền tảng, dấu hiệu và hướng chăm sóc theo từng nhóm bệnh.',
-      route: '/loai-ung-thu',
-      icon: '05',
-    },
-  ];
-
-  protected readonly guideArticles: GuideArticle[] = [
+  protected readonly socialLinks = SOCIAL_LINKS;
+  protected readonly openFaqIndex = signal(0);
+  protected readonly chatNoticeOpen = signal(false);
+  protected readonly guideArticles = [
     {
       category: 'Điều trị',
       title: 'Những điều cần biết trước buổi hóa trị đầu tiên',
       summary: 'Chuẩn bị tốt giúp bạn cảm thấy an tâm và chủ động hơn trong quá trình điều trị.',
-      image: '/assets/images/home/guide-chemotherapy.png',
+      image: 'guide-chemotherapy.png',
+      route: '/cam-nang',
     },
     {
       category: 'Dinh dưỡng',
-      title: 'Dinh dưỡng phù hợp trong thời gian điều trị',
-      summary: 'Những nguyên tắc đơn giản để xây dựng bữa ăn đủ chất và phù hợp thể trạng.',
-      image: '/assets/images/home/guide-nutrition.png',
+      title: '5 thực phẩm hỗ trợ duy trì năng lượng mỗi ngày',
+      summary: 'Gợi ý đơn giản giúp cơ thể nhận đủ dưỡng chất trong quá trình điều trị.',
+      image: 'guide-nutrition.png',
+      route: '/cam-nang',
     },
     {
-      category: 'Tinh thần',
-      title: 'Chăm sóc sức khỏe tinh thần mỗi ngày',
-      summary: 'Nhận diện cảm xúc và tìm sự hỗ trợ khi hành trình trở nên quá sức.',
-      image: '/assets/images/home/guide-mental-health.png',
+      category: 'Điều trị',
+      title: 'Những câu chuyện truyền cảm hứng từ người bệnh',
+      summary: 'Lắng nghe hành trình vượt qua thử thách của những bệnh nhân.',
+      image: 'guide-mental-health.png',
+      route: '/cau-chuyen',
     },
     {
-      category: 'Người đồng hành',
-      title: 'Cách ở bên người thân một cách dịu dàng',
-      summary: 'Lắng nghe, sẻ chia và tôn trọng nhu cầu của người bệnh trong từng giai đoạn.',
-      image: '/assets/images/home/guide-family.png',
+      category: 'Chăm sóc',
+      title: 'Chăm sóc bản thân từ những điều nhỏ nhất',
+      summary: 'Dinh dưỡng, nghỉ ngơi và vận động đều là những bước tiến đáng quý.',
+      image: 'guide-family.png',
+      route: '/cam-nang',
     },
   ];
-
-  protected readonly faqItems: FaqItem[] = [
+  protected readonly faqItems = [
     {
-      question: 'Trạm K cung cấp những nội dung gì?',
+      question: 'Tôi vừa được chẩn đoán ung thư, tôi nên làm như thế nào?',
       answer:
-        'Trạm K tổng hợp cẩm nang, câu chuyện cộng đồng, thông tin các loại ung thư và những chương trình hỗ trợ đã được quản trị viên kiểm duyệt.',
+        'Hãy cho bản thân thời gian để tiếp nhận thông tin. Trao đổi với bác sĩ để hiểu rõ tình trạng bệnh và kế hoạch điều trị.\n\nBạn không cần phải đối mặt với hành trình này một mình. Hãy tìm kiếm sự đồng hành từ gia đình, bạn bè, đội ngũ y tế hoặc cộng đồng những người đã và đang trải qua hoàn cảnh tương tự.',
     },
     {
-      question: 'Tôi có thể chia sẻ câu chuyện của mình không?',
+      question: 'Tôi có thể tìm thông tin đáng tin cậy ở đâu?',
       answer:
-        'Có. Sau khi đăng nhập, thành viên có thể gửi bài chia sẻ. Bài viết sẽ ở trạng thái chờ duyệt trước khi xuất hiện công khai.',
+        'Bạn có thể tham khảo thông tin từ cơ sở y tế, trao đổi trực tiếp với bác sĩ và đọc các cẩm nang có ghi nguồn. Nội dung trên Trạm K chỉ mang tính tham khảo, không thay thế tư vấn y khoa.',
     },
     {
-      question: 'Làm thế nào để tham gia cộng đồng?',
+      question: 'Tôi cần hỗ trợ tâm lý, có ai có thể giúp tôi không?',
       answer:
-        'Bạn đăng ký tài khoản thành viên, hoàn thiện hồ sơ rồi có thể tham gia bình luận và gửi câu chuyện của mình.',
+        'Bạn có thể chia sẻ với người thân, đội ngũ chăm sóc hoặc chuyên gia tâm lý. Góc tâm lý và tinh thần của Trạm là nơi bắt đầu tìm hiểu các nguồn hỗ trợ.',
     },
     {
-      question: 'Nhà hảo tâm đăng ký chương trình hỗ trợ ở đâu?',
+      question: 'Những loại điều trị nào có sẵn cho bệnh ung thư?',
       answer:
-        'Đối tác đăng ký tài khoản và gửi thông tin chương trình hoặc điểm phát cơm. Quản trị viên sẽ xác minh trước khi công bố.',
+        'Các phương án phụ thuộc vào loại bệnh và tình trạng của từng người. Hãy hỏi bác sĩ điều trị về những lựa chọn phù hợp, lợi ích và tác dụng không mong muốn.',
     },
     {
-      question: 'Thông tin trên website có thay thế tư vấn y khoa không?',
+      question: 'Tôi có thể tham gia vào các nhóm hỗ trợ không?',
       answer:
-        'Không. Nội dung chỉ có mục đích tham khảo và đồng hành. Bạn nên trao đổi trực tiếp với bác sĩ cho mọi quyết định liên quan đến chẩn đoán và điều trị.',
+        'Có. Bạn có thể đăng ký tài khoản để tham gia cộng đồng Trạm K, bình luận và gửi câu chuyện. Bài chia sẻ cần được quản trị viên duyệt trước khi công khai.',
+    },
+    {
+      question: 'Làm thế nào để tôi có thể chăm sóc sức khỏe tinh thần của mình tốt hơn?',
+      answer:
+        'Hãy dành thời gian cho những hoạt động bạn thấy dễ chịu, giữ kết nối với người tin cậy và tìm sự hỗ trợ chuyên môn khi cần. Bạn có thể xem thêm ở Góc tâm lý và tinh thần.',
     },
   ];
-
-  protected readonly partners = ['BV 01', 'Quỹ K', 'HT 03', 'TN 04', 'BV 05', 'TC 06', 'HT 07'];
-  protected readonly openFaqIndex = signal(0);
-
+  // Logo từ bản thiết kế; dữ liệu đối tác thực tế sẽ được quản trị viên quản lý.
+  protected readonly partners = ['', '1', '2', '3', '4', '5', '6'];
   protected toggleFaq(index: number): void {
     this.openFaqIndex.update((current) => (current === index ? -1 : index));
   }

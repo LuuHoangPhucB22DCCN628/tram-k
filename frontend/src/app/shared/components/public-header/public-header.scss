@@ -1,1 +1,14 @@
-/* Header hiện sử dụng utility class của Tailwind; thêm SCSS đặc thù tại đây khi cần. */
+// Giữ nguyên menu và đăng nhập/đăng ký, thu gọn khoảng cách để không tràn màn hình laptop.
+@media (min-width: 1280px) and (max-width: 1535px) {
+  header > div {
+    padding-inline: 24px;
+    gap: 12px;
+  }
+  header > div > a {
+    width: 145px;
+  }
+  nav a {
+    padding-inline: 8px;
+    font-size: 14px;
+  }
+}

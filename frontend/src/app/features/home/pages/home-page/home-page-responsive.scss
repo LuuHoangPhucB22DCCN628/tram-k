@@ -1,0 +1,323 @@
+@media (min-width: 1000px) and (max-width: 1300px) {
+  .hero__stats {
+    width: 58%;
+  }
+  .hero__tagline {
+    margin-left: 5%;
+    width: 52%;
+    font-size: 20px;
+  }
+  .hero h1 {
+    margin-left: 10%;
+  }
+  .journey__subtitle {
+    font-size: 24px;
+  }
+  .feature-card h3 {
+    font-size: 19px;
+    line-height: 26px;
+  }
+  .feature-card p {
+    font-size: 14px;
+    line-height: 21px;
+  }
+  .feature-card--chat img {
+    width: 80px;
+  }
+  .faq__content {
+    grid-template-columns: 32% 1fr;
+    gap: 40px;
+    padding-inline: 0;
+  }
+  .guide-card {
+    padding: 14px;
+  }
+}
+@media (max-width: 999px) {
+  .section-shell {
+    width: calc(100% - 48px);
+  }
+  .hero {
+    height: 740px;
+  }
+  .hero__art {
+    object-fit: contain;
+    object-position: center bottom;
+  }
+  .hero__content {
+    padding-top: 36px;
+  }
+  .hero h1 {
+    width: 360px;
+    height: 188px;
+    margin: auto;
+  }
+  .hero__eyebrow {
+    font-size: 48px;
+  }
+  .hero__word {
+    font-size: 110px;
+  }
+  .hero__tagline {
+    width: auto;
+    margin: 8px 20px 0;
+    font-size: 18px;
+  }
+  .hero__stats {
+    width: calc(100% - 48px);
+    max-width: 600px;
+    margin: 24px auto;
+    padding: 12px;
+    background: #efedfae6;
+  }
+  .hero__stats dt {
+    font-size: 28px;
+    line-height: 40px;
+  }
+  .hero__stats dd {
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .journey {
+    height: auto;
+    padding: 64px 24px;
+    display: flex;
+    flex-direction: column;
+  }
+  .journey__art {
+    position: static;
+    width: 100%;
+    max-width: 650px;
+    margin: auto;
+  }
+  .journey__copy {
+    position: static;
+    max-width: 600px;
+    margin: 24px auto 0;
+  }
+  .journey__copy .display-title {
+    text-align: center;
+  }
+  .journey__subtitle {
+    font-size: 22px;
+    text-align: center;
+  }
+  .explore {
+    padding-block: 64px;
+  }
+  .explore__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+  }
+  .feature-card--guide {
+    grid-row: span 2;
+  }
+  .feature-card--story {
+    grid-column: auto;
+    min-height: 302px;
+  }
+  .feature-card--story > div {
+    width: 65%;
+  }
+  .feature-card--chat {
+    min-height: 218px;
+  }
+  .feature-card--mind {
+    min-height: 218px;
+  }
+  .feature-card--cancer {
+    min-height: 303px;
+  }
+  .feature-card--support {
+    min-height: 303px;
+  }
+  .feature-card h3 {
+    font-size: 20px;
+    line-height: 26px;
+  }
+  .feature-card--story p {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .guides,
+  .faq {
+    padding-block: 64px;
+  }
+  .section-heading {
+    padding-inline: 24px;
+  }
+  .display-title {
+    min-height: 60px;
+  }
+  .guide-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .faq__content {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 0;
+    margin-top: 40px;
+  }
+  .faq aside {
+    text-align: center;
+  }
+  .faq__social {
+    justify-content: center;
+  }
+  .faq aside img {
+    margin: auto;
+  }
+  .faq aside > p {
+    margin-top: 20px;
+  }
+  .partners {
+    height: 640px;
+  }
+  .partners__logos img {
+    width: 64px;
+    height: 64px;
+  }
+  .partners__logos img:nth-child(4) {
+    left: auto;
+    right: 3%;
+  }
+  .partners .section-heading {
+    top: 440px;
+    left: 0;
+    right: 0;
+  }
+}
+@media (max-width: 599px) {
+  .hero {
+    height: 620px;
+  }
+  .hero h1 {
+    width: 280px;
+    height: 147px;
+  }
+  .hero__tagline {
+    font-size: 14px;
+  }
+  .hero__stats {
+    width: calc(100% - 32px);
+    padding: 10px 4px;
+    margin-top: 20px;
+  }
+  .hero__stats dt {
+    font-size: 22px;
+    line-height: 32px;
+  }
+  .hero__stats dd {
+    font-size: 11px;
+    line-height: 18px;
+  }
+  .hero__art {
+    height: auto;
+    top: auto;
+    bottom: 0;
+  }
+  .section-shell {
+    width: calc(100% - 32px);
+  }
+  .section-heading > p {
+    font-size: 14px;
+    line-height: 22px;
+  }
+  .display-title {
+    min-height: 50px;
+  }
+  .section-heading > .explore__subtitle {
+    font-size: 19px;
+    line-height: 28px;
+  }
+  .explore__grid {
+    grid-template-columns: 1fr;
+    margin-top: 32px;
+  }
+  .feature-card--guide {
+    grid-row: auto;
+    min-height: 510px;
+  }
+  .feature-card--story {
+    min-height: 400px;
+    padding: 24px;
+  }
+  .feature-card--story > div {
+    width: 100%;
+    padding-top: 16px;
+    background: #efedfa;
+  }
+  .feature-card--story > img {
+    height: 210px;
+    object-fit: cover;
+    object-position: left;
+  }
+  .hero__eyebrow {
+    font-size: 32px;
+    padding-top: 8px;
+  }
+  .hero__word {
+    font-size: 76px;
+    letter-spacing: -4px;
+  }
+  .feature-card--support {
+    grid-column: auto;
+    min-height: 460px;
+    overflow: hidden;
+  }
+  .feature-card--support > div {
+    width: 100%;
+  }
+  .feature-card__kids {
+    width: 100%;
+    right: -8%;
+    bottom: 0;
+  }
+  .feature-card--support .home-button {
+    margin-top: 16px;
+    margin-bottom: auto;
+  }
+  .feature-card--cancer {
+    min-height: 280px;
+  }
+  .guide-grid {
+    grid-template-columns: 1fr;
+  }
+  .guide-card {
+    max-width: 400px;
+    width: 100%;
+    margin: auto;
+  }
+  .faq__art {
+    width: 280px;
+    height: auto;
+  }
+  .faq-item button {
+    padding: 20px;
+    font-size: 14px;
+  }
+  .partners {
+    height: 500px;
+  }
+  .partners__logos {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 24px;
+    padding: 40px 24px;
+  }
+  .partners__logos img:nth-child(n) {
+    position: static;
+    width: 64px;
+    height: 64px;
+  }
+  .partners .section-heading {
+    top: 300px;
+  }
+  .partners__orbit--outer {
+    top: 35px;
+  }
+  .partners__orbit--inner {
+    top: 100px;
+  }
+}

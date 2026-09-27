@@ -45,37 +45,113 @@ const publicSectionRoutes: Routes = [
     path: 'cam-nang',
     title: 'Cẩm nang | Trạm K',
     data: {
-      heading: 'Cẩm nang đồng hành',
-      description: 'Kiến thức chăm sóc và hướng dẫn thiết thực dành cho bệnh nhân và gia đình.',
+      kind: 'GUIDE',
+      title: 'Cẩm nang đồng hành',
+      subtitle: 'dành cho bệnh nhân và người thân',
+      description:
+        'Từ dinh dưỡng, điều trị đến chăm sóc tinh thần, chúng tôi mong muốn mang đến những thông tin dễ hiểu và hữu ích để người bệnh cùng gia đình cảm thấy an tâm hơn trong từng bước đi.',
+      basePath: '/cam-nang',
     },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/content/pages/content-list-page/content-list-page').then(
+        (component) => component.ContentListPage,
+      ),
+  },
+  {
+    path: 'cam-nang/:slug',
+    loadComponent: () =>
+      import('@features/content/pages/content-detail-page/content-detail-page').then(
+        (component) => component.ContentDetailPage,
+      ),
   },
   {
     path: 'loai-ung-thu',
     title: 'Các loại ung thư | Trạm K',
-    data: {
-      heading: 'Thông tin các loại ung thư',
-      description: 'Không gian tra cứu kiến thức cơ bản theo từng nhóm bệnh ung thư.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/cancer-types/pages/cancer-types-page/cancer-types-page').then(
+        (component) => component.CancerTypesPage,
+      ),
+  },
+  {
+    path: 'loai-ung-thu/:slug',
+    loadComponent: () =>
+      import('@features/cancer-types/pages/cancer-type-detail-page/cancer-type-detail-page').then(
+        (component) => component.CancerTypeDetailPage,
+      ),
+  },
+  {
+    path: 'cau-chuyen/la-bai-dinh-menh',
+    title: 'Lá bài định mệnh | Trạm K',
+    loadComponent: () =>
+      import('@features/stories/pages/destiny-story-page/destiny-story-page').then(
+        (component) => component.DestinyStoryPage,
+      ),
+  },
+  {
+    path: 'cau-chuyen/bong-toi',
+    title: 'Bóng tối - Khi cái chết lần đầu gõ cửa | Trạm K',
+    loadComponent: () =>
+      import('@features/stories/pages/dark-story-page/dark-story-page').then(
+        (component) => component.DarkStoryPage,
+      ),
+  },
+  {
+    path: 'cau-chuyen/anh-sang',
+    title: 'Ánh sáng - Học cách sống sau lời tuyên án | Trạm K',
+    loadComponent: () =>
+      import('@features/stories/pages/light-story-page/light-story-page').then(
+        (component) => component.LightStoryPage,
+      ),
   },
   {
     path: 'cau-chuyen',
     title: 'Câu chuyện truyền cảm hứng | Trạm K',
-    data: {
-      heading: 'Câu chuyện truyền cảm hứng',
-      description: 'Nơi lưu giữ những hành trình, trải nghiệm và nguồn động lực từ cộng đồng.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/stories/pages/stories-page/stories-page').then(
+        (component) => component.StoriesPage,
+      ),
+  },
+  {
+    path: 'cong-dong/thu-vien-toc/nhan-toc',
+    title: 'Đăng ký nhận tóc | Trạm K',
+    data: { mode: 'receive' },
+    loadComponent: () =>
+      import('@features/community/pages/hair-registration-page/hair-registration-page').then(
+        (component) => component.HairRegistrationPage,
+      ),
+  },
+  {
+    path: 'cong-dong/thu-vien-toc/hien-toc',
+    title: 'Đăng ký hiến tóc | Trạm K',
+    data: { mode: 'donate' },
+    loadComponent: () =>
+      import('@features/community/pages/hair-registration-page/hair-registration-page').then(
+        (component) => component.HairRegistrationPage,
+      ),
+  },
+  {
+    path: 'cong-dong/diem-quyen-gop/ha-noi',
+    title: 'Điểm quyên góp tại Hà Nội | Trạm K',
+    loadComponent: () =>
+      import('@features/community/pages/community-hanoi-donation-map-page/community-hanoi-donation-map-page').then(
+        (component) => component.CommunityHanoiDonationMapPage,
+      ),
+  },
+  {
+    path: 'cong-dong/diem-quyen-gop',
+    title: 'Điểm quyên góp | Trạm K',
+    loadComponent: () =>
+      import('@features/community/pages/community-donation-map-page/community-donation-map-page').then(
+        (component) => component.CommunityDonationMapPage,
+      ),
   },
   {
     path: 'cong-dong',
     title: 'Cộng đồng | Trạm K',
-    data: {
-      heading: 'Cộng đồng Trạm K',
-      description: 'Không gian để thành viên chia sẻ trải nghiệm và đồng hành cùng nhau.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/community/pages/community-page/community-page').then(
+        (component) => component.CommunityPage,
+      ),
   },
   {
     path: 'goc-tam-ly',

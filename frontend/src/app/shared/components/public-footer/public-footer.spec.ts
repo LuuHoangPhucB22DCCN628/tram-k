@@ -16,7 +16,17 @@ describe('PublicFooter', () => {
     fixture.detectChanges();
   });
 
-  it('should render the medical information notice', () => {
-    expect(fixture.nativeElement.textContent).toContain('không thay thế tư vấn');
+  it('renders the Figma footer structure and unique navigation links', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const fund = element.querySelector<HTMLImageElement>('.public-footer__fund');
+    const informationLinks = element.querySelectorAll('nav[aria-label="Liên kết thông tin"] a');
+    const communityLinks = element.querySelectorAll('nav[aria-label="Liên kết cộng đồng"] a');
+
+    expect(element.querySelectorAll('.public-footer')).toHaveLength(1);
+    expect(fund?.getAttribute('src')).toBe('/assets/images/community/community-footer-fund.svg');
+    expect(informationLinks).toHaveLength(7);
+    expect(communityLinks).toHaveLength(3);
+    expect(new Set([...informationLinks].map((link) => link.textContent?.trim())).size).toBe(7);
+    expect(new Set([...communityLinks].map((link) => link.textContent?.trim())).size).toBe(3);
   });
 });

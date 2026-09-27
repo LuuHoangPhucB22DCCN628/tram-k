@@ -1,0 +1,53 @@
+:host {
+  display: block;
+  animation: light-story-enter 1022ms ease both;
+}
+
+@keyframes light-story-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.light-story {
+  overflow: hidden;
+  background: #d0d1e0;
+}
+
+.light-story__section {
+  position: relative;
+}
+
+.light-story__image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.light-story__continue-link {
+  position: absolute;
+  top: 20.5%;
+  left: 40.8%;
+  width: 15.8%;
+  height: 48.5%;
+  border-radius: 12px;
+  cursor: pointer;
+
+  &::after {
+    position: absolute;
+    top: 135.7%;
+    left: 27.9%;
+    width: 61.1%;
+    height: 9.7%;
+    content: '';
+  }
+
+  &:focus-visible {
+    outline: 3px solid #5e4dcb;
+    outline-offset: 4px;
+  }
+}
