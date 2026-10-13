@@ -4,8 +4,10 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { UiEmptyState, UiErrorState, UiLoading, UiPagination } from '@shared/ui';
+import { RevealDirective } from '@shared/directives/reveal.directive';
 
 import type { ContentCategory, ContentKind, ContentSummary } from '../../models/content.models';
+import { ContentSectionService } from '../../services/content-section.service';
 import { ContentService } from '../../services/content.service';
 
 interface ContentListPageConfig {
@@ -21,6 +23,12 @@ interface ContentGroup {
   readonly title: string;
   readonly subtitle: string;
   readonly items: readonly ContentSummary[];
+}
+
+interface ContentGroupDefinition {
+  readonly slug: string;
+  readonly title: string;
+  readonly subtitle: string;
 }
 
 const GUIDE_GROUPS = [
@@ -54,13 +62,22 @@ const DEFAULT_CONFIG: ContentListPageConfig = {
 @Component({
   selector: 'app-content-list-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, UiEmptyState, UiErrorState, UiLoading, UiPagination],
+  imports: [
+    FormsModule,
+    RouterLink,
+    RevealDirective,
+    UiEmptyState,
+    UiErrorState,
+    UiLoading,
+    UiPagination,
+  ],
   templateUrl: './content-list-page.html',
   styleUrl: './content-list-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContentListPage {
   private readonly contentService = inject(ContentService);
+  private readonly contentSections = inject(ContentSectionService);
   private readonly route = inject(ActivatedRoute);
   private requestVersion = 0;
 
@@ -76,6 +93,18 @@ export class ContentListPage {
   protected readonly totalPages = signal(0);
   protected readonly totalItems = signal(0);
   protected readonly filteredView = signal(false);
+  protected readonly groupDefinitions = computed<readonly ContentGroupDefinition[]>(() => {
+    const knownSlugs = new Set(GUIDE_GROUPS.map((group) => group.slug));
+    const customGroups = this.categories()
+      .filter((category) => !knownSlugs.has(category.slug as (typeof GUIDE_GROUPS)[number]['slug']))
+      .map((category) => ({
+        slug: category.slug,
+        title: category.name,
+        subtitle: 'Nội dung mới được Ban biên tập Trạm K cập nhật',
+      }));
+
+    return [...GUIDE_GROUPS, ...customGroups];
+  });
   protected readonly groupedItems = computed<readonly ContentGroup[]>(() => {
     if (this.filteredView()) {
       return [
@@ -88,10 +117,12 @@ export class ContentListPage {
       ];
     }
 
-    return GUIDE_GROUPS.map((group) => ({
-      ...group,
-      items: this.items().filter((item) => item.category.slug === group.slug),
-    })).filter((group) => group.items.length > 0);
+    return this.groupDefinitions()
+      .map((group) => ({
+        ...group,
+        items: this.items().filter((item) => item.category.slug === group.slug),
+      }))
+      .filter((group) => group.items.length > 0);
   });
   protected search = '';
   protected selectedCategory = '';
@@ -151,6 +182,26 @@ export class ContentListPage {
     this.errorMessage.set('');
 
     try {
+      if (!this.filteredView()) {
+        const sections = await Promise.all(
+          this.groupDefinitions().map((group) =>
+            firstValueFrom(
+              this.contentSections.latest({
+                kind: this.config.kind,
+                categorySlug: group.slug,
+              }),
+            ),
+          ),
+        );
+
+        if (currentRequest !== this.requestVersion) return;
+        const items = sections.flat();
+        this.items.set(items);
+        this.totalItems.set(items.length);
+        this.totalPages.set(0);
+        return;
+      }
+
       const result = await firstValueFrom(
         this.contentService.list({
           kind: this.config.kind,

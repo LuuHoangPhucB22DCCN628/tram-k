@@ -1,7 +1,7 @@
 <article class="donation-map-page">
-  <section class="donation-map-hero" aria-labelledby="donation-map-instruction">
-    <app-community-map-background aria-hidden="true" />
+  <app-community-map-background aria-hidden="true" />
 
+  <section class="donation-map-hero" aria-labelledby="donation-map-instruction">
     <app-community-love-title class="donation-map-hero__title" />
 
     <p id="donation-map-instruction" class="donation-map-hero__instruction">
@@ -9,18 +9,116 @@
     </p>
 
     <div class="donation-map-hero__map-shell">
-      <img
+      <svg
         class="donation-map-hero__map"
-        src="/assets/images/community/community-donation-map.svg"
-        alt="Bản đồ Việt Nam hiển thị các tỉnh, thành có điểm quyên góp"
+        appReveal="scale"
+        viewBox="0 0 798 800"
+        role="img"
+        aria-labelledby="donation-map-svg-title donation-map-svg-description"
         width="798"
         height="800"
-      />
-      <a
-        class="donation-map-hero__hanoi-link"
-        routerLink="/cong-dong/diem-quyen-gop/ha-noi"
-        aria-label="Xem các điểm quyên góp tại Hà Nội"
-      ></a>
+      >
+        <title id="donation-map-svg-title">Bản đồ các điểm quyên góp tại Việt Nam</title>
+        <desc id="donation-map-svg-description">
+          Chọn một tỉnh hoặc thành phố để xem thông tin điểm quyên góp.
+        </desc>
+        @for (region of regions(); track region.id) {
+          <a
+            class="donation-map-hero__region"
+            [class.donation-map-hero__region--active]="region.locationCount > 0"
+            [class.donation-map-hero__region--selected]="selectedRegion()?.id === region.id"
+            role="button"
+            tabindex="0"
+            [attr.aria-label]="
+              'Chọn khu vực ' +
+              region.name +
+              (region.locationCount > 0
+                ? ', ' + region.locationCount + ' điểm đang tiếp nhận quyên góp'
+                : ', chưa có điểm tiếp nhận')
+            "
+            [attr.aria-pressed]="selectedRegion()?.id === region.id"
+            (keydown.enter)="selectRegion(region, $event)"
+            (keydown.space)="selectRegion(region, $event)"
+          >
+            <title>{{ region.name }}</title>
+            <use
+              [attr.href]="'/assets/images/community/community-donation-map.svg#' + region.svgId"
+              (click)="selectRegion(region, $event)"
+            />
+          </a>
+        }
+      </svg>
     </div>
   </section>
+
+  <section class="support-programs-cta" aria-label="Đi đến các chương trình hỗ trợ">
+    <a routerLink="/cong-dong/chuong-trinh-ho-tro">
+      <span>Các chương trình hỗ trợ</span>
+      <span aria-hidden="true">→</span>
+    </a>
+  </section>
+
+  <app-ui-modal
+    [open]="selectedRegion() !== null"
+    [title]="'Điểm quyên góp tại ' + (selectedRegion()?.name ?? '')"
+    size="lg"
+    (closed)="closeRegion()"
+  >
+    @if (selectedRegion(); as region) {
+      <div class="donation-region-dialog">
+        <div class="donation-region-dialog__visual" aria-hidden="true">
+          <img
+            [src]="
+              region.detailRoute
+                ? region.id === 'ha-noi'
+                  ? '/assets/images/community/community-hanoi-map.svg'
+                  : '/assets/images/community/community-donation-map.svg'
+                : '/assets/images/community/community-donation-map.svg'
+            "
+            alt=""
+            width="210"
+            height="210"
+          />
+          <span>{{ region.name }}</span>
+        </div>
+
+        <div class="donation-region-dialog__content">
+          <p class="donation-region-dialog__eyebrow">KHU VỰC ĐÃ CHỌN</p>
+          @if (region.detailRoute) {
+            <h3>{{ region.locationCount }} điểm quyên góp đang hoạt động</h3>
+            <p>
+              Xem địa chỉ, lịch tiếp nhận và thông tin liên hệ của các điểm quyên góp tại
+              {{ region.name }}.
+            </p>
+            <div class="donation-region-dialog__status donation-region-dialog__status--active">
+              Đang tiếp nhận quyên góp
+            </div>
+          } @else {
+            <h3>Điểm quyên góp đang được cập nhật</h3>
+            <p>
+              Trạm K chưa có điểm tiếp nhận được xác minh tại {{ region.name }}. Thông tin sẽ được
+              cập nhật ngay khi có địa điểm phù hợp.
+            </p>
+            <div class="donation-region-dialog__status">Chưa có địa điểm hoạt động</div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (selectedRegion(); as region) {
+      <div uiModalFooter class="donation-region-dialog__actions">
+        <button type="button" class="donation-region-dialog__button" (click)="closeRegion()">
+          Đóng
+        </button>
+        @if (region.detailRoute) {
+          <a
+            class="donation-region-dialog__button donation-region-dialog__button--primary"
+            [routerLink]="region.detailRoute"
+          >
+            Xem các điểm quyên góp
+          </a>
+        }
+      </div>
+    }
+  </app-ui-modal>
 </article>

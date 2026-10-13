@@ -48,15 +48,17 @@
   padding: 4px 8px;
   border-radius: 4px;
   background: #ff8fcf;
-  color: white;
+  color: #394366;
   font-size: 12px;
   line-height: 15px;
 }
 .guide-card__badge--dark {
   background: #394366;
+  color: white;
 }
 .guide-card__badge--purple {
   background: var(--color-brand-primary);
+  color: white;
 }
 .guide-card h3 {
   font-size: 16px;

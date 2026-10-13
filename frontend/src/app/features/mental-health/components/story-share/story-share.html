@@ -1,0 +1,313 @@
+<section class="story-share" id="chia-se-cau-chuyen" aria-labelledby="story-share-title">
+  <div class="story-share__intro" appReveal="left">
+    <span class="eyebrow">GÓC CHIA SẺ · TRẠM K</span>
+    <h2 id="story-share-title">Mỗi câu chuyện,<br />một điểm tựa</h2>
+    <p>
+      Một ngày bình yên, một người luôn ở bên, hay một điều giúp bạn vững lòng. Câu chuyện của bạn
+      có thể là lời động viên mà ai đó đang cần.
+    </p>
+    <blockquote>
+      “Bạn không cần một câu chuyện hoàn hảo.<br />Chỉ cần một câu chuyện của chính mình.”
+    </blockquote>
+    <div class="story-share__note">
+      <span aria-hidden="true">✦</span>
+      <p>
+        Chia sẻ bằng sự chân thành và tôn trọng. Hãy giữ riêng thông tin cá nhân, hồ sơ bệnh án của
+        bạn và người khác.
+      </p>
+    </div>
+  </div>
+  <div class="story-share__card" appReveal="right" [revealDelay]="100">
+    @if (canWrite()) {
+      <div class="author">
+        <span class="avatar" aria-hidden="true">{{ user()?.displayName?.slice(0, 1) }}</span>
+        <div>
+          <strong>{{ user()?.displayName }}</strong
+          ><span>Câu chuyện được đăng dưới tên của bạn</span>
+        </div>
+      </div>
+      @if (notice()) {
+        <p class="notice" [class.error]="failed()" role="status">{{ notice() }}</p>
+      }
+      @if (saved()) {
+        <div class="success">
+          <span aria-hidden="true">♡</span>
+          <h3>Cảm ơn vì đã mở lòng</h3>
+          <p>Bạn có thể theo dõi trạng thái bài viết trong không gian cá nhân.</p>
+          <a class="primary" [href]="postsUrl()">Bài viết của tôi →</a
+          ><button type="button" class="secondary" (click)="writeAgain()">
+            Viết câu chuyện khác
+          </button>
+        </div>
+      } @else {
+        <form [formGroup]="form" (ngSubmit)="save('PENDING')" novalidate>
+          <label for="story-title">Tiêu đề câu chuyện <span aria-hidden="true">*</span></label>
+          <input
+            id="story-title"
+            formControlName="title"
+            maxlength="120"
+            placeholder="Điều nhỏ bé đã tiếp thêm sức mạnh cho tôi…"
+            required
+            [attr.aria-invalid]="invalid('title')"
+            aria-describedby="story-title-help"
+          />
+          <small id="story-title-help" [class.error]="invalid('title')">{{
+            invalid('title')
+              ? 'Vui lòng nhập tiêu đề từ 5 đến 120 ký tự, không chỉ gồm khoảng trắng.'
+              : 'Một tiêu đề ngắn gọn, từ 5 đến 120 ký tự.'
+          }}</small>
+          <label for="story-content">Câu chuyện của bạn <span aria-hidden="true">*</span></label>
+          <textarea
+            id="story-content"
+            formControlName="content"
+            rows="7"
+            maxlength="5000"
+            placeholder="Bạn đã trải qua điều gì? Ai hoặc điều gì đã giúp bạn cảm thấy được đồng hành? Hãy viết khi bạn sẵn sàng…"
+            required
+            [attr.aria-invalid]="invalid('content')"
+            aria-describedby="story-content-help"
+          ></textarea>
+          <small id="story-content-help" [class.error]="invalid('content')"
+            >{{
+              invalid('content')
+                ? 'Vui lòng chia sẻ ít nhất 20 ký tự có nội dung.'
+                : 'Tối thiểu 20 ký tự'
+            }}
+            <span>{{ form.controls.content.value.length }} / 5.000</span></small
+          >
+          <label class="consent"
+            ><input
+              type="checkbox"
+              formControlName="consent"
+              [attr.aria-invalid]="invalid('consent')"
+              aria-describedby="story-consent-help"
+            /><span
+              >Tôi đồng ý chia sẻ nội dung này công khai sau khi được Trạm K duyệt.</span
+            ></label
+          >
+          @if (invalid('consent')) {
+            <small class="error" id="story-consent-help"
+              >Vui lòng đồng ý trước khi gửi duyệt. Bạn vẫn có thể lưu bản nháp.</small
+            >
+          }
+          <div class="actions">
+            <button type="button" class="secondary" (click)="save('DRAFT')">Lưu bản nháp</button
+            ><button class="primary" type="submit">
+              Gửi câu chuyện <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+          <p class="review-note">Bài viết sẽ được duyệt trước khi xuất hiện trên Trạm K.</p>
+        </form>
+      }
+    } @else {
+      <div class="welcome">
+        <span class="welcome__icon" aria-hidden="true">✎</span>
+        <h3>Một nơi để bạn được lắng nghe</h3>
+        <p>Lưu lại trải nghiệm, gửi một lời động viên và cùng nhau đi qua những ngày khó khăn.</p>
+        @if (!user()) {
+          <a class="primary" href="/dang-nhap?returnUrl=%2Fgoc-tam-ly%23chia-se-cau-chuyen"
+            >Đăng nhập để chia sẻ →</a
+          >
+          <p class="review-note">Câu chuyện chỉ được công khai sau khi bạn gửi và được duyệt.</p>
+        } @else {
+          <p>Hãy sử dụng tài khoản thành viên để chia sẻ câu chuyện.</p>
+        }
+      </div>
+    }
+  </div>
+</section>
+
+<section class="shared-stories" aria-labelledby="shared-stories-title">
+  <header class="shared-stories__heading" appReveal="up">
+    <div>
+      <span class="eyebrow">NHỮNG LỜI TỪ TRÁI TIM</span>
+      <h2 id="shared-stories-title">Câu chuyện từ cộng đồng</h2>
+    </div>
+    <p>Những trải nghiệm đã được Trạm K duyệt và chia sẻ với sự đồng ý của người viết.</p>
+  </header>
+
+  <div class="shared-stories__grid">
+    @for (story of displayedStories(); track story.id; let index = $index) {
+      <article
+        class="shared-story"
+        [class.shared-story--featured]="index === 0"
+        [id]="'cau-chuyen-' + story.id"
+        appReveal="up"
+        [revealDelay]="(index % 3) * 70"
+        data-ui-card
+      >
+        <div class="shared-story__author">
+          <span class="avatar" aria-hidden="true">{{ story.authorName.slice(0, 1) }}</span>
+          <div>
+            <strong>{{ story.authorName }}</strong>
+            <span>{{ story.authorRole }}</span>
+          </div>
+          <time [attr.datetime]="story.publishedAt">{{ formatDate(story.publishedAt) }}</time>
+        </div>
+        <span class="shared-story__quote" aria-hidden="true">“</span>
+        <h3>{{ story.title }}</h3>
+        <p
+          class="shared-story__content"
+          [class.shared-story__content--expanded]="expandedStoryId() === story.id"
+        >
+          {{ story.content }}
+        </p>
+        <button
+          class="shared-story__more"
+          type="button"
+          (click)="toggleStory(story.id)"
+          [attr.aria-expanded]="expandedStoryId() === story.id"
+        >
+          {{ expandedStoryId() === story.id ? 'Thu gọn' : 'Đọc tiếp' }}
+          <span aria-hidden="true">{{ expandedStoryId() === story.id ? '↑' : '→' }}</span>
+        </button>
+
+        <div class="shared-story__engagement" aria-label="Tương tác với câu chuyện">
+          <div class="shared-story__reactions">
+            @for (reaction of reactionOptions; track reaction.type) {
+              <button
+                type="button"
+                [class.is-selected]="selectedReaction(story) === reaction.type"
+                [attr.aria-pressed]="selectedReaction(story) === reaction.type"
+                [attr.aria-label]="reaction.label + ': ' + reactionCount(story, reaction.type)"
+                (click)="toggleReaction(story, reaction.type)"
+              >
+                <span aria-hidden="true">{{ reaction.icon }}</span>
+                <span>{{ reactionCount(story, reaction.type) }}</span>
+              </button>
+            }
+          </div>
+          <button
+            type="button"
+            class="shared-story__discussion-toggle"
+            [attr.aria-expanded]="activeDiscussionId() === story.id"
+            [attr.aria-controls]="'discussion-' + story.id"
+            (click)="toggleDiscussion(story.id)"
+          >
+            Bình luận <span>{{ commentCount(story) }}</span>
+          </button>
+        </div>
+
+        @if (activeDiscussionId() === story.id) {
+          <section
+            class="story-discussion"
+            [id]="'discussion-' + story.id"
+            aria-label="Bình luận câu chuyện"
+          >
+            @if (discussionNotice()) {
+              <p class="story-discussion__notice" role="status">{{ discussionNotice() }}</p>
+            }
+
+            @if (canWrite()) {
+              <form
+                class="story-discussion__form"
+                [formGroup]="commentForm"
+                (ngSubmit)="submitComment(story)"
+              >
+                <label [for]="'new-comment-' + story.id">
+                  {{ replyingToId() ? 'Viết câu trả lời' : 'Chia sẻ suy nghĩ của bạn' }}
+                </label>
+                <textarea
+                  [id]="'new-comment-' + story.id"
+                  formControlName="content"
+                  rows="3"
+                  maxlength="1000"
+                  placeholder="Viết một lời chia sẻ tích cực và tôn trọng…"
+                ></textarea>
+                @if (commentForm.controls.content.invalid && commentForm.controls.content.touched) {
+                  <small class="error">Bình luận cần từ 2 đến 1.000 ký tự.</small>
+                }
+                <div class="story-discussion__form-actions">
+                  @if (replyingToId()) {
+                    <button type="button" class="secondary" (click)="cancelCommentAction()">
+                      Hủy trả lời
+                    </button>
+                  }
+                  <button type="submit" class="primary">
+                    {{ replyingToId() ? 'Gửi trả lời' : 'Đăng bình luận' }}
+                  </button>
+                </div>
+              </form>
+            } @else {
+              <p class="story-discussion__signin">
+                <a href="/dang-nhap?returnUrl=%2Fgoc-tam-ly%23chia-se-cau-chuyen">Đăng nhập</a>
+                bằng tài khoản thành viên để tham gia trao đổi.
+              </p>
+            }
+
+            <div class="story-discussion__list">
+              @for (comment of rootComments(story); track comment.id) {
+                <ng-container
+                  [ngTemplateOutlet]="commentItem"
+                  [ngTemplateOutletContext]="{ $implicit: comment, story: story }"
+                />
+                @for (reply of repliesFor(story, comment.id); track reply.id) {
+                  <div class="story-comment__reply">
+                    <ng-container
+                      [ngTemplateOutlet]="commentItem"
+                      [ngTemplateOutletContext]="{ $implicit: reply, story: story }"
+                    />
+                  </div>
+                }
+              } @empty {
+                <p class="story-discussion__empty">
+                  Chưa có bình luận. Hãy là người đầu tiên gửi lời đồng hành.
+                </p>
+              }
+            </div>
+
+            <ng-template #commentItem let-comment let-currentStory="story">
+              <article class="story-comment" [class.story-comment--deleted]="comment.deletedAt">
+                <div class="story-comment__meta">
+                  <span class="avatar" aria-hidden="true">{{
+                    comment.authorName.slice(0, 1)
+                  }}</span>
+                  <div>
+                    <strong>{{ comment.authorName }}</strong
+                    ><time [attr.datetime]="comment.updatedAt"
+                      >{{ formatDate(comment.updatedAt)
+                      }}{{ comment.updatedAt !== comment.createdAt ? ' · đã sửa' : '' }}</time
+                    >
+                  </div>
+                </div>
+                @if (editingCommentId() === comment.id) {
+                  <form [formGroup]="editCommentForm" (ngSubmit)="saveComment(comment)">
+                    <textarea formControlName="content" rows="3" maxlength="1000"></textarea>
+                    <div class="story-comment__actions">
+                      <button type="button" (click)="cancelCommentAction()">Hủy</button
+                      ><button type="submit">Lưu</button>
+                    </div>
+                  </form>
+                } @else {
+                  <p>{{ comment.deletedAt ? 'Bình luận đã bị xóa.' : comment.content }}</p>
+                  @if (!comment.deletedAt) {
+                    <div class="story-comment__actions">
+                      @if (!comment.parentId) {
+                        <button type="button" (click)="startReply(comment)">Trả lời</button>
+                      }
+                      @if (comment.userId === user()?.id) {
+                        <button type="button" (click)="startEditing(comment)">Sửa</button>
+                        <button type="button" class="remove" (click)="removeComment(comment)">
+                          Xóa
+                        </button>
+                      }
+                    </div>
+                  }
+                }
+              </article>
+            </ng-template>
+          </section>
+        }
+      </article>
+    }
+  </div>
+
+  <app-ui-section-more
+    [expanded]="showAllStories()"
+    [remaining]="remainingStoryCount()"
+    [page]="storyPagination().page"
+    [totalPages]="storyPagination().totalPages"
+    (toggled)="toggleStoryList()"
+    (pageChange)="selectStoryPage($event)"
+  />
+</section>

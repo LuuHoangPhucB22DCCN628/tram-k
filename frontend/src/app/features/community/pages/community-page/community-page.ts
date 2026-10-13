@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { RevealDirective } from '../../../../shared/directives/reveal.directive';
 import { CommunityLoveTitle } from '../../components/community-love-title/community-love-title';
 
 interface HairLibraryCard {
@@ -39,7 +40,7 @@ interface DirectDonationBrand {
 @Component({
   selector: 'app-community-page',
   standalone: true,
-  imports: [RouterLink, CommunityLoveTitle],
+  imports: [RouterLink, CommunityLoveTitle, RevealDirective],
   templateUrl: './community-page.html',
   styleUrl: './community-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

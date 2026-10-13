@@ -1,20 +1,20 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SOCIAL_LINKS } from '../../../../core/config/social-links';
+import { RevealDirective } from '../../../../shared/directives/reveal.directive';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, RevealDirective],
   templateUrl: './home-page.html',
   // Một component; chia SCSS theo vùng và responsive để dễ theo dõi.
   styleUrls: ['./home-page.scss', './home-page-sections.scss', './home-page-responsive.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomePage {
-  protected readonly socialLinks = SOCIAL_LINKS;
+  protected readonly socialLinks = [...SOCIAL_LINKS];
   protected readonly openFaqIndex = signal(0);
-  protected readonly chatNoticeOpen = signal(false);
   protected readonly guideArticles = [
     {
       category: 'Điều trị',

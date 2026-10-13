@@ -36,6 +36,17 @@ describe('HomePage', () => {
     expect(element.querySelectorAll('h1 img, h2 img').length).toBe(0);
   });
 
+  it('uses the shared reveal directive for homepage motion', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const animatedElements = element.querySelectorAll('.ui-reveal');
+
+    expect(animatedElements.length).toBeGreaterThan(10);
+    expect(element.querySelector('.journey__art')?.classList).toContain('ui-reveal--left');
+    expect(element.querySelector('.journey__copy')?.classList).toContain('ui-reveal--right');
+    expect(element.querySelector('.partners__logos')?.classList).toContain('ui-reveal--scale');
+    expect(element.querySelectorAll('[data-ui-card]')).toHaveLength(10);
+  });
+
   it('opens and closes an FAQ answer', () => {
     const element = fixture.nativeElement as HTMLElement;
     const secondButton = element.querySelectorAll<HTMLButtonElement>('.faq-item button')[1];
@@ -86,5 +97,13 @@ describe('HomePage', () => {
     expect(kids.length).toBe(3);
     expect(element.querySelector('img[src$="explore-donation.png"]')).toBeNull();
     expect(element.querySelector('img[src$="donation-shadow.svg"]')).not.toBeNull();
+  });
+
+  it('links the AI card to the finished assistant page', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const aiCard = element.querySelector<HTMLAnchorElement>('.feature-card--chat');
+
+    expect(aiCard?.getAttribute('href')).toBe('/tro-ly-ai');
+    expect(element.textContent).not.toContain('Chatbot đang được hoàn thiện');
   });
 });

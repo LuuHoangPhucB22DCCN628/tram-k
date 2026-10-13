@@ -1,0 +1,181 @@
+<main class="search-page">
+  <section class="search-hero" aria-labelledby="search-page-title">
+    <div class="search-hero__inner" appReveal="up">
+      <p class="search-hero__eyebrow">Tìm trong Trạm K</p>
+      <h1 id="search-page-title">Bạn đang cần tìm <em>điều gì?</em></h1>
+      <p class="search-hero__description">
+        Tìm cẩm nang, thông tin ung thư, câu chuyện, podcast và chương trình hỗ trợ phù hợp với bạn.
+      </p>
+
+      <form class="search-box" role="search" (ngSubmit)="submitSearch()">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-4-4"></path>
+        </svg>
+        <label class="search-box__label" for="site-search-input">Từ khóa tìm kiếm</label>
+        <input
+          id="site-search-input"
+          type="text"
+          inputmode="search"
+          autocomplete="off"
+          placeholder="Ví dụ: dinh dưỡng, ung thư phổi, hỗ trợ chi phí..."
+          [ngModel]="searchInput()"
+          (ngModelChange)="searchInput.set($event)"
+          name="query"
+        />
+        @if (searchInput()) {
+          <button
+            class="search-box__clear"
+            type="button"
+            aria-label="Xóa từ khóa"
+            (click)="clearSearch()"
+          >
+            ×
+          </button>
+        }
+        <button class="search-box__submit" type="submit">Tìm kiếm</button>
+      </form>
+      <p class="search-hero__feedback" aria-live="polite">{{ validationMessage() }}</p>
+
+      <div class="search-suggestions" aria-label="Từ khóa gợi ý">
+        <span>Tìm nhanh:</span>
+        <button type="button" (click)="useSuggestion('dinh dưỡng')">Dinh dưỡng</button>
+        <button type="button" (click)="useSuggestion('điều trị')">Điều trị</button>
+        <button type="button" (click)="useSuggestion('tâm lý')">Tâm lý</button>
+        <button type="button" (click)="useSuggestion('hỗ trợ')">Hỗ trợ</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="search-results" aria-labelledby="search-results-title">
+    <div class="search-results__inner">
+      @if (!hasSearched()) {
+        <div class="search-discovery" appReveal="up">
+          <div class="search-discovery__heading">
+            <p>Khám phá thông tin</p>
+            <h2 id="search-results-title">Bắt đầu từ nội dung bạn quan tâm</h2>
+          </div>
+          <div class="search-discovery__grid">
+            <a routerLink="/cam-nang">
+              <span>01</span>
+              <strong>Cẩm nang đồng hành</strong>
+              <small>Dinh dưỡng, điều trị và chăm sóc người bệnh</small>
+            </a>
+            <a routerLink="/loai-ung-thu">
+              <span>02</span>
+              <strong>Thông tin ung thư</strong>
+              <small>Dấu hiệu, kiến thức và lưu ý theo từng loại bệnh</small>
+            </a>
+            <a routerLink="/goc-tam-ly">
+              <span>03</span>
+              <strong>Góc tâm lý</strong>
+              <small>Podcast và những nội dung chăm sóc tinh thần</small>
+            </a>
+            <a routerLink="/cong-dong/chuong-trinh-ho-tro">
+              <span>04</span>
+              <strong>Chương trình hỗ trợ</strong>
+              <small>Tìm chương trình phù hợp theo địa điểm và nhu cầu</small>
+            </a>
+          </div>
+        </div>
+      } @else {
+        <div class="search-results__heading">
+          <div>
+            <p class="search-results__eyebrow">Kết quả tìm kiếm</p>
+            <h2 id="search-results-title">
+              @if (!loading() && !errorMessage()) {
+                Tìm thấy {{ results().length }} kết quả cho “{{ query() }}”
+              } @else {
+                Đang tìm “{{ query() }}”
+              }
+            </h2>
+          </div>
+        </div>
+
+        @if (!loading() && !errorMessage()) {
+          <div class="search-filters" role="group" aria-label="Lọc kết quả theo loại nội dung">
+            @for (option of typeOptions; track option.value) {
+              <button
+                type="button"
+                [class.is-active]="selectedType() === option.value"
+                [attr.aria-pressed]="selectedType() === option.value"
+                (click)="selectType(option.value)"
+              >
+                {{ option.label }}
+                <span>{{ countFor(option.value) }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        @if (loading()) {
+          <div class="search-state search-state--loading" aria-live="polite">
+            <span class="search-state__spinner" aria-hidden="true"></span>
+            <strong>Đang tìm nội dung phù hợp...</strong>
+            <p>Trạm K đang tổng hợp thông tin từ các chuyên mục.</p>
+          </div>
+        } @else if (errorMessage()) {
+          <div class="search-state" role="alert">
+            <span class="search-state__icon" aria-hidden="true">!</span>
+            <strong>{{ errorMessage() }}</strong>
+            <button type="button" (click)="retry()">Thử lại</button>
+          </div>
+        } @else if (filteredResults().length === 0) {
+          <div class="search-state">
+            <span class="search-state__icon" aria-hidden="true">⌕</span>
+            <strong>Chưa tìm thấy nội dung phù hợp</strong>
+            <p>Hãy thử từ khóa ngắn hơn, bỏ dấu hoặc chọn mục “Tất cả”.</p>
+            <button type="button" (click)="clearSearch()">Tìm từ khóa khác</button>
+          </div>
+        } @else {
+          <div class="search-results__grid" aria-live="polite">
+            @for (item of pagination().items; track item.type + '-' + item.id; let index = $index) {
+              <article class="search-result-card" appReveal="up" [revealDelay]="index * 45">
+                <a
+                  class="search-result-card__media"
+                  [routerLink]="item.link"
+                  [queryParams]="item.queryParams"
+                  tabindex="-1"
+                  aria-hidden="true"
+                >
+                  @if (item.image) {
+                    <img [src]="item.image" [alt]="item.imageAlt ?? ''" loading="lazy" />
+                  } @else {
+                    <span>{{ item.eyebrow.slice(0, 1) }}</span>
+                  }
+                </a>
+                <div class="search-result-card__body">
+                  <div class="search-result-card__topline">
+                    <span>{{ item.eyebrow }}</span>
+                    <small>{{ item.metadata }}</small>
+                  </div>
+                  <h3>
+                    <a [routerLink]="item.link" [queryParams]="item.queryParams">{{
+                      item.title
+                    }}</a>
+                  </h3>
+                  <p>{{ item.description }}</p>
+                  <a
+                    class="search-result-card__link"
+                    [routerLink]="item.link"
+                    [queryParams]="item.queryParams"
+                  >
+                    Xem nội dung <span aria-hidden="true">→</span>
+                  </a>
+                </div>
+              </article>
+            }
+          </div>
+
+          @if (pagination().totalPages > 1) {
+            <app-ui-pagination
+              [page]="pagination().page"
+              [totalPages]="pagination().totalPages"
+              (pageChange)="selectPage($event)"
+            />
+          }
+        }
+      }
+    </div>
+  </section>
+</main>

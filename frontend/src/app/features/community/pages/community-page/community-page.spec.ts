@@ -49,5 +49,11 @@ describe('CommunityPage', () => {
     expect(brandCards).toHaveLength(8);
     expect(brandImages).toHaveLength(8);
     expect(new Set([...brandImages].map((image) => image.getAttribute('src'))).size).toBe(8);
+    expect(element.querySelectorAll('.ui-reveal')).toHaveLength(16);
+    expect(element.querySelector('.community-hero__content')?.classList).toContain(
+      'ui-reveal--left',
+    );
+    expect(element.querySelector('.donation-card')?.classList).toContain('ui-reveal--scale');
+    expect(element.querySelectorAll('[data-ui-card]')).toHaveLength(11);
   });
 });

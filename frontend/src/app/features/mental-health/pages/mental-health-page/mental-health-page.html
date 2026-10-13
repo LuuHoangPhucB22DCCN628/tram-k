@@ -1,0 +1,173 @@
+<article class="mental-health-page">
+  <section class="podcast-hero" aria-labelledby="featured-podcast-title">
+    <img
+      class="podcast-hero__art"
+      src="/assets/images/mental-health/podcast-hero-art.svg"
+      width="1440"
+      height="800"
+      alt=""
+      aria-hidden="true"
+    />
+
+    <div class="podcast-hero__content" appReveal="left">
+      <p class="podcast-hero__eyebrow">Podcast tập đặc biệt</p>
+      <h1 id="featured-podcast-title" class="podcast-hero__accessible-title">
+        Nếu hôm nay bạn vừa nhận kết quả ung thư
+      </h1>
+      <img
+        class="podcast-hero__title-art"
+        src="/assets/images/mental-health/mental-health-hero-title.svg"
+        width="849"
+        height="164"
+        alt=""
+        aria-hidden="true"
+      />
+      <blockquote>
+        “Ra trận thì chỉ có chiến thắng thôi. Nếu không chiến thắng, chắc chắn là tử trận. Cho nên
+        bằng mọi giá là phải chiến thắng.”
+      </blockquote>
+
+      <div class="audio-player" aria-label="Trình phát podcast tập đặc biệt">
+        <button
+          class="audio-player__toggle"
+          type="button"
+          (click)="togglePlayback()"
+          [attr.aria-label]="isPlaying() ? 'Tạm dừng podcast' : 'Phát podcast'"
+          [attr.aria-pressed]="isPlaying()"
+        >
+          <img
+            [src]="
+              isPlaying()
+                ? '/assets/images/mental-health/pause-audio.svg'
+                : '/assets/images/mental-health/play-audio.svg'
+            "
+            width="40"
+            height="40"
+            alt=""
+            aria-hidden="true"
+          />
+        </button>
+        <div
+          class="audio-player__progress"
+          [style.--progress]="progress() + '%'"
+          role="progressbar"
+          aria-label="Tiến trình podcast"
+          aria-valuemin="0"
+          [attr.aria-valuemax]="durationSeconds"
+          [attr.aria-valuenow]="currentTime()"
+        ></div>
+        <output class="audio-player__time" aria-live="off">
+          {{ formattedCurrentTime() }} / {{ formattedDuration }}
+        </output>
+        <img
+          class="audio-player__speaker"
+          src="/assets/images/mental-health/speaker.svg"
+          width="32"
+          height="32"
+          alt=""
+        />
+        <p class="audio-player__status" aria-live="polite">{{ playbackMessage() }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="podcast-library" aria-labelledby="podcast-library-title">
+    <div class="podcast-library__heading" appReveal="up">
+      <h2 id="podcast-library-title">Các Podcast khác</h2>
+      <img
+        class="podcast-library__ribbon"
+        src="/assets/images/mental-health/podcast-ribbon.svg"
+        width="97"
+        height="113"
+        alt=""
+        aria-hidden="true"
+      />
+    </div>
+
+    <div class="podcast-library__grid">
+      @for (podcast of podcasts(); track podcast.id; let index = $index) {
+        <article class="podcast-card" appReveal="up" [revealDelay]="index * 80" data-ui-card>
+          <button
+            class="podcast-card__trigger"
+            type="button"
+            [attr.aria-label]="'Xem chi tiết podcast: ' + podcast.title"
+            (click)="openPodcast(podcast)"
+          ></button>
+          <img class="podcast-card__image" [src]="podcast.image" [alt]="podcast.imageAlt" />
+          <div class="podcast-card__body">
+            <div>
+              <h3>{{ podcast.title }}</h3>
+              <p>{{ podcast.description }}</p>
+            </div>
+            <div class="podcast-card__footer">
+              <p class="podcast-card__source">
+                <img
+                  src="/assets/images/mental-health/waveform.svg"
+                  width="18"
+                  height="18"
+                  alt=""
+                />
+                {{ podcast.source }}
+              </p>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+
+    <app-ui-section-more
+      [expanded]="showAllPodcasts()"
+      [remaining]="remainingPodcastCount()"
+      [page]="podcastPagination().page"
+      [totalPages]="podcastPagination().totalPages"
+      (toggled)="togglePodcastLibrary()"
+      (pageChange)="selectPodcastPage($event)"
+    />
+
+    <app-story-share />
+
+    <div class="podcast-contact" appReveal="up">
+      <p>Hãy liên hệ Trạm nhé!</p>
+      <div>
+        @for (social of socialLinks; track social.name) {
+          <a
+            [href]="social.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            [attr.aria-label]="social.name"
+          >
+            <img [src]="social.icon" width="32" height="32" [alt]="social.name" />
+          </a>
+        }
+      </div>
+    </div>
+  </section>
+
+  @if (selectedPodcast(); as podcast) {
+    <app-ui-modal [open]="true" [title]="podcast.title" size="lg" (closed)="closePodcast()">
+      <div class="podcast-detail">
+        <img class="podcast-detail__image" [src]="podcast.image" [alt]="podcast.imageAlt" />
+        <div>
+          <p class="podcast-detail__description">{{ podcast.description }}</p>
+          <p class="podcast-detail__source">
+            <img src="/assets/images/mental-health/waveform.svg" width="18" height="18" alt="" />
+            {{ podcast.source }}
+          </p>
+          @if (podcastPreviewMessage()) {
+            <p class="podcast-detail__message" role="alert">{{ podcastPreviewMessage() }}</p>
+          }
+        </div>
+      </div>
+
+      <button
+        uiModalFooter
+        class="podcast-detail__play"
+        type="button"
+        [attr.aria-pressed]="isPodcastPreviewPlaying()"
+        (click)="togglePodcastPreview()"
+      >
+        {{ isPodcastPreviewPlaying() ? 'Dừng nghe' : 'Nghe nội dung' }}
+      </button>
+    </app-ui-modal>
+  }
+</article>

@@ -4,15 +4,19 @@
 }
 
 .donation-map-page {
+  position: relative;
+  overflow: hidden;
   color: #394366;
-  background: #fff;
+  background: #f4f6fa;
+  isolation: isolate;
 }
 
 .donation-map-hero {
   position: relative;
+  z-index: 1;
   height: 1045px;
   overflow: hidden;
-  background: #f4f6fa;
+  background: transparent;
 }
 
 .donation-map-hero__title {
@@ -44,6 +48,7 @@
   left: calc(50% - 195px);
   width: 798px;
   height: 800px;
+  isolation: isolate;
 }
 
 .donation-map-hero__map {
@@ -51,21 +56,196 @@
   width: 798px;
   height: 800px;
   max-width: none;
+  overflow: visible;
+}
+
+.donation-map-hero__region {
+  cursor: pointer;
+  outline: none;
+}
+
+.donation-map-hero__region use {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    opacity 180ms ease,
+    filter 180ms ease,
+    transform 180ms ease;
+}
+
+.donation-map-hero__region:hover use,
+.donation-map-hero__region:focus-visible use {
+  opacity: 0.86;
+  filter: saturate(1.3) drop-shadow(0 3px 5px rgb(74 55 166 / 30%));
+  transform: scale(1.012);
+}
+
+.donation-map-hero__region:focus-visible use {
+  filter: brightness(0.88) saturate(1.45) drop-shadow(0 0 5px rgb(255 255 255 / 95%));
+}
+
+.donation-map-hero__region--active use {
+  filter: brightness(0.86) saturate(1.35) drop-shadow(0 3px 5px rgb(74 55 166 / 28%));
+}
+
+.donation-map-hero__region--selected use {
+  filter: brightness(0.72) saturate(1.6) drop-shadow(0 4px 7px rgb(74 55 166 / 42%));
+}
+
+.support-programs-cta {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: 14rem;
+  place-items: center;
+  padding: 2rem;
+  overflow: hidden;
+  background: transparent;
+}
+
+.support-programs-cta a {
+  display: inline-flex;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.85rem 1.35rem;
+  border: 1px solid #6554d9;
+  border-radius: 999px;
+  color: #fff;
+  background: #6554d9;
+  box-shadow: 0 0.8rem 1.8rem rgb(73 56 166 / 20%);
+  font-weight: 800;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.support-programs-cta a:hover {
+  box-shadow: 0 1rem 2.2rem rgb(73 56 166 / 28%);
+  transform: translateY(-2px);
+}
+.donation-region-dialog {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(1.25rem, 3vw, 2rem);
+  align-items: center;
+}
+
+.donation-region-dialog__visual {
+  position: relative;
+  display: grid;
+  min-height: 17rem;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 30% 25%, rgb(255 255 255 / 88%), transparent 36%),
+    linear-gradient(145deg, #f1efff, #ddd8fa);
+}
+
+.donation-region-dialog__visual img {
+  width: min(78%, 13rem);
+  height: 13rem;
   object-fit: contain;
+  filter: drop-shadow(0 0.75rem 1rem rgb(62 49 132 / 18%));
 }
 
-.donation-map-hero__hanoi-link {
+.donation-region-dialog__visual span {
   position: absolute;
-  top: 12.45%;
-  left: 24.59%;
-  width: 4.37%;
-  height: 5.06%;
-  border-radius: 50%;
+  right: 0.8rem;
+  bottom: 0.8rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid rgb(101 84 217 / 22%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 90%);
+  color: #5140bd;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
-.donation-map-hero__hanoi-link:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
+.donation-region-dialog__eyebrow {
+  margin: 0 0 0.65rem;
+  color: #6554d9;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.donation-region-dialog__content h3 {
+  margin: 0 0 0.75rem;
+  color: #293252;
+  font-size: clamp(1.25rem, 2.5vw, 1.7rem);
+  line-height: 1.25;
+}
+
+.donation-region-dialog__content > p:not(.donation-region-dialog__eyebrow) {
+  margin: 0;
+  color: #687190;
+  line-height: 1.65;
+}
+
+.donation-region-dialog__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: #f1effa;
+  color: #706b87;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.donation-region-dialog__status::before {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentcolor;
+  content: '';
+}
+
+.donation-region-dialog__status--active {
+  background: #e9f7ef;
+  color: #267a4b;
+}
+
+.donation-region-dialog__actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.donation-region-dialog__button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1rem;
+  border: 1px solid #6554d9;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: #5948ca;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.donation-region-dialog__button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0.5rem 1rem rgb(73 56 166 / 14%);
+}
+
+.donation-region-dialog__button--primary {
+  border-color: #6554d9;
+  background: #6554d9;
+  color: #fff;
 }
 
 @media (max-width: 1000px) {
@@ -105,5 +285,38 @@
 
   .donation-map-hero__map-shell {
     top: 190px;
+  }
+
+  .donation-region-dialog {
+    grid-template-columns: 1fr;
+  }
+
+  .donation-region-dialog__visual {
+    min-height: 11rem;
+  }
+
+  .donation-region-dialog__visual img {
+    height: 9rem;
+  }
+
+  .donation-region-dialog__actions {
+    width: 100%;
+    flex-direction: column-reverse;
+  }
+
+  .support-programs-cta {
+    min-height: 11rem;
+  }
+
+  .donation-region-dialog__button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donation-map-hero__region use,
+  .donation-region-dialog__button,
+  .support-programs-cta a {
+    transition: none;
   }
 }

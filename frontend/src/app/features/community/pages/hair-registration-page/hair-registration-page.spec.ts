@@ -40,6 +40,7 @@ describe('HairRegistrationPage', () => {
 
     expect(element.querySelector('h1')?.textContent?.trim()).toBe('Đăng ký tham gia nhận tóc');
     expect(element.querySelectorAll('.hair-form')).toHaveLength(1);
+    expect(element.querySelector('.hair-form')?.classList).toContain('ui-reveal');
     expect(element.querySelectorAll('.hair-form__section--registration')).toHaveLength(1);
     expect(element.querySelectorAll('.hair-form__commitments')).toHaveLength(0);
   });

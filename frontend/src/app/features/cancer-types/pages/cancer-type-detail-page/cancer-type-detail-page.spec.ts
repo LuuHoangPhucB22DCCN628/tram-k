@@ -19,7 +19,10 @@ describe('CancerTypeDetailPage', () => {
         provideRouter([]),
         {
           provide: ActivatedRoute,
-          useValue: { paramMap: routeParams.asObservable(), snapshot: { paramMap } },
+          useValue: {
+            paramMap: routeParams.asObservable(),
+            snapshot: { paramMap },
+          },
         },
       ],
     }).compileComponents();
@@ -90,5 +93,28 @@ describe('CancerTypeDetailPage', () => {
     expect(element.querySelectorAll('.breast-section__copy strong')).toHaveLength(18);
     expect(element.querySelector('.thyroid-treatment__card')).not.toBeNull();
     expect(ids).toHaveLength(new Set(ids).size);
+  });
+
+  it('uses the shared reveal motion for each Figma detail layout', () => {
+    let element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('.breast-hero')?.classList).toContain('ui-reveal--scale');
+    expect(
+      [...element.querySelectorAll('.breast-section, .breast-screening, .breast-story')].every(
+        (section) => section.classList.contains('ui-reveal'),
+      ),
+    ).toBe(true);
+
+    routeParams.next(convertToParamMap({ slug: 'ung-thu-gan' }));
+    fixture.detectChanges();
+    element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('.medical-article__header')?.classList).toContain('ui-reveal');
+    expect(
+      [...element.querySelectorAll('.medical-article__section')].every((section) =>
+        section.classList.contains('ui-reveal'),
+      ),
+    ).toBe(true);
+    expect(element.querySelector('.related-cancers')?.classList).toContain('ui-reveal--right');
   });
 });

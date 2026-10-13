@@ -1,25 +1,122 @@
 <article class="hanoi-donation-map-page">
-  <section class="hanoi-map-hero" aria-label="Các điểm quyên góp tại Hà Nội">
+  <section class="hanoi-map-hero" [attr.aria-label]="'Các điểm quyên góp tại ' + region.name">
     <app-community-map-background aria-hidden="true" />
     <app-community-love-title class="hanoi-map-hero__title" />
 
     <div class="hanoi-map-hero__map-shell">
       <img
         class="hanoi-map-hero__map"
-        src="/assets/images/community/community-hanoi-map.svg"
-        alt="Bản đồ Hà Nội với ba điểm quyên góp"
+        appReveal="scale"
+        [src]="mapImage"
+        [alt]="'Bản đồ ' + region.name + ' với ' + markers().length + ' điểm quyên góp'"
         width="750"
         height="847"
       />
-      @for (marker of markers; track marker.id) {
+      @for (marker of markers(); track marker.id; let index = $index) {
         <button
-          class="hanoi-map-hero__marker hanoi-map-hero__marker--{{ marker.id }}"
+          class="hanoi-map-hero__marker"
+          appReveal="scale"
+          [revealDelay]="120 + index * 70"
           type="button"
-          [attr.aria-label]="marker.label"
+          [style.top.%]="marker.mapTopPercent"
+          [style.left.%]="marker.mapLeftPercent"
+          [attr.aria-label]="'Xem chi tiết ' + marker.label"
+          (click)="openDetails(marker, $event)"
         >
           <app-community-location-pin />
         </button>
       }
     </div>
   </section>
+
+  @if (selectedLocation(); as location) {
+    <div class="location-dialog-backdrop" (click)="closeDetails()">
+      <section
+        class="location-dialog"
+        appReveal="scale"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-labelledby]="'location-dialog-title-' + location.id"
+        (click)="$event.stopPropagation()"
+      >
+        <img
+          class="location-dialog__photo"
+          [src]="location.image"
+          [alt]="'Hoạt động phát cơm tại ' + location.title"
+          width="304"
+          height="380"
+        />
+
+        <div class="location-dialog__content">
+          <h2 [id]="'location-dialog-title-' + location.id">{{ location.title }}</h2>
+
+          <div class="location-dialog__description">
+            @for (paragraph of location.description; track paragraph) {
+              <p>{{ paragraph }}</p>
+            }
+            @if (location.emphasis) {
+              <strong>{{ location.emphasis }}</strong>
+            }
+          </div>
+
+          <div class="location-dialog__meta">
+            <p>
+              <img
+                src="/assets/icons/community-location-calendar.svg"
+                alt=""
+                aria-hidden="true"
+                width="21"
+                height="21"
+              />
+              <span>{{ location.schedule }}</span>
+            </p>
+            <p>
+              <img
+                src="/assets/icons/community-location-address.svg"
+                alt=""
+                aria-hidden="true"
+                width="21"
+                height="21"
+              />
+              <span>{{ location.address }}</span>
+            </p>
+            <p class="location-dialog__contact">
+              <span>Liên hệ: {{ location.contactName }} · {{ location.phone }}</span>
+            </p>
+          </div>
+
+          <button
+            class="location-dialog__register"
+            type="button"
+            [disabled]="isRegistered()"
+            (click)="registerForMeal()"
+          >
+            {{ registrationButtonLabel() }}
+          </button>
+
+          @if (registrationFeedback()) {
+            <p class="location-dialog__feedback" aria-live="polite">
+              {{ registrationFeedback() }}
+            </p>
+          }
+        </div>
+
+        <button
+          #closeButton
+          class="location-dialog__close"
+          type="button"
+          aria-label="Đóng chi tiết địa điểm"
+          (click)="closeDetails()"
+        >
+          <img
+            src="/assets/icons/community-modal-close.svg"
+            alt=""
+            aria-hidden="true"
+            width="20"
+            height="20"
+          />
+        </button>
+      </section>
+    </div>
+  }
 </article>
