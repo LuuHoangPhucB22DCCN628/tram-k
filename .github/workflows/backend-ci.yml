@@ -1,0 +1,79 @@
+name: Backend CI
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  verify-backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tram_k
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tram_k"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tram_k?schema=public
+      JWT_SECRET: tram-k-ci-jwt-secret-at-least-32-characters
+      OUTBOX_ENCRYPTION_KEY: tram-k-ci-outbox-key-at-least-32-characters
+      IP_HASH_SECRET: tram-k-ci-ip-hash-secret-at-least-32-characters
+      AUTH_JOBS_ENABLED: false
+      EMAIL_DELIVERY_MODE: log
+      AI_PROVIDER: local
+      MEDIA_STORAGE_PATH: /tmp/tram-k-media
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
+
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+      - name: Apply database migrations
+        run: npm run db:migrate
+
+      - name: Check migration status
+        run: npx prisma migrate status
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build application
+        run: npm run build
