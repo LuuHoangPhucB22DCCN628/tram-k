@@ -5,6 +5,8 @@ import { TestBed } from '@angular/core/testing';
 import { API_BASE_URL } from '@core/config/api-base-url.token';
 
 import { authInterceptor } from './auth.interceptor';
+import { AuthApiService } from './auth-api.service';
+import { AuthMockApiService } from './auth-mock-api.service';
 import { AuthService } from './auth.service';
 
 describe('authInterceptor', () => {
@@ -16,6 +18,7 @@ describe('authInterceptor', () => {
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
         { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
+        { provide: AuthApiService, useExisting: AuthMockApiService },
       ],
     });
   });

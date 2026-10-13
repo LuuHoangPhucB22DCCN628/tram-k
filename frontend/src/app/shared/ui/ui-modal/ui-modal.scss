@@ -5,6 +5,11 @@
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: 0 1.5rem 4rem rgb(37 41 74 / 24%);
+  animation: ui-modal-enter var(--motion-duration-base) var(--motion-ease-emphasized) both;
+
+  &[data-size='lg'] {
+    width: min(calc(100% - (2 * var(--space-5))), 46rem);
+  }
 
   &__backdrop {
     position: fixed;
@@ -14,6 +19,7 @@
     place-items: center;
     padding: var(--space-4);
     background: rgb(37 41 74 / 55%);
+    animation: ui-modal-backdrop-enter var(--motion-duration-fast) var(--motion-ease-standard) both;
   }
 
   &__header {
@@ -41,10 +47,18 @@
       color: var(--color-text-muted);
       font-size: 1.5rem;
       cursor: pointer;
+      transition:
+        background-color var(--motion-duration-fast) var(--motion-ease-standard),
+        color var(--motion-duration-fast) var(--motion-ease-standard),
+        transform var(--motion-duration-fast) var(--motion-ease-standard);
 
       &:hover {
         background: var(--color-brand-soft);
         color: var(--color-brand-primary);
+      }
+
+      &:active {
+        transform: scale(0.92);
       }
     }
   }
@@ -63,5 +77,29 @@
     &:empty {
       display: none;
     }
+  }
+}
+
+@keyframes ui-modal-backdrop-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-modal-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--motion-distance-sm), 0) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-modal,
+  .ui-modal__backdrop {
+    animation: none;
+  }
+
+  .ui-modal__header button {
+    transition: none;
   }
 }

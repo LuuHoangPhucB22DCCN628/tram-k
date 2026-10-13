@@ -96,6 +96,35 @@
     font-size: 0.875rem;
   }
 
+  &__password {
+    position: relative;
+
+    input {
+      padding-right: 4.5rem;
+    }
+  }
+
+  &__password-toggle {
+    position: absolute;
+    top: 50%;
+    right: var(--space-3);
+    padding: var(--space-1) var(--space-2);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-brand-primary);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    cursor: pointer;
+    transform: translateY(-50%);
+
+    &:focus-visible {
+      outline: 2px solid var(--color-brand-primary);
+      outline-offset: 2px;
+    }
+  }
+
   &__checkbox {
     display: flex;
     align-items: flex-start;

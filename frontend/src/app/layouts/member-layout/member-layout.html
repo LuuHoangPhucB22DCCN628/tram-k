@@ -1,31 +1,30 @@
 <div class="member-shell">
   <a class="skip-link" href="#member-main-content">Bỏ qua đến nội dung chính</a>
 
-  <header class="member-shell__header">
-    <a routerLink="/" aria-label="Trạm K - Trang chủ">
-      <img src="/assets/images/brand/tram-k-logo.svg" width="169" height="40" alt="Trạm K" />
-    </a>
-    <div>
-      <span class="member-shell__account">
-        Khu vực thành viên · {{ auth.currentUser()?.displayName }}
-      </span>
-      <span class="member-shell__links">
-        <a routerLink="/">Trang công khai</a>
-        <button type="button" (click)="logout()">Đăng xuất</button>
-      </span>
-    </div>
-  </header>
+  <app-public-header></app-public-header>
 
   <div class="member-shell__body">
-    <aside class="member-shell__sidebar">
-      <nav aria-label="Điều hướng thành viên">
-        @for (item of menuItems; track item.path) {
+    <aside class="member-shell__sidebar" [class.member-shell__sidebar--open]="isSidebarOpen()">
+      <button
+        class="member-shell__sidebar-toggle"
+        type="button"
+        aria-controls="member-navigation"
+        [attr.aria-expanded]="isSidebarOpen()"
+        (click)="toggleSidebar()"
+      >
+        <span>Menu tài khoản</span>
+        <span class="member-shell__sidebar-chevron" aria-hidden="true"></span>
+      </button>
+
+      <nav id="member-navigation" aria-label="Điều hướng thành viên">
+        @for (item of menuItems(); track item.path) {
           <a
             [routerLink]="item.path"
             routerLinkActive="member-shell__nav-link--active"
             [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
             ariaCurrentWhenActive="page"
             class="member-shell__nav-link"
+            (click)="closeSidebar()"
           >
             {{ item.label }}
           </a>
@@ -33,8 +32,10 @@
       </nav>
     </aside>
 
-    <main id="member-main-content" class="member-shell__main">
+    <main id="member-main-content" class="member-shell__main ui-route-content">
       <router-outlet></router-outlet>
     </main>
   </div>
+
+  <app-public-footer></app-public-footer>
 </div>

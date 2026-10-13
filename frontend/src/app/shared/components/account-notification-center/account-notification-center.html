@@ -1,0 +1,105 @@
+<div class="notification-center" [class.notification-center--mobile]="appearance() === 'mobile'">
+  <button
+    class="notification-center__trigger"
+    type="button"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-label]="
+      unreadCount()
+        ? 'Thông báo, ' + unreadCount() + ' thông báo chưa đọc'
+        : 'Thông báo, không có thông báo mới'
+    "
+    (click)="toggle($event)"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.8"
+      />
+    </svg>
+    @if (appearance() === 'mobile') {
+      <span class="notification-center__mobile-label">Thông báo</span>
+    }
+    @if (unreadCount()) {
+      <span class="notification-center__badge" aria-hidden="true">
+        {{ unreadCount() > 9 ? '9+' : unreadCount() }}
+      </span>
+    }
+  </button>
+
+  @if (isOpen()) {
+    <section
+      class="notification-center__panel"
+      role="dialog"
+      aria-label="Thông báo tài khoản"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="notification-center__header">
+        <div>
+          <span>Cập nhật của bạn</span>
+          <h2>Thông báo</h2>
+        </div>
+        @if (unreadCount()) {
+          <button type="button" (click)="markAllRead($event)">Đánh dấu đã đọc</button>
+        }
+      </header>
+
+      <div class="notification-center__list">
+        @for (notification of notifications(); track notification.id) {
+          <a
+            class="notification-center__item"
+            [class.notification-center__item--unread]="!notification.readAt"
+            [routerLink]="notificationUrl(notification)"
+            (click)="openNotification(notification)"
+          >
+            <span class="notification-center__status" aria-hidden="true">
+              @switch (notification.kind) {
+                @case ('PROGRAM_REGISTRATION_REJECTED') {
+                  !
+                }
+                @case ('PROGRAM_REGISTRATION_COMPLETED') {
+                  ✓
+                }
+                @case ('PROGRAM_PUBLISHED') {
+                  ✓
+                }
+                @case ('PARTNER_APPLICATION_APPROVED') {
+                  ✓
+                }
+                @case ('PROGRAM_REJECTED') {
+                  !
+                }
+                @case ('PARTNER_APPLICATION_REJECTED') {
+                  !
+                }
+                @default {
+                  •
+                }
+              }
+            </span>
+            <span class="notification-center__content">
+              <strong>{{ notification.title }}</strong>
+              <span>{{ notification.message }}</span>
+              <time [attr.datetime]="notification.createdAt">
+                {{ notification.createdAt | date: 'HH:mm, dd/MM/yyyy' }}
+              </time>
+            </span>
+            @if (!notification.readAt) {
+              <span class="notification-center__unread-dot" aria-label="Chưa đọc"></span>
+            }
+          </a>
+        } @empty {
+          <div class="notification-center__empty">
+            <span aria-hidden="true">✓</span>
+            <strong>Bạn đã xem hết thông báo</strong>
+            <p>Các cập nhật về chương trình hỗ trợ sẽ xuất hiện tại đây.</p>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>

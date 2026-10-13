@@ -7,3 +7,4 @@ export { UiInput, type UiInputType } from './ui-input/ui-input';
 export { UiLoading } from './ui-loading/ui-loading';
 export { UiModal } from './ui-modal/ui-modal';
 export { UiPagination } from './ui-pagination/ui-pagination';
+export { UiSectionMore } from './ui-section-more/ui-section-more';
