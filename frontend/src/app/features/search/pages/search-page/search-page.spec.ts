@@ -27,10 +27,7 @@ describe('SearchPage', () => {
     searchService.search.mockClear();
     await TestBed.configureTestingModule({
       imports: [SearchPage],
-      providers: [
-        provideRouter([]),
-        { provide: SiteSearchService, useValue: searchService },
-      ],
+      providers: [provideRouter([]), { provide: SiteSearchService, useValue: searchService }],
     }).compileComponents();
   });
 
@@ -58,8 +55,9 @@ describe('SearchPage', () => {
     expect(element.textContent).toContain('Tìm thấy 9 kết quả');
     expect(element.querySelector('button[aria-label="Trang 2"]')).not.toBeNull();
 
-    const podcastFilter = [...element.querySelectorAll<HTMLButtonElement>('.search-filters button')]
-      .find((button) => button.textContent?.includes('Podcast'))!;
+    const podcastFilter = [
+      ...element.querySelectorAll<HTMLButtonElement>('.search-filters button'),
+    ].find((button) => button.textContent?.includes('Podcast'))!;
     podcastFilter.click();
     await fixture.whenStable();
     fixture.detectChanges();
