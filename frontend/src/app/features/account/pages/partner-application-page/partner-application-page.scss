@@ -1,0 +1,128 @@
+.partner-application {
+  max-width: 960px;
+  margin: auto;
+  color: #2e385d;
+}
+.partner-application__heading {
+  margin-bottom: 24px;
+}
+.partner-application__heading p {
+  color: #5e4dcb;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+}
+form,
+.partner-application__status {
+  background: #fff;
+  border: 1px solid #dedafa;
+  border-radius: 18px;
+  padding: clamp(18px, 4vw, 30px);
+  box-shadow: 0 12px 35px rgba(48, 38, 110, 0.08);
+}
+.partner-application__status {
+  margin-bottom: 22px;
+}
+.partner-application__status div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.partner-application__status strong {
+  color: #5e4dcb;
+}
+.partner-application__status[data-status='REJECTED'] strong,
+.partner-application__error,
+.partner-application__field-error,
+.partner-application__feedback[data-state='error'] {
+  color: #b42318;
+}
+.partner-application__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+label {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 18px;
+  font-weight: 650;
+}
+input,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ccd1e4;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font: inherit;
+  color: inherit;
+}
+input:focus,
+textarea:focus {
+  outline: 3px solid rgba(94, 77, 203, 0.18);
+  border-color: #5e4dcb;
+}
+input[aria-invalid='true'],
+textarea[aria-invalid='true'] {
+  border-color: #d92d20;
+  background: #fffafa;
+}
+.partner-application__field-error {
+  margin: -1px 0 0;
+  font-size: 0.82rem;
+  font-weight: 550;
+  line-height: 1.4;
+}
+.partner-application__hint,
+.partner-application__counter {
+  color: #667085;
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+.partner-application__counter {
+  justify-self: end;
+}
+.partner-application label > span b {
+  color: #d92d20;
+}
+.partner-application__consent {
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  font-weight: 400;
+}
+.partner-application__consent input {
+  width: auto;
+  margin-top: 4px;
+}
+.partner-application__files,
+.partner-application__feedback {
+  color: #5447ac;
+}
+.partner-application__error {
+  padding: 10px 12px;
+  border: 1px solid #fecdca;
+  border-radius: 10px;
+  background: #fffbfa;
+}
+.partner-application__feedback[data-state='success'] {
+  color: #16794a;
+}
+button {
+  border: 0;
+  border-radius: 999px;
+  background: #5e4dcb;
+  color: #fff;
+  padding: 12px 24px;
+  font-weight: 700;
+  cursor: pointer;
+}
+@media (max-width: 650px) {
+  .partner-application__grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

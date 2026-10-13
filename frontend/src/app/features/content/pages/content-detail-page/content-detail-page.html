@@ -6,7 +6,7 @@
       title="Không tìm thấy bài viết"
       message="Bài viết có thể đã được chuyển, gỡ bỏ hoặc chưa được xuất bản."
     >
-      <a class="detail-action" routerLink="/cam-nang">Quay lại Cẩm nang</a>
+      <a class="detail-action" [routerLink]="config.backPath">Quay lại {{ config.backLabel }}</a>
     </app-ui-empty-state>
   </div>
 } @else if (errorMessage()) {
@@ -17,7 +17,7 @@
   <article class="detail-page">
     <div class="detail-layout">
       <div class="detail-main">
-        <header class="detail-header">
+        <header class="detail-header" appReveal="up">
           <p class="detail-category">{{ article.category.name }}</p>
           <h1>{{ article.title }}</h1>
           <div class="detail-meta">
@@ -52,8 +52,8 @@
         <div class="detail-content">
           <p class="detail-lead">{{ article.detailLead ?? article.excerpt }}</p>
 
-          @for (section of article.sections; track $index) {
-            <section class="detail-section">
+          @for (section of article.sections; track $index; let sectionIndex = $index) {
+            <section class="detail-section" appReveal="up" [revealDelay]="(sectionIndex % 3) * 70">
               @if (section.heading) {
                 <h2>{{ section.heading }}</h2>
               }
@@ -84,15 +84,64 @@
             </section>
           }
         </div>
+
+        <section class="detail-comments" aria-labelledby="comments-title" appReveal="up">
+          <div class="detail-comments__heading">
+            <h2 id="comments-title">Bình luận</h2>
+            <span>{{ comments().length }} bình luận</span>
+          </div>
+
+          @if (auth.isAuthenticated()) {
+            <form [formGroup]="commentForm" (ngSubmit)="submitComment()">
+              <label for="new-comment">Chia sẻ suy nghĩ của bạn</label>
+              <textarea
+                id="new-comment"
+                formControlName="content"
+                rows="4"
+                maxlength="1000"
+                placeholder="Nhập bình luận..."
+              ></textarea>
+              @if (commentForm.controls.content.invalid && commentForm.controls.content.touched) {
+                <small>Bình luận cần từ 2 đến 1.000 ký tự.</small>
+              }
+              <button type="submit">Gửi bình luận</button>
+              <span class="visually-hidden" aria-live="polite">{{ commentFeedback() }}</span>
+            </form>
+          } @else {
+            <p class="detail-comments__login">
+              <a routerLink="/dang-nhap">Đăng nhập</a> để tham gia bình luận.
+            </p>
+          }
+          @if (comments().length) {
+            <div class="detail-comments__list">
+              @for (comment of comments(); track comment.id) {
+                <article>
+                  <div>
+                    <strong>{{ isOwnComment(comment.userId) ? 'Bạn' : comment.authorName }}</strong>
+                    <time [attr.datetime]="comment.updatedAt">
+                      {{ comment.updatedAt | date: 'dd/MM/yyyy, HH:mm' }}
+                    </time>
+                  </div>
+                  <p>{{ comment.content }}</p>
+                </article>
+              }
+            </div>
+          }
+        </section>
       </div>
 
-      <aside class="detail-related" aria-label="Bài viết gợi ý">
+      <aside
+        class="detail-related"
+        aria-label="Bài viết gợi ý"
+        appReveal="right"
+        [revealDelay]="100"
+      >
         @for (group of sidebarGroups(); track group.title; let last = $last) {
           <section class="related-group">
             <h2 [id]="last ? 'related-title' : null">{{ group.title }}</h2>
             <div class="detail-related__list">
               @for (item of group.items; track item.id) {
-                <a class="related-card" [routerLink]="articleLink(item)">
+                <a class="related-card" [routerLink]="articleLink(item)" data-ui-card>
                   <img
                     [src]="item.coverImage.url"
                     [alt]="item.coverImage.alt"

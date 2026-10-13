@@ -8,7 +8,7 @@
       alt=""
       fetchpriority="high"
     />
-    <div class="hero__content">
+    <div class="hero__content" appReveal="up">
       <h1 id="hero-title">
         <span class="hero__eyebrow">we can<em>cer</em></span
         ><span class="hero__word">Survive</span>
@@ -33,13 +33,14 @@
   <section class="journey" aria-labelledby="journey-title">
     <img
       class="journey__art"
+      appReveal="left"
       src="/assets/images/home/home-journey.svg"
       width="839"
       height="534"
       alt=""
       loading="lazy"
     />
-    <div class="journey__copy">
+    <div class="journey__copy" appReveal="right" [revealDelay]="100">
       <h2 id="journey-title" class="display-title">Hành trình</h2>
       <p class="journey__subtitle">nào cũng cần một người đồng hành</p>
       <p>
@@ -50,12 +51,17 @@
     </div>
   </section>
   <section class="explore section-shell" aria-labelledby="explore-title">
-    <header class="section-heading">
+    <header class="section-heading" appReveal="up">
       <h2 id="explore-title" class="display-title">Khám phá</h2>
       <p class="explore__subtitle">Nơi hy vọng bắt đầu từ những hành động nhỏ</p>
     </header>
     <div class="explore__grid">
-      <a class="feature-card feature-card--guide" routerLink="/cam-nang">
+      <a
+        class="feature-card feature-card--guide"
+        routerLink="/cam-nang"
+        appReveal="up"
+        data-ui-card
+      >
         <h3>Cẩm nang</h3>
         <p>Những kiến thức và hướng dẫn hữu ích để đồng hành cùng bệnh nhân và gia đình.</p>
         <img
@@ -66,7 +72,13 @@
           loading="lazy"
         />
       </a>
-      <a class="feature-card feature-card--story" routerLink="/cau-chuyen">
+      <a
+        class="feature-card feature-card--story"
+        routerLink="/cau-chuyen"
+        appReveal="up"
+        [revealDelay]="70"
+        data-ui-card
+      >
         <img
           src="/assets/images/home/explore-story.svg"
           width="848"
@@ -84,12 +96,12 @@
           >
         </div>
       </a>
-      <button
-        type="button"
+      <a
         class="feature-card feature-card--chat"
-        (click)="chatNoticeOpen.set(!chatNoticeOpen())"
-        [attr.aria-expanded]="chatNoticeOpen()"
-        aria-controls="chat-notice"
+        routerLink="/tro-ly-ai"
+        appReveal="up"
+        [revealDelay]="140"
+        data-ui-card
       >
         <div>
           <h3>Chat bot AI</h3>
@@ -105,12 +117,23 @@
           alt=""
           loading="lazy"
         />
-      </button>
-      <a class="feature-card feature-card--mind" routerLink="/goc-tam-ly"
+      </a>
+      <a
+        class="feature-card feature-card--mind"
+        routerLink="/goc-tam-ly"
+        appReveal="up"
+        [revealDelay]="210"
+        data-ui-card
         ><h3>Góc tâm lý và tinh thần</h3>
         <p>Lắng nghe các podcast của Trạm và các đối tác. Trạm luôn đồng hành cùng bạn.</p></a
       >
-      <a class="feature-card feature-card--cancer" routerLink="/loai-ung-thu">
+      <a
+        class="feature-card feature-card--cancer"
+        routerLink="/loai-ung-thu"
+        appReveal="up"
+        [revealDelay]="280"
+        data-ui-card
+      >
         <img
           src="/assets/images/home/explore-cancer-types.svg"
           width="580"
@@ -126,7 +149,13 @@
           </p>
         </div>
       </a>
-      <a class="feature-card feature-card--support" routerLink="/cong-dong">
+      <a
+        class="feature-card feature-card--support"
+        routerLink="/cong-dong"
+        appReveal="up"
+        [revealDelay]="350"
+        data-ui-card
+      >
         <div>
           <h3>Cộng đồng</h3>
           <p>
@@ -157,13 +186,9 @@
         </span>
       </a>
     </div>
-    <p id="chat-notice" class="chat-notice" [hidden]="!chatNoticeOpen()" role="status">
-      Chatbot đang được hoàn thiện. Bạn có thể xem <a routerLink="/cam-nang">cẩm nang</a> hoặc kết
-      nối với <a routerLink="/cong-dong">cộng đồng Trạm K</a>.
-    </p>
   </section>
   <section class="guides" aria-labelledby="guides-title">
-    <header class="section-heading">
+    <header class="section-heading" appReveal="up">
       <h2 id="guides-title" class="display-title">Cẩm nang đồng hành</h2>
       <p>
         Đằng sau mỗi hành trình được tiếp thêm sức mạnh là sự đồng hành của những đối tác cùng chung
@@ -172,7 +197,7 @@
     </header>
     <div class="guide-grid section-shell">
       @for (article of guideArticles; track article.title; let index = $index) {
-        <article class="guide-card">
+        <article class="guide-card" appReveal="up" [revealDelay]="index * 70" data-ui-card>
           <a
             class="guide-card__photo"
             [class.guide-card__photo--first]="index === 0"
@@ -204,7 +229,7 @@
     >
   </section>
   <section class="faq" aria-labelledby="faq-title">
-    <header class="section-heading">
+    <header class="section-heading" appReveal="up">
       <h2 id="faq-title" class="display-title">Những câu hỏi thường gặp</h2>
       <p>
         Đằng sau mỗi hành trình được tiếp thêm sức mạnh là sự đồng hành của những đối tác cùng chung
@@ -212,7 +237,7 @@
       </p>
     </header>
     <div class="faq__content section-shell">
-      <aside>
+      <aside appReveal="left">
         <img
           class="faq__art"
           src="/assets/images/home/home-faq.svg"
@@ -235,7 +260,7 @@
           }
         </nav>
       </aside>
-      <div class="faq-list">
+      <div class="faq-list" appReveal="right" [revealDelay]="100">
         @for (item of faqItems; track item.question; let index = $index) {
           <article class="faq-item">
             <h3>
@@ -267,7 +292,7 @@
   <section class="partners" id="home-partners" aria-labelledby="partners-title">
     <div class="partners__orbit partners__orbit--outer" aria-hidden="true"></div>
     <div class="partners__orbit partners__orbit--inner" aria-hidden="true"></div>
-    <div class="partners__logos">
+    <div class="partners__logos" appReveal="scale">
       @for (partner of partners; track partner; let index = $index) {
         <img
           [src]="'/assets/images/home/759-3423-imgAva' + partner + '.png'"
@@ -278,7 +303,7 @@
         />
       }
     </div>
-    <header class="section-heading">
+    <header class="section-heading" appReveal="up" [revealDelay]="120">
       <h2 id="partners-title" class="display-title">Đối tác của Trạm</h2>
       <p>
         Đằng sau mỗi hành trình được tiếp thêm sức mạnh là sự đồng hành của những đối tác cùng chung

@@ -1,5 +1,7 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
+
+import { normalizeSearchText } from '@shared/utils/search-text';
 
 import { MOCK_CONTENT_ITEMS } from '../data/content.mock-data';
 import {
@@ -13,17 +15,28 @@ import {
   type ContentPageSize,
   type ContentSummary,
 } from '../models/content.models';
+import { ContentAdminStorageService } from './content-admin-storage.service';
 
 const DEFAULT_PAGE_SIZE: ContentPageSize = 6;
 
 @Injectable({ providedIn: 'root' })
 export class ContentMockApiService {
+  private readonly adminStorage = inject(ContentAdminStorageService);
+
   list(query: ContentListQuery = {}): Observable<ContentPage<ContentSummary>> {
+    return this.listFromItems(this.items(), query);
+  }
+
+  listFromItems(
+    sourceItems: readonly ContentDetail[],
+    query: ContentListQuery = {},
+  ): Observable<ContentPage<ContentSummary>> {
     const page = this.normalizePage(query.page);
     const pageSize = this.normalizePageSize(query.pageSize);
-    const searchTerm = this.normalizeText(query.search ?? '');
+    const searchTerm = normalizeSearchText(query.search ?? '');
 
-    const filteredItems = MOCK_CONTENT_ITEMS.filter((item) => item.status === 'PUBLISHED')
+    const filteredItems = sourceItems
+      .filter((item) => item.status === 'PUBLISHED')
       .filter((item) => !query.kind || item.kind === query.kind)
       .filter((item) => !query.categorySlug || item.category.slug === query.categorySlug)
       .filter((item) => !query.tagSlug || item.tags.some((tag) => tag.slug === query.tagSlug))
@@ -49,7 +62,15 @@ export class ContentMockApiService {
   }
 
   getBySlug(kind: ContentKind, slug: string): Observable<ContentDetail> {
-    const item = MOCK_CONTENT_ITEMS.find(
+    return this.getBySlugFromItems(this.items(), kind, slug);
+  }
+
+  getBySlugFromItems(
+    sourceItems: readonly ContentDetail[],
+    kind: ContentKind,
+    slug: string,
+  ): Observable<ContentDetail> {
+    const item = sourceItems.find(
       (candidate) =>
         candidate.status === 'PUBLISHED' && candidate.kind === kind && candidate.slug === slug,
     );
@@ -66,9 +87,16 @@ export class ContentMockApiService {
   }
 
   getCategories(kind?: ContentKind): Observable<readonly ContentCategory[]> {
+    return this.getCategoriesFromItems(this.items(), kind);
+  }
+
+  getCategoriesFromItems(
+    sourceItems: readonly ContentDetail[],
+    kind?: ContentKind,
+  ): Observable<readonly ContentCategory[]> {
     const categories = new Map<string, ContentCategory>();
 
-    for (const item of MOCK_CONTENT_ITEMS) {
+    for (const item of sourceItems) {
       if (item.status === 'PUBLISHED' && (!kind || item.kind === kind)) {
         categories.set(item.category.id, item.category);
       }
@@ -87,17 +115,11 @@ export class ContentMockApiService {
       ...item.tags.map((tag) => tag.name),
     ].join(' ');
 
-    return this.normalizeText(searchableText).includes(searchTerm);
+    return normalizeSearchText(searchableText).includes(searchTerm);
   }
 
-  private normalizeText(value: string): string {
-    return value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D')
-      .toLowerCase()
-      .trim();
+  private items(): readonly ContentDetail[] {
+    return this.adminStorage.resolve(MOCK_CONTENT_ITEMS);
   }
 
   private normalizePage(page?: number): number {

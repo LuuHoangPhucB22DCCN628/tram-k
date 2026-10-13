@@ -25,6 +25,23 @@ const publicSectionRoutes: Routes = [
       ),
   },
   {
+    path: 'xac-minh-email',
+    title: 'Xác minh email | Trạm K',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('@features/auth/pages/verify-email-page/verify-email-page').then(
+        (component) => component.VerifyEmailPage,
+      ),
+  },
+  {
+    path: 'xac-minh-email-moi',
+    title: 'Xác minh email mới | Trạm K',
+    loadComponent: () =>
+      import('@features/auth/pages/verify-email-change-page/verify-email-change-page').then(
+        (component) => component.VerifyEmailChangePage,
+      ),
+  },
+  {
     path: 'quen-mat-khau',
     title: 'Quên mật khẩu | Trạm K',
     canActivate: [guestGuard],
@@ -73,6 +90,19 @@ const publicSectionRoutes: Routes = [
       ),
   },
   {
+    path: 'loai-ung-thu/bai-viet/:slug',
+    data: {
+      kind: 'CANCER_TYPE',
+      articleBasePath: '/loai-ung-thu/bai-viet',
+      backPath: '/loai-ung-thu',
+      backLabel: 'Loại ung thư',
+    },
+    loadComponent: () =>
+      import('@features/content/pages/content-detail-page/content-detail-page').then(
+        (component) => component.ContentDetailPage,
+      ),
+  },
+  {
     path: 'loai-ung-thu/:slug',
     loadComponent: () =>
       import('@features/cancer-types/pages/cancer-type-detail-page/cancer-type-detail-page').then(
@@ -93,6 +123,19 @@ const publicSectionRoutes: Routes = [
     loadComponent: () =>
       import('@features/stories/pages/dark-story-page/dark-story-page').then(
         (component) => component.DarkStoryPage,
+      ),
+  },
+  {
+    path: 'cau-chuyen/bai-viet/:slug',
+    data: {
+      kind: 'STORY',
+      articleBasePath: '/cau-chuyen/bai-viet',
+      backPath: '/cau-chuyen',
+      backLabel: 'Câu chuyện',
+    },
+    loadComponent: () =>
+      import('@features/content/pages/content-detail-page/content-detail-page').then(
+        (component) => component.ContentDetailPage,
       ),
   },
   {
@@ -130,8 +173,16 @@ const publicSectionRoutes: Routes = [
       ),
   },
   {
-    path: 'cong-dong/diem-quyen-gop/ha-noi',
-    title: 'Điểm quyên góp tại Hà Nội | Trạm K',
+    path: 'cong-dong/chuong-trinh-ho-tro',
+    title: 'Các chương trình hỗ trợ | Trạm K',
+    loadComponent: () =>
+      import('@features/community/pages/community-support-programs-page/community-support-programs-page').then(
+        (component) => component.CommunitySupportProgramsPage,
+      ),
+  },
+  {
+    path: 'cong-dong/diem-quyen-gop/:regionId',
+    title: 'Điểm quyên góp theo khu vực | Trạm K',
     loadComponent: () =>
       import('@features/community/pages/community-hanoi-donation-map-page/community-hanoi-donation-map-page').then(
         (component) => component.CommunityHanoiDonationMapPage,
@@ -156,11 +207,10 @@ const publicSectionRoutes: Routes = [
   {
     path: 'goc-tam-ly',
     title: 'Góc tâm lý và tinh thần | Trạm K',
-    data: {
-      heading: 'Góc tâm lý và tinh thần',
-      description: 'Nội dung giúp người bệnh và người thân chăm sóc sức khỏe tinh thần.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/mental-health/pages/mental-health-page/mental-health-page').then(
+        (component) => component.MentalHealthPage,
+      ),
   },
   {
     path: 've-chung-toi',
@@ -174,11 +224,18 @@ const publicSectionRoutes: Routes = [
   {
     path: 'tim-kiem',
     title: 'Tìm kiếm | Trạm K',
-    data: {
-      heading: 'Tìm kiếm thông tin',
-      description: 'Khung tìm kiếm bài viết, cẩm nang, câu chuyện và chương trình hỗ trợ.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/search/pages/search-page/search-page').then(
+        (component) => component.SearchPage,
+      ),
+  },
+  {
+    path: 'tro-ly-ai',
+    title: 'Trợ lý AI | Trạm K',
+    loadComponent: () =>
+      import('@features/ai-assistant/pages/ai-assistant-page/ai-assistant-page').then(
+        (component) => component.AiAssistantPage,
+      ),
   },
 ];
 
@@ -204,32 +261,90 @@ const memberSectionRoutes: Routes = [
   {
     path: 'bai-viet',
     title: 'Bài viết của tôi | Trạm K',
-    data: {
-      area: 'member',
-      heading: 'Bài viết của tôi',
-      description: 'Khung tạo bài chia sẻ và theo dõi trạng thái chờ quản trị viên duyệt.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/account/pages/member-posts-page/member-posts-page').then(
+        (component) => component.MemberPostsPage,
+      ),
   },
   {
     path: 'binh-luan',
     title: 'Bình luận của tôi | Trạm K',
-    data: {
-      area: 'member',
-      heading: 'Bình luận của tôi',
-      description: 'Khung quản lý những bình luận thành viên đã gửi trong cộng đồng.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/account/pages/member-comments-page/member-comments-page').then(
+        (component) => component.MemberCommentsPage,
+      ),
+  },
+  {
+    path: 'dang-ky-doi-tac',
+    title: 'Đăng ký đối tác | Trạm K',
+    loadComponent: () =>
+      import('@features/account/pages/partner-application-page/partner-application-page').then(
+        (component) => component.PartnerApplicationPage,
+      ),
+  },
+  {
+    path: 'chuong-trinh-da-dang-ky',
+    title: 'Các chương trình đã đăng ký | Trạm K',
+    loadComponent: () =>
+      import('@features/account/pages/member-registrations-page/member-registrations-page').then(
+        (component) => component.MemberRegistrationsPage,
+      ),
+  },
+];
+
+const partnerSectionRoutes: Routes = [
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: 'ho-so',
+  },
+  {
+    path: 'ho-so',
+    title: 'Hồ sơ nhà hảo tâm | Trạm K',
+    loadComponent: () =>
+      import('@features/profile/pages/profile-page/profile-page').then(
+        (component) => component.ProfilePage,
+      ),
+  },
+  {
+    path: 'bai-viet',
+    title: 'Bài viết của tôi | Trạm K',
+    loadComponent: () =>
+      import('@features/account/pages/member-posts-page/member-posts-page').then(
+        (component) => component.MemberPostsPage,
+      ),
+  },
+  {
+    path: 'binh-luan',
+    title: 'Bình luận của tôi | Trạm K',
+    loadComponent: () =>
+      import('@features/account/pages/member-comments-page/member-comments-page').then(
+        (component) => component.MemberCommentsPage,
+      ),
+  },
+  {
+    path: 'chuong-trinh-da-dang-ky',
+    title: 'Các chương trình đã đăng ký | Trạm K',
+    loadComponent: () =>
+      import('@features/account/pages/member-registrations-page/member-registrations-page').then(
+        (component) => component.MemberRegistrationsPage,
+      ),
   },
   {
     path: 'dang-ky-ho-tro',
     title: 'Đăng ký hỗ trợ | Trạm K',
-    data: {
-      area: 'member',
-      heading: 'Đăng ký hỗ trợ',
-      description: 'Khung theo dõi các chương trình hỗ trợ và điểm phát cơm đã đăng ký.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/account/pages/partner-support-registration-page/partner-support-registration-page').then(
+        (component) => component.PartnerSupportRegistrationPage,
+      ),
+  },
+  {
+    path: 'quan-ly-chuong-trinh',
+    title: 'Quản lý chương trình từ thiện | Trạm K',
+    loadComponent: () =>
+      import('@features/account/pages/partner-program-management-page/partner-program-management-page').then(
+        (component) => component.PartnerProgramManagementPage,
+      ),
   },
 ];
 
@@ -237,7 +352,15 @@ const adminSectionRoutes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'nguoi-dung',
+    redirectTo: 'tong-quan',
+  },
+  {
+    path: 'tong-quan',
+    title: 'Tổng quan quản trị | Trạm K',
+    loadComponent: () =>
+      import('@features/admin/pages/admin-dashboard-page/admin-dashboard-page').then(
+        (component) => component.AdminDashboardPage,
+      ),
   },
   {
     path: 'nguoi-dung',
@@ -248,44 +371,44 @@ const adminSectionRoutes: Routes = [
       ),
   },
   {
+    path: 'doi-tac',
+    title: 'Hồ sơ đối tác | Trạm K',
+    loadComponent: () =>
+      import('@features/admin/pages/admin-partner-applications-page/admin-partner-applications-page').then(
+        (component) => component.AdminPartnerApplicationsPage,
+      ),
+  },
+  {
     path: 'kiem-duyet',
     title: 'Kiểm duyệt cộng đồng | Trạm K',
-    data: {
-      area: 'admin',
-      heading: 'Kiểm duyệt cộng đồng',
-      description: 'Khung quản lý bài viết và bình luận đang chờ Admin duyệt.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/admin/pages/admin-community-moderation-page/admin-community-moderation-page').then(
+        (component) => component.AdminCommunityModerationPage,
+      ),
   },
   {
     path: 'noi-dung',
     title: 'Quản lý nội dung | Trạm K',
-    data: {
-      area: 'admin',
-      heading: 'Quản lý nội dung',
-      description: 'Khung quản lý cẩm nang, loại ung thư và câu chuyện truyền cảm hứng.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/admin/pages/admin-content-management-page/admin-content-management-page').then(
+        (component) => component.AdminContentManagementPage,
+      ),
   },
   {
     path: 'chuong-trinh',
     title: 'Chương trình hỗ trợ | Trạm K',
-    data: {
-      area: 'admin',
-      heading: 'Chương trình hỗ trợ',
-      description: 'Khung duyệt và quản lý các chương trình do nhà hảo tâm đăng ký.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/admin/pages/admin-charity-programs-page/admin-charity-programs-page').then(
+        (component) => component.AdminCharityProgramsPage,
+      ),
   },
   {
     path: 'diem-phat-com',
-    title: 'Điểm phát cơm | Trạm K',
-    data: {
-      area: 'admin',
-      heading: 'Điểm phát cơm',
-      description: 'Khung duyệt địa điểm, lịch phát và thông tin liên hệ của điểm hỗ trợ.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    title: 'Điểm tiếp nhận quyên góp | Trạm K',
+    loadComponent: () =>
+      import('@features/admin/pages/admin-community-locations-page/admin-community-locations-page').then(
+        (component) => component.AdminCommunityLocationsPage,
+      ),
   },
 ];
 
@@ -309,16 +432,11 @@ export const routes: Routes = [
   },
   {
     path: 'doi-tac',
-    title: 'Khu vực đối tác | Trạm K',
     canActivate: [roleGuard],
-    data: {
-      roles: ['PARTNER'],
-      area: 'partner',
-      heading: 'Khu vực đối tác',
-      description:
-        'Tài khoản của bạn đã vào đúng khu vực. Chức năng đăng ký và đề xuất chương trình sẽ được hoàn thiện ở Phase 6.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    data: { roles: ['PARTNER'] },
+    loadComponent: () =>
+      import('@layouts/member-layout/member-layout').then((component) => component.MemberLayout),
+    children: partnerSectionRoutes,
   },
   {
     path: 'thanh-vien',

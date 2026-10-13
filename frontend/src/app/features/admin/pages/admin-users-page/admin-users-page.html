@@ -9,9 +9,9 @@
     <div>
       <p class="admin-users__eyebrow">Quản lý hệ thống</p>
       <h1>Người dùng</h1>
-      <p>Theo dõi trạng thái tài khoản và xử lý trường hợp cần khóa hoặc mở khóa.</p>
+      <p>Theo dõi trạng thái tài khoản, khóa, mở khóa hoặc vô hiệu hóa khi cần thiết.</p>
     </div>
-    <app-ui-badge variant="primary">Dữ liệu mẫu</app-ui-badge>
+    <app-ui-badge variant="primary">Theo UC19</app-ui-badge>
   </header>
 
   <section class="stats" aria-label="Thống kê tài khoản">
@@ -30,6 +30,10 @@
     <app-ui-card>
       <span uiCardHeader>Đã khóa</span>
       <strong>{{ lockedUserCount() }}</strong>
+    </app-ui-card>
+    <app-ui-card>
+      <span uiCardHeader>Đã vô hiệu hóa</span>
+      <strong>{{ disabledUserCount() }}</strong>
     </app-ui-card>
   </section>
 
@@ -54,8 +58,9 @@
           <select [value]="statusFilter()" (change)="updateStatusFilter($event)">
             <option value="ALL">Tất cả</option>
             <option value="ACTIVE">Đang hoạt động</option>
-            <option value="PENDING">Chờ xác minh</option>
+            <option value="PENDING_VERIFY">Chờ xác minh</option>
             <option value="LOCKED">Đã khóa</option>
+            <option value="DISABLED">Đã vô hiệu hóa</option>
           </select>
         </label>
       </div>
@@ -65,7 +70,9 @@
       <p class="user-panel__feedback" role="status">{{ feedback() }}</p>
     }
 
-    @if (pagedUsers().length) {
+    @if (isLoading()) {
+      <p class="user-panel__loading" role="status">Đang tải danh sách tài khoản…</p>
+    } @else if (pagedUsers().length) {
       <div class="table-scroll" tabindex="0" aria-label="Bảng người dùng có thể cuộn ngang">
         <table>
           <thead>
@@ -93,12 +100,33 @@
                   </app-ui-badge>
                 </td>
                 <td>
-                  <app-ui-button
-                    [variant]="user.status === 'LOCKED' ? 'secondary' : 'ghost'"
-                    (buttonClick)="openStatusConfirmation(user)"
-                  >
-                    {{ user.status === 'LOCKED' ? 'Mở khóa' : 'Khóa' }}
-                  </app-ui-button>
+                  <div class="user-actions">
+                    @if (user.status === 'ACTIVE') {
+                      <app-ui-button
+                        variant="ghost"
+                        (buttonClick)="openStatusConfirmation(user, 'LOCKED')"
+                      >
+                        Khóa
+                      </app-ui-button>
+                    } @else if (user.status === 'LOCKED') {
+                      <app-ui-button
+                        variant="secondary"
+                        (buttonClick)="openStatusConfirmation(user, 'ACTIVE')"
+                      >
+                        Mở khóa
+                      </app-ui-button>
+                    }
+                    @if (user.status !== 'DISABLED') {
+                      <app-ui-button
+                        variant="danger"
+                        (buttonClick)="openStatusConfirmation(user, 'DISABLED')"
+                      >
+                        Vô hiệu hóa
+                      </app-ui-button>
+                    } @else {
+                      <span class="user-actions__terminal">Trạng thái cuối</span>
+                    }
+                  </div>
                 </td>
               </tr>
             }
@@ -129,22 +157,37 @@
 >
   @if (selectedUser(); as user) {
     <p>
-      Bạn có chắc muốn <strong>{{ user.status === 'LOCKED' ? 'mở khóa' : 'khóa' }}</strong> tài
-      khoản <strong>{{ user.displayName }}</strong
+      Bạn có chắc muốn chuyển tài khoản <strong>{{ user.displayName }}</strong> sang
+      <strong>{{ actionLabel(selectedStatus()) }}</strong
       >?
     </p>
     <p class="modal-note">
-      Đây là dữ liệu mock. Trạng thái sẽ được lưu trong trình duyệt để phục vụ kiểm thử giao diện.
+      Khóa hoặc vô hiệu hóa sẽ thu hồi toàn bộ phiên đăng nhập ngay lập tức. Tài khoản đã vô hiệu
+      hóa không thể kích hoạt lại qua giao diện trong MVP.
     </p>
+    <label class="status-reason">
+      <span>Lý do <strong aria-hidden="true">*</strong></span>
+      <textarea
+        rows="4"
+        minlength="10"
+        maxlength="1000"
+        [value]="reason()"
+        (input)="updateReason($event)"
+        placeholder="Nhập lý do từ 10 đến 1.000 ký tự"
+      ></textarea>
+      <small>{{ reason().trim().length }}/1000 ký tự</small>
+    </label>
   }
 
   <div uiModalFooter class="modal-actions">
     <app-ui-button variant="ghost" (buttonClick)="closeStatusConfirmation()">Hủy</app-ui-button>
     <app-ui-button
-      [variant]="selectedUser()?.status === 'LOCKED' ? 'primary' : 'danger'"
+      [variant]="selectedStatus() === 'ACTIVE' ? 'primary' : 'danger'"
+      [loading]="isSaving()"
+      [disabled]="reason().trim().length < 10 || isSaving()"
       (buttonClick)="confirmStatusChange()"
     >
-      Xác nhận {{ selectedUser()?.status === 'LOCKED' ? 'mở khóa' : 'khóa' }}
+      Xác nhận {{ actionLabel(selectedStatus()) }}
     </app-ui-button>
   </div>
 </app-ui-modal>

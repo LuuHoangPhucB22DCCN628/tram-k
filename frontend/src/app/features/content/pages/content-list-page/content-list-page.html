@@ -1,11 +1,13 @@
 <section class="content-hero" aria-labelledby="content-page-title">
   <div class="content-hero__inner">
-    <div class="content-hero__copy">
+    <div class="content-hero__copy" appReveal="left">
       <h1 id="content-page-title">{{ config.title }}</h1>
       <p class="content-hero__subtitle">{{ config.subtitle }}</p>
       <p class="content-hero__description">{{ config.description }}</p>
     </div>
     <img
+      appReveal="right"
+      [revealDelay]="100"
       src="/assets/images/guides/guide-hero-figma.svg"
       alt="Minh họa những bàn tay nâng đỡ biểu tượng dải băng ung thư"
       width="710"
@@ -16,7 +18,7 @@
 
 <section class="content-search" aria-label="Tìm kiếm và lọc cẩm nang">
   <div class="content-search__inner">
-    <form class="content-toolbar" (ngSubmit)="applyFilters()">
+    <form class="content-toolbar" appReveal="up" (ngSubmit)="applyFilters()">
       <label class="content-toolbar__search">
         <svg aria-hidden="true" viewBox="0 0 24 24">
           <circle cx="11" cy="11" r="7"></circle>
@@ -75,14 +77,20 @@
     @for (group of groupedItems(); track group.slug; let groupIndex = $index) {
       <section class="content-group" [class.content-group--tinted]="groupIndex % 2 === 1">
         <div class="content-group__inner">
-          <header class="content-group__title">
+          <header class="content-group__title" appReveal="up">
             <h2>{{ group.title }}</h2>
             <p>{{ group.subtitle }}</p>
           </header>
 
           <div class="content-grid">
             @for (item of group.items; track item.id; let cardIndex = $index) {
-              <article class="content-card" [class.content-card--soft]="cardIndex % 2 === 1">
+              <article
+                class="content-card"
+                [class.content-card--soft]="cardIndex % 2 === 1"
+                appReveal="up"
+                [revealDelay]="(cardIndex % 4) * 70"
+                data-ui-card
+              >
                 <a
                   class="content-card__image"
                   [class.content-card__image--cropped]="item.coverImage.crop"
@@ -118,7 +126,12 @@
           </div>
 
           @if (!filteredView()) {
-            <button class="content-group__more" type="button" (click)="filterByGroup(group.slug)">
+            <button
+              class="content-group__more"
+              type="button"
+              appReveal="up"
+              (click)="filterByGroup(group.slug)"
+            >
               Tìm hiểu thêm
               <svg aria-hidden="true" viewBox="0 0 24 24">
                 <path d="M5 12h14M13 6l6 6-6 6"></path>

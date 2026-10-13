@@ -20,6 +20,7 @@ export interface ContentImage {
   readonly alt: string;
   readonly width: number;
   readonly height: number;
+  readonly caption?: string;
   readonly crop?: ContentImageCrop;
 }
 

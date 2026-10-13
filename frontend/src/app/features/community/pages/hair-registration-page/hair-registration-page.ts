@@ -11,6 +11,7 @@ import {
 import { ActivatedRoute } from '@angular/router';
 import { finalize, take } from 'rxjs';
 
+import { RevealDirective } from '../../../../shared/directives/reveal.directive';
 import {
   HairRegistrationApiError,
   type HairRegistrationGender,
@@ -91,7 +92,7 @@ const donatedHairLength: ValidatorFn = (control: AbstractControl): ValidationErr
 @Component({
   selector: 'app-hair-registration-page',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RevealDirective],
   templateUrl: './hair-registration-page.html',
   styleUrl: './hair-registration-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,0 +1,208 @@
+<main class="ai-page">
+  <section class="ai-hero" aria-labelledby="ai-title">
+    <div class="ai-hero__glow ai-hero__glow--one" aria-hidden="true"></div>
+    <div class="ai-hero__glow ai-hero__glow--two" aria-hidden="true"></div>
+    <div class="ai-hero__inner" appReveal="up">
+      <div class="ai-hero__copy">
+        <p class="ai-hero__eyebrow">TRỢ LÝ TRẠM K</p>
+        <h1 id="ai-title">Một nơi để hỏi,<br /><em>một người cùng lắng nghe</em></h1>
+        <p class="ai-hero__description">
+          Tìm nhanh thông tin đã được Trạm K tổng hợp, gợi ý nguồn hỗ trợ phù hợp và chuẩn bị câu
+          hỏi trước khi trao đổi với đội ngũ y tế.
+        </p>
+      </div>
+      <aside class="ai-safety" aria-label="Lưu ý an toàn">
+        <span aria-hidden="true">✦</span>
+        <div>
+          <strong>Đồng hành, không thay thế bác sĩ</strong>
+          <p>{{ disclaimer }}</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="ai-workspace" aria-label="Trò chuyện với Trợ lý Trạm K">
+    <div class="ai-workspace__inner">
+      <aside class="ai-guide" appReveal="left">
+        <p class="ai-guide__eyebrow">GỢI Ý BẮT ĐẦU</p>
+        <h2>Bạn muốn chia sẻ điều gì?</h2>
+        <p>
+          Chọn một câu hỏi hoặc viết điều bạn đang quan tâm. Không nhập thông tin nhận dạng hay hồ
+          sơ y tế nhạy cảm.
+        </p>
+        <div class="ai-guide__suggestions">
+          @for (suggestion of suggestions; track suggestion) {
+            <button type="button" (click)="useSuggestion(suggestion)" [disabled]="loading()">
+              <span>{{ suggestion }}</span
+              ><span aria-hidden="true">↗</span>
+            </button>
+          }
+        </div>
+        <section class="ai-history" aria-labelledby="ai-history-title">
+          <div class="ai-history__heading">
+            <div>
+              <p>LỊCH SỬ TRÒ CHUYỆN</p>
+              <h3 id="ai-history-title">Tiếp tục nơi bạn dừng lại</h3>
+            </div>
+            <button
+              type="button"
+              (click)="startNewConversation()"
+              [disabled]="loading() || historyLoading()"
+              aria-label="Bắt đầu cuộc trò chuyện mới"
+              title="Cuộc trò chuyện mới"
+            >
+              +
+            </button>
+          </div>
+
+          @if (persistenceEnabled()) {
+            @if (conversations().length) {
+              <div class="ai-history__list">
+                @for (conversation of conversations(); track conversation.id) {
+                  <button
+                    type="button"
+                    [class.is-active]="conversation.id === activeConversationId()"
+                    (click)="selectConversation(conversation.id)"
+                    [disabled]="historyLoading()"
+                  >
+                    <span>{{ conversation.title }}</span>
+                    <small>{{ conversation.messageCount }} tin nhắn</small>
+                  </button>
+                }
+              </div>
+              @if (!confirmClearHistory()) {
+                <button
+                  class="ai-history__clear"
+                  type="button"
+                  (click)="requestClearHistory()"
+                  [disabled]="historyLoading()"
+                >
+                  Xóa toàn bộ lịch sử
+                </button>
+              } @else {
+                <div class="ai-history__confirm" role="alert">
+                  <p>Lịch sử sẽ bị xóa vĩnh viễn và không thể khôi phục.</p>
+                  <div>
+                    <button type="button" (click)="cancelClearHistory()">Hủy</button>
+                    <button type="button" (click)="clearHistory()">Xóa lịch sử</button>
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="ai-history__empty">
+                Chưa có lịch sử. Câu hỏi đầu tiên sẽ tạo một cuộc trò chuyện mới.
+              </p>
+            }
+          } @else {
+            <p class="ai-history__empty">
+              <a routerLink="/dang-nhap">Đăng nhập</a> để lưu và xem lại lịch sử trên tài khoản của
+              bạn.
+            </p>
+          }
+        </section>
+        <a routerLink="/cam-nang">Khám phá cẩm nang <span aria-hidden="true">⟶</span></a>
+      </aside>
+
+      <div class="ai-chat" appReveal="right" [revealDelay]="80">
+        <header class="ai-chat__header">
+          <span class="ai-chat__avatar" aria-hidden="true">K</span>
+          <div>
+            <strong>Trợ lý Trạm K</strong>
+            <small><span></span> Sẵn sàng đồng hành</small>
+          </div>
+          <span class="ai-chat__privacy">Không lưu hội thoại trên OpenAI</span>
+          <button
+            class="ai-chat__new"
+            type="button"
+            (click)="startNewConversation()"
+            [disabled]="loading() || historyLoading()"
+          >
+            Cuộc trò chuyện mới
+          </button>
+        </header>
+
+        <div #conversation class="ai-chat__conversation" role="log" aria-live="polite">
+          @for (item of messages(); track item.id) {
+            <article class="chat-message" [class.chat-message--user]="item.role === 'user'">
+              <span class="chat-message__avatar" aria-hidden="true">{{
+                item.role === 'user' ? 'B' : 'K'
+              }}</span>
+              <div class="chat-message__content">
+                <p>{{ item.content }}</p>
+                @if (item.sources?.length) {
+                  <div class="chat-message__sources">
+                    <strong>Nguồn tham khảo tại Trạm K</strong>
+                    @for (source of item.sources; track source.link) {
+                      @if (isInternalLink(source.link)) {
+                        <a [routerLink]="source.link"
+                          >{{ source.title }} <span aria-hidden="true">→</span></a
+                        >
+                      } @else {
+                        <a [href]="source.link" target="_blank" rel="noopener noreferrer"
+                          >{{ source.title }} <span aria-hidden="true">↗</span></a
+                        >
+                      }
+                    }
+                  </div>
+                }
+                @if (item.mode === 'SAFETY') {
+                  <strong class="chat-message__urgent"
+                    >Hãy ưu tiên nhận hỗ trợ trực tiếp ngay lúc này.</strong
+                  >
+                }
+              </div>
+            </article>
+          }
+          @if (loading()) {
+            <div class="chat-message chat-message--loading" role="status">
+              <span class="chat-message__avatar" aria-hidden="true">K</span>
+              <div class="chat-typing" aria-label="Trợ lý đang trả lời"><i></i><i></i><i></i></div>
+            </div>
+          }
+        </div>
+
+        <div class="ai-composer">
+          <label for="ai-message">Câu hỏi của bạn</label>
+          <div class="ai-composer__box">
+            <textarea
+              #messageInput
+              id="ai-message"
+              rows="2"
+              [attr.maxlength]="maxMessageLength"
+              [value]="message()"
+              (input)="onInput(messageInput.value)"
+              (keydown)="onComposerKeydown($event)"
+              [disabled]="loading()"
+              placeholder="Viết điều bạn đang quan tâm..."
+            ></textarea>
+            <button
+              type="button"
+              (click)="send()"
+              [disabled]="loading() || message().trim().length < 2"
+              aria-label="Gửi câu hỏi"
+            >
+              <span>Gửi</span><span aria-hidden="true">↑</span>
+            </button>
+          </div>
+          <div class="ai-composer__meta">
+            <p [class.is-error]="errorMessage()" aria-live="polite">
+              {{ errorMessage() || 'Enter để gửi · Shift + Enter để xuống dòng' }}
+            </p>
+            <span>{{ message().length }}/{{ maxMessageLength }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ai-emergency" aria-labelledby="emergency-title">
+    <div>
+      <p>TRƯỜNG HỢP KHẨN CẤP</p>
+      <h2 id="emergency-title">Ưu tiên sự an toàn của bạn</h2>
+    </div>
+    <p>
+      Nếu khó thở dữ dội, đau ngực, bất tỉnh, co giật, chảy máu không cầm hoặc có ý nghĩ làm hại bản
+      thân, hãy liên hệ dịch vụ cấp cứu địa phương hoặc đến cơ sở y tế gần nhất.
+    </p>
+  </section>
+</main>

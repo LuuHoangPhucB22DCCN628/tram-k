@@ -1,0 +1,154 @@
+<div class="ai-widget" [class.ai-widget--open]="isOpen()">
+  @if (!isOpen()) {
+    <button
+      type="button"
+      class="ai-widget__launcher"
+      (click)="open()"
+      aria-label="Mở Trợ lý AI Trạm K"
+      aria-haspopup="dialog"
+      [attr.aria-expanded]="isOpen()"
+    >
+      <span class="ai-widget__launcher-pulse" aria-hidden="true"></span>
+      <svg viewBox="0 0 28 28" aria-hidden="true">
+        <path
+          d="M6.2 5.5h15.6a3.7 3.7 0 0 1 3.7 3.7v8.1a3.7 3.7 0 0 1-3.7 3.7h-7.1l-5.5 3.5.9-3.5H6.2a3.7 3.7 0 0 1-3.7-3.7V9.2a3.7 3.7 0 0 1 3.7-3.7Z"
+        />
+        <path d="M8.4 13.3h.1m5.4 0h.1m5.4 0h.1" />
+      </svg>
+      <span class="ai-widget__launcher-copy">
+        <strong>Trợ lý AI</strong>
+        <small>Luôn sẵn sàng</small>
+      </span>
+    </button>
+  } @else {
+    <section
+      class="ai-widget__panel"
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby="ai-widget-title"
+    >
+      <header class="ai-widget__header">
+        <span class="ai-widget__brand" aria-hidden="true">K</span>
+        <div class="ai-widget__heading">
+          <strong id="ai-widget-title">Trợ lý Trạm K</strong>
+          <span><i aria-hidden="true"></i> Sẵn sàng đồng hành</span>
+        </div>
+        <button
+          type="button"
+          (click)="startNewConversation()"
+          [disabled]="chat.loading() || chat.historyLoading()"
+          title="Cuộc trò chuyện mới"
+          aria-label="Bắt đầu cuộc trò chuyện mới"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+        <a routerLink="/tro-ly-ai" title="Mở trang Trợ lý AI" aria-label="Mở trang Trợ lý AI">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14 5h5v5M19 5l-7 7M19 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4" />
+          </svg>
+        </a>
+        <button type="button" (click)="close()" aria-label="Đóng Trợ lý AI">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
+      </header>
+
+      <div class="ai-widget__notice">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3 4.5 6v5.2c0 4.6 3.2 8.9 7.5 9.8 4.3-.9 7.5-5.2 7.5-9.8V6L12 3Z" />
+          <path d="M9.4 12.2 11 14l3.8-4" />
+        </svg>
+        <span>Không chia sẻ thông tin nhận dạng hoặc hồ sơ y tế nhạy cảm.</span>
+      </div>
+
+      <div #widgetConversation class="ai-widget__conversation" role="log" aria-live="polite">
+        @if (chat.historyLoading()) {
+          <p class="ai-widget__history-status" role="status">Đang tải cuộc trò chuyện…</p>
+        }
+        @for (item of chat.messages(); track item.id) {
+          <article class="widget-message" [class.widget-message--user]="item.role === 'user'">
+            @if (item.role === 'assistant') {
+              <span class="widget-message__avatar" aria-hidden="true">K</span>
+            }
+            <div class="widget-message__body">
+              <p>{{ item.content }}</p>
+              @if (item.sources?.length) {
+                <div class="widget-message__sources">
+                  <strong>Nguồn tham khảo</strong>
+                  @for (source of item.sources; track source.link) {
+                    @if (isInternalLink(source.link)) {
+                      <a [routerLink]="source.link">{{ source.title }} <span>→</span></a>
+                    } @else {
+                      <a [href]="source.link" target="_blank" rel="noopener noreferrer"
+                        >{{ source.title }} <span>↗</span></a
+                      >
+                    }
+                  }
+                </div>
+              }
+              @if (item.mode === 'SAFETY') {
+                <strong class="widget-message__urgent"
+                  >Hãy ưu tiên nhận hỗ trợ trực tiếp ngay lúc này.</strong
+                >
+              }
+            </div>
+          </article>
+        }
+
+        @if (chat.messages().length === 1) {
+          <div class="ai-widget__suggestions" aria-label="Câu hỏi gợi ý">
+            @for (suggestion of chat.suggestions.slice(0, 3); track suggestion) {
+              <button type="button" (click)="useSuggestion(suggestion)" [disabled]="chat.loading()">
+                {{ suggestion }}
+              </button>
+            }
+          </div>
+        }
+
+        @if (chat.loading()) {
+          <div class="widget-message widget-message--loading" role="status">
+            <span class="widget-message__avatar" aria-hidden="true">K</span>
+            <span class="widget-typing" aria-label="Trợ lý đang trả lời"
+              ><i></i><i></i><i></i
+            ></span>
+          </div>
+        }
+      </div>
+
+      <div class="ai-widget__composer">
+        <label for="ai-widget-message">Câu hỏi của bạn</label>
+        <div class="ai-widget__input-row">
+          <textarea
+            #widgetInput
+            id="ai-widget-message"
+            rows="1"
+            [attr.maxlength]="chat.maxMessageLength"
+            [value]="chat.message()"
+            (input)="chat.setMessage(widgetInput.value)"
+            (keydown)="onComposerKeydown($event)"
+            [disabled]="chat.loading()"
+            placeholder="Bạn đang cần Trạm K hỗ trợ điều gì?"
+          ></textarea>
+          <button
+            type="button"
+            (click)="send()"
+            [disabled]="chat.loading() || chat.message().trim().length < 2"
+            aria-label="Gửi câu hỏi"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m5 12 14-7-4 14-3.2-5.1L5 12Z" />
+              <path d="m11.8 13.9 3.1-3.3" />
+            </svg>
+          </button>
+        </div>
+        <div class="ai-widget__meta">
+          <p [class.is-error]="chat.errorMessage()" aria-live="polite">
+            {{ chat.errorMessage() || 'AI có thể nhầm lẫn. Hãy kiểm tra thông tin quan trọng.' }}
+          </p>
+          <span>{{ chat.message().length }}/{{ chat.maxMessageLength }}</span>
+        </div>
+      </div>
+    </section>
+  }
+</div>

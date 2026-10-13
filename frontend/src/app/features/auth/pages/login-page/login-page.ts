@@ -51,8 +51,6 @@ export class LoginPage {
 
   private safeReturnUrl(): string {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-    return returnUrl?.startsWith('/') && !returnUrl.startsWith('//')
-      ? returnUrl
-      : '/';
+    return returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/';
   }
 }

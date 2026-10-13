@@ -1,7 +1,7 @@
 :host {
   display: block;
   font-family: var(--font-family-sans);
-  color: #6d7898;
+  color: var(--color-text-muted);
 }
 .home-page {
   width: 100%;
@@ -87,7 +87,7 @@ img {
   line-height: 1;
 }
 .hero__eyebrow em {
-  color: #9388dc;
+  color: #7e71d5;
   font-weight: 400;
 }
 .hero__word {
@@ -243,7 +243,7 @@ img {
 }
 .home-button--lavender {
   margin-top: 10px;
-  background: #9388dc;
+  background: var(--color-brand-primary);
   color: white;
 }
 .feature-card--chat {
@@ -287,7 +287,7 @@ img {
   color: white;
 }
 .feature-card--support p {
-  color: #cdc8ef;
+  color: white;
 }
 .feature-card--support > div {
   width: 35%;

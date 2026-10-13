@@ -1,0 +1,142 @@
+<article class="support-programs-page">
+  <app-community-map-background aria-hidden="true" />
+
+  <section class="support-programs" aria-labelledby="support-programs-title">
+    <a class="support-programs__back" routerLink="/cong-dong/diem-quyen-gop">
+      <span aria-hidden="true">←</span> Quay lại bản đồ quyên góp
+    </a>
+
+    <header class="support-programs__header" appReveal="up">
+      <div>
+        <p>CHƯƠNG TRÌNH ĐANG TIẾP NHẬN</p>
+        <h1 id="support-programs-title">Các chương trình hỗ trợ</h1>
+        <span>
+          Chọn chương trình phù hợp từ các nhà hảo tâm đã được Trạm K xác minh trước khi công khai.
+        </span>
+      </div>
+      <label class="support-programs__filter">
+        <span>Lọc theo địa điểm</span>
+        <select [value]="programRegionFilter()" (change)="updateProgramRegion($event)">
+          <option value="ALL">Tất cả tỉnh/thành</option>
+          @for (region of programRegionOptions(); track region.id) {
+            <option [value]="region.id">{{ region.name }}</option>
+          }
+        </select>
+      </label>
+    </header>
+
+    @if (publishedPrograms().length) {
+      <div class="support-programs__grid">
+        @for (program of publishedPrograms(); track program.id; let index = $index) {
+          <article class="support-program-card" appReveal="up" [revealDelay]="index * 60">
+            <div class="support-program-card__visual">
+              <span aria-hidden="true">
+                {{
+                  program.supportType === 'MEAL'
+                    ? '♡'
+                    : program.supportType === 'FINANCIAL'
+                      ? '₫'
+                      : program.supportType === 'TRANSPORT'
+                        ? '→'
+                        : '✦'
+                }}
+              </span>
+              <small>{{ supportTypeLabel(program.supportType) }}</small>
+            </div>
+            <div class="support-program-card__body">
+              <div class="support-program-card__meta">
+                <span>{{ program.city }}</span>
+                <span>{{ program.capacity }} suất/người mỗi đợt</span>
+              </div>
+              <h2>{{ program.title }}</h2>
+              <p>{{ program.description }}</p>
+              <dl>
+                <div>
+                  <dt>Đơn vị</dt>
+                  <dd>{{ program.ownerName }}</dd>
+                </div>
+                <div>
+                  <dt>Thời gian</dt>
+                  <dd>{{ program.schedule }}</dd>
+                </div>
+              </dl>
+              <button type="button" (click)="openProgramDetails(program)">
+                Xem và đăng ký <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="support-programs__empty" role="status">
+        <span aria-hidden="true">♡</span>
+        <h2>Chưa có chương trình phù hợp</h2>
+        <p>Hãy chọn địa điểm khác hoặc quay lại sau khi Trạm K công khai chương trình mới.</p>
+      </div>
+    }
+  </section>
+
+  <app-ui-modal
+    [open]="selectedProgram() !== null"
+    [title]="selectedProgram()?.title ?? 'Chi tiết chương trình hỗ trợ'"
+    size="lg"
+    (closed)="closeProgramDetails()"
+  >
+    @if (selectedProgram(); as program) {
+      <div class="support-program-dialog">
+        <div class="support-program-dialog__heading">
+          <span>{{ supportTypeLabel(program.supportType) }}</span>
+          <span>{{ program.city }}</span>
+        </div>
+        <p>{{ program.description }}</p>
+        <dl>
+          <div>
+            <dt>Nhà hảo tâm</dt>
+            <dd>{{ program.ownerName }}</dd>
+          </div>
+          <div>
+            <dt>Địa điểm</dt>
+            <dd>{{ program.address }}, {{ program.city }}</dd>
+          </div>
+          <div>
+            <dt>Thời gian</dt>
+            <dd>{{ program.schedule }}</dd>
+          </div>
+          <div>
+            <dt>Quy mô</dt>
+            <dd>{{ program.capacity }} suất/người mỗi đợt</dd>
+          </div>
+          <div>
+            <dt>Liên hệ</dt>
+            <dd>{{ program.contactName }} · {{ program.phone }}</dd>
+          </div>
+        </dl>
+        @if (programFeedback()) {
+          <p class="support-program-dialog__feedback" aria-live="polite">
+            {{ programFeedback() }}
+          </p>
+        }
+      </div>
+    }
+
+    @if (selectedProgram()) {
+      <div uiModalFooter class="support-program-dialog__actions">
+        <button
+          type="button"
+          class="support-program-dialog__button"
+          (click)="closeProgramDetails()"
+        >
+          Đóng
+        </button>
+        <button
+          type="button"
+          class="support-program-dialog__button support-program-dialog__button--primary"
+          [disabled]="selectedProgramRegistered() || selectedProgramFull()"
+          (click)="registerForProgram()"
+        >
+          {{ programRegistrationLabel() }}
+        </button>
+      </div>
+    }
+  </app-ui-modal>
+</article>

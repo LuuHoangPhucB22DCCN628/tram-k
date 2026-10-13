@@ -1,68 +1,58 @@
 .member-shell {
+  display: flex;
   min-height: 100vh;
+  flex-direction: column;
   background: var(--color-surface-subtle);
-
-  &__header {
-    display: flex;
-    min-height: 5rem;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-    padding: var(--space-4) var(--space-5);
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-surface);
-
-    img {
-      width: 8.5rem;
-      height: auto;
-    }
-
-    div {
-      display: grid;
-      justify-items: end;
-      gap: var(--space-1);
-    }
-
-    a {
-      color: var(--color-brand-primary);
-    }
-  }
-
-  &__account {
-    color: var(--color-text-heading);
-    font-weight: 700;
-  }
-
-  &__links {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: var(--space-3);
-
-    button {
-      padding: 0;
-      border: 0;
-      background: transparent;
-      color: var(--color-danger);
-      cursor: pointer;
-    }
-  }
 
   &__body {
     display: grid;
+    flex: 1;
   }
 
   &__sidebar {
-    overflow-x: auto;
     border-bottom: 1px solid var(--color-border);
     background: var(--color-surface);
 
     nav {
-      display: flex;
-      width: max-content;
+      display: none;
+      width: 100%;
       gap: var(--space-2);
-      padding: var(--space-3) var(--space-5);
+      padding: 0 var(--space-4) var(--space-4);
     }
+
+    &--open {
+      nav {
+        display: grid;
+      }
+
+      .member-shell__sidebar-chevron {
+        transform: rotate(225deg);
+      }
+    }
+  }
+
+  &__sidebar-toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border: 0;
+    background: transparent;
+    color: var(--color-text-heading);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  &__sidebar-chevron {
+    width: 0.65rem;
+    height: 0.65rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 180ms ease;
   }
 
   &__nav-link {
@@ -86,16 +76,11 @@
 
 @media (min-width: 64rem) {
   .member-shell {
-    &__header {
-      padding-inline: var(--space-8);
-    }
-
     &__body {
       grid-template-columns: 17rem minmax(0, 1fr);
     }
 
     &__sidebar {
-      min-height: calc(100vh - 5rem);
       overflow: visible;
       border-right: 1px solid var(--color-border);
       border-bottom: 0;
@@ -106,5 +91,15 @@
         padding: var(--space-6);
       }
     }
+
+    &__sidebar-toggle {
+      display: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-shell__sidebar-chevron {
+    transition: none;
   }
 }

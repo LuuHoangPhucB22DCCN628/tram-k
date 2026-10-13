@@ -1,4 +1,243 @@
 // Giữ nguyên menu và đăng nhập/đăng ký, thu gọn khoảng cách để không tràn màn hình laptop.
+.account-menu {
+  position: relative;
+}
+
+.account-menu__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 4px;
+  border: 0;
+  border-radius: 14px;
+  color: var(--color-text-heading);
+  background: transparent;
+  cursor: pointer;
+  font: 600 14px/20px var(--font-family-sans);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.account-menu__trigger:hover,
+.account-menu__trigger[aria-expanded='true'] {
+  background: var(--color-brand-soft);
+}
+
+.account-menu__trigger:active {
+  transform: scale(0.98);
+}
+
+.account-menu__avatar,
+.mobile-account__identity > img,
+.mobile-account__identity > span {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, #7465dd, #4f3db8);
+  font-size: 13px;
+  font-weight: 700;
+  object-fit: cover;
+}
+
+.account-menu__name {
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu__chevron {
+  width: 8px;
+  height: 8px;
+  margin: -4px 3px 0 2px;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+  transform: rotate(45deg);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.account-menu__trigger[aria-expanded='true'] .account-menu__chevron {
+  transform: translateY(0.1875rem) rotate(225deg);
+}
+
+.account-menu__panel {
+  position: absolute;
+  z-index: 70;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 284px;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  animation: account-menu-enter var(--motion-duration-fast) var(--motion-ease-emphasized) both;
+}
+
+.account-menu__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.account-menu__identity strong {
+  color: var(--color-text-heading);
+  font-size: 14px;
+}
+
+.account-menu__identity span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.account-menu__panel nav {
+  display: grid;
+  padding-block: 6px;
+}
+
+.account-menu__panel a,
+.account-menu__logout {
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--color-text-body);
+  background: transparent;
+  cursor: pointer;
+  font: 500 14px/18px var(--font-family-sans);
+  text-align: left;
+  text-decoration: none;
+}
+
+.account-menu__panel a:hover,
+.account-menu__logout:hover {
+  color: var(--color-brand-primary);
+  background: var(--color-brand-soft);
+}
+
+.account-menu__section-title,
+.mobile-account__section-title {
+  margin-top: 6px;
+  padding: 10px 12px 4px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.account-menu__logout {
+  width: 100%;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-danger);
+}
+
+.account-menu__trigger:focus-visible,
+.account-menu__panel a:focus-visible,
+.account-menu__logout:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.mobile-account {
+  display: grid;
+  gap: 12px;
+}
+
+.mobile-account__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-account__identity div {
+  display: grid;
+}
+
+.mobile-account__identity strong {
+  color: var(--color-text-heading);
+}
+
+.mobile-account__identity small {
+  color: var(--color-text-muted);
+}
+
+.mobile-account nav {
+  display: grid;
+  gap: 2px;
+}
+
+.mobile-account nav a {
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--color-text-body);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.mobile-account nav a:hover {
+  color: var(--color-brand-primary);
+  background: var(--color-brand-soft);
+}
+
+.public-mobile-nav {
+  animation: mobile-nav-enter var(--motion-duration-base) var(--motion-ease-emphasized) both;
+  transform-origin: top;
+}
+
+.public-mobile-menu-toggle {
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.public-mobile-menu-toggle:hover,
+.public-mobile-menu-toggle[aria-expanded='true'] {
+  background: var(--color-brand-soft);
+}
+
+.public-mobile-menu-toggle:active {
+  transform: scale(0.96);
+}
+
+@keyframes account-menu-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -0.5rem, 0) scale(0.98);
+  }
+}
+
+@keyframes mobile-nav-enter {
+  from {
+    opacity: 0;
+    transform: scaleY(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-menu__trigger,
+  .account-menu__chevron,
+  .public-mobile-menu-toggle {
+    transition: none;
+  }
+
+  .account-menu__panel,
+  .public-mobile-nav {
+    animation: none;
+  }
+}
+
 @media (min-width: 1280px) and (max-width: 1535px) {
   header > div {
     padding-inline: 24px;
@@ -10,5 +249,9 @@
   nav a {
     padding-inline: 8px;
     font-size: 14px;
+  }
+
+  .account-menu__name {
+    max-width: 92px;
   }
 }

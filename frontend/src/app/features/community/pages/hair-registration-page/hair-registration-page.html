@@ -10,8 +10,8 @@
     </div>
   </header>
 
-  <main class="hair-registration__body">
-    <form class="hair-form" [formGroup]="form" novalidate (ngSubmit)="submit()">
+  <div class="hair-registration__body">
+    <form class="hair-form" appReveal="up" [formGroup]="form" novalidate (ngSubmit)="submit()">
       <fieldset class="hair-form__section">
         <legend>Thông tin cá nhân</legend>
 
@@ -393,8 +393,8 @@
       }
     </form>
 
-    <p class="hair-registration__privacy">
+    <p class="hair-registration__privacy" appReveal="up" [revealDelay]="80">
       Thông tin của bạn sẽ được bảo mật tuyệt đối và chỉ dùng cho mục đích hỗ trợ y tế.
     </p>
-  </main>
+  </div>
 </article>

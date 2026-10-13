@@ -10,7 +10,39 @@ datasource db {
 enum RoleName {
   ADMIN
   PATIENT
+  CARER
   PARTNER
+}
+
+enum UserStatus {
+  PENDING_VERIFY
+  ACTIVE
+  LOCKED
+  DISABLED
+}
+
+enum ConsentType {
+  TERMS
+  PRIVACY
+}
+
+enum ProfileVisibility {
+  PUBLIC
+  MEMBERS
+  PRIVATE
+}
+
+enum AuthTokenPurpose {
+  EMAIL_VERIFICATION
+  EMAIL_CHANGE
+  PASSWORD_RESET
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
 }
 
 enum HairRegistrationMode {
@@ -25,6 +57,58 @@ enum HairRegistrationStatus {
   COMPLETED
 }
 
+enum PartnerApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CommunityReactionType {
+  LIKE
+  LOVE
+  SUPPORT
+}
+
+enum NotificationKind {
+  PROGRAM_REGISTRATION_SENT
+  PROGRAM_REGISTRATION_RECEIVED
+  PROGRAM_REGISTRATION_CONFIRMED
+  PROGRAM_REGISTRATION_REJECTED
+  PROGRAM_REGISTRATION_COMPLETED
+  PROGRAM_PUBLISHED
+  PROGRAM_REJECTED
+  PARTNER_APPLICATION_APPROVED
+  PARTNER_APPLICATION_REJECTED
+}
+
+enum SearchDocumentType {
+  GUIDE
+  CANCER_TYPE
+  STORY
+  PODCAST
+  SUPPORT_PROGRAM
+}
+
+enum ManagedResourceStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum SupportProgramRegistrationStatus {
+  PENDING_CONFIRMATION
+  CONFIRMED
+  REJECTED
+  COMPLETED
+}
+
+enum AiConversationMessageRole {
+  USER
+  ASSISTANT
+}
+
 model Role {
   id        String   @id @default(cuid())
   name      RoleName @unique
@@ -36,18 +120,361 @@ model Role {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  fullName     String   @map("full_name")
-  isActive     Boolean  @default(true) @map("is_active")
-  roleId       String   @map("role_id")
-  role         Role     @relation(fields: [roleId], references: [id])
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                          String                       @id @default(cuid())
+  email                       String                       @unique
+  passwordHash                String                       @map("password_hash")
+  fullName                    String                       @map("full_name")
+  status                      UserStatus                   @default(PENDING_VERIFY)
+  emailVerifiedAt             DateTime?                    @map("email_verified_at")
+  authVersion                 Int                          @default(1) @map("auth_version")
+  loginBlockedUntil           DateTime?                    @map("login_blocked_until")
+  verificationCleanupAt       DateTime?                    @map("verification_cleanup_at")
+  deletedAt                   DateTime?                    @map("deleted_at")
+  deletedById                 String?                      @map("deleted_by_id")
+  deletedBy                   User?                        @relation("UserDeletedBy", fields: [deletedById], references: [id])
+  deletedUsers                User[]                       @relation("UserDeletedBy")
+  roleId                      String                       @map("role_id")
+  role                        Role                         @relation(fields: [roleId], references: [id])
+  partnerApplication          PartnerApplication?          @relation("PartnerApplicant")
+  reviewedPartnerApplications PartnerApplication[]         @relation("PartnerReviewer")
+  partnerMembership           PartnerMembership?           @relation("PartnerMember")
+  grantedPartnerMemberships   PartnerMembership[]          @relation("PartnerGranter")
+  communityComments           CommunityComment[]
+  communityReactions          CommunityReaction[]
+  notifications               Notification[]
+  supportProgramRegistrations SupportProgramRegistration[]
+  partnerApplicationDocuments PartnerApplicationDocument[]
+  authSessions                AuthSession[]
+  authTokens                  AuthToken[]
+  consents                    UserConsent[]
+  authAttempts                AuthAttempt[]
+  aiConversations             AiConversation[]
+  profile                     UserProfile?
+  createdAt                   DateTime                     @default(now()) @map("created_at")
+  updatedAt                   DateTime                     @updatedAt @map("updated_at")
 
   @@index([roleId])
+  @@index([status, deletedAt])
+  @@index([verificationCleanupAt])
+  @@index([deletedById])
   @@map("users")
+}
+
+model AiConversation {
+  id        String                  @id @default(cuid())
+  userId    String                  @map("user_id")
+  user      User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String                  @default("Cuộc trò chuyện mới") @db.VarChar(120)
+  messages  AiConversationMessage[]
+  createdAt DateTime                @default(now()) @map("created_at")
+  updatedAt DateTime                @updatedAt @map("updated_at")
+
+  @@index([userId, updatedAt])
+  @@map("ai_conversations")
+}
+
+model AiConversationMessage {
+  id             String                    @id @default(cuid())
+  conversationId String                    @map("conversation_id")
+  conversation   AiConversation            @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           AiConversationMessageRole
+  content        String                    @db.Text
+  mode           String?                   @db.VarChar(20)
+  sources        Json?
+  createdAt      DateTime                  @default(now()) @map("created_at")
+
+  @@index([conversationId, createdAt])
+  @@map("ai_conversation_messages")
+}
+
+model UserProfile {
+  userId        String            @id @map("user_id")
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone         String?
+  city          String?
+  birthYear     Int?              @map("birth_year")
+  bio           String?           @db.VarChar(500)
+  avatarDataUrl String?           @map("avatar_data_url") @db.Text
+  visibility    ProfileVisibility @default(MEMBERS)
+  showEmail     Boolean           @default(false) @map("show_email")
+  allowComments Boolean           @default(true) @map("allow_comments")
+  version       Int               @default(1)
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@map("user_profiles")
+}
+
+model UserConsent {
+  id          String      @id @default(cuid())
+  userId      String      @map("user_id")
+  user        User        @relation(fields: [userId], references: [id])
+  type        ConsentType
+  version     String
+  acceptedAt  DateTime    @map("accepted_at")
+  source      String
+  withdrawnAt DateTime?   @map("withdrawn_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  @@unique([userId, type, version])
+  @@index([userId, type, withdrawnAt])
+  @@map("user_consents")
+}
+
+model AuthToken {
+  id          String           @id @default(cuid())
+  userId      String           @map("user_id")
+  user        User             @relation(fields: [userId], references: [id])
+  purpose     AuthTokenPurpose
+  tokenHash   String           @unique @map("token_hash")
+  targetEmail String?          @unique @map("target_email")
+  expiresAt   DateTime         @map("expires_at")
+  usedAt      DateTime?        @map("used_at")
+  revokedAt   DateTime?        @map("revoked_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@index([userId, purpose, createdAt])
+  @@index([expiresAt])
+  @@map("auth_tokens")
+}
+
+model AuthAttempt {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id])
+  emailHash String   @map("email_hash")
+  ipHash    String   @map("ip_hash")
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@index([emailHash, createdAt])
+  @@index([ipHash, createdAt])
+  @@map("auth_attempts")
+}
+
+model OutboxEvent {
+  id            String       @id @default(cuid())
+  eventId       String       @unique @map("event_id")
+  type          String
+  aggregateType String       @map("aggregate_type")
+  aggregateId   String       @map("aggregate_id")
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  availableAt   DateTime     @default(now()) @map("available_at")
+  sentAt        DateTime?    @map("sent_at")
+  lastError     String?      @map("last_error")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@index([status, availableAt])
+  @@map("outbox_events")
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  actorType     String   @map("actor_type")
+  actorId       String?  @map("actor_id")
+  action        String
+  entityType    String   @map("entity_type")
+  entityId      String   @map("entity_id")
+  before        Json?
+  after         Json?
+  reason        String?
+  ipHash        String?  @map("ip_hash")
+  correlationId String   @map("correlation_id")
+  occurredAt    DateTime @default(now()) @map("occurred_at")
+
+  @@index([entityType, entityId, occurredAt])
+  @@index([actorId, occurredAt])
+  @@index([correlationId])
+  @@map("audit_logs")
+}
+
+model AuthSession {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id])
+  tokenHash   String    @unique @map("token_hash")
+  authVersion Int       @default(1) @map("auth_version")
+  expiresAt   DateTime  @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+model CommunityComment {
+  id             String             @id @default(cuid())
+  userId         String             @map("user_id")
+  user           User               @relation(fields: [userId], references: [id])
+  sourceKey      String             @map("source_key")
+  sourceTitle    String             @map("source_title")
+  sourcePath     String             @map("source_path")
+  parentId       String?            @map("parent_id")
+  parent         CommunityComment?  @relation("CommunityCommentReplies", fields: [parentId], references: [id])
+  replies        CommunityComment[] @relation("CommunityCommentReplies")
+  content        String
+  idempotencyKey String             @map("idempotency_key")
+  deletedAt      DateTime?          @map("deleted_at")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  @@unique([userId, idempotencyKey])
+  @@index([sourceKey, createdAt])
+  @@index([parentId])
+  @@map("community_comments")
+}
+
+model CommunityReaction {
+  id        String                @id @default(cuid())
+  userId    String                @map("user_id")
+  user      User                  @relation(fields: [userId], references: [id])
+  sourceKey String                @map("source_key")
+  type      CommunityReactionType
+  createdAt DateTime              @default(now()) @map("created_at")
+  updatedAt DateTime              @updatedAt @map("updated_at")
+
+  @@unique([userId, sourceKey])
+  @@index([sourceKey, type])
+  @@map("community_reactions")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String           @map("recipient_id")
+  recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  kind        NotificationKind
+  title       String           @db.VarChar(160)
+  message     String           @db.VarChar(1000)
+  link        String           @db.VarChar(500)
+  dedupeKey   String?          @map("dedupe_key") @db.VarChar(255)
+  readAt      DateTime?        @map("read_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@unique([recipientId, dedupeKey])
+  @@index([recipientId, readAt, createdAt])
+  @@map("notifications")
+}
+
+model SearchDocument {
+  id              String             @id @default(cuid())
+  sourceId        String             @map("source_id")
+  type            SearchDocumentType
+  title           String             @db.VarChar(160)
+  description     String             @db.VarChar(1000)
+  eyebrow         String             @db.VarChar(80)
+  metadata        String             @db.VarChar(255)
+  imageUrl        String?            @map("image_url") @db.VarChar(500)
+  imageAlt        String?            @map("image_alt") @db.VarChar(255)
+  link            String             @db.VarChar(500)
+  queryParams     Json?              @map("query_params")
+  normalizedTitle String             @map("normalized_title") @db.Text
+  normalizedText  String             @map("normalized_text") @db.Text
+  publishedAt     DateTime           @map("published_at")
+  active          Boolean            @default(true)
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  @@unique([type, sourceId])
+  @@index([active, type, publishedAt])
+  @@map("search_documents")
+}
+
+model ManagedResource {
+  id          String                @id @default(cuid())
+  sourceId    String                @map("source_id")
+  type        SearchDocumentType
+  status      ManagedResourceStatus
+  title       String                @db.VarChar(160)
+  description String                @db.VarChar(1000)
+  payload     Json
+  publishedAt DateTime              @map("published_at")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+
+  @@unique([type, sourceId])
+  @@index([status, type, publishedAt])
+  @@map("managed_resources")
+}
+
+model SupportProgramRegistration {
+  id             String                           @id @default(cuid())
+  programId      String                           @map("program_id")
+  userId         String                           @map("user_id")
+  user           User                             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicantName  String                           @map("applicant_name") @db.VarChar(160)
+  applicantEmail String                           @map("applicant_email") @db.VarChar(255)
+  status         SupportProgramRegistrationStatus @default(PENDING_CONFIRMATION)
+  decisionReason String?                          @map("decision_reason") @db.VarChar(1000)
+  registeredAt   DateTime                         @default(now()) @map("registered_at")
+  updatedAt      DateTime                         @updatedAt @map("updated_at")
+
+  @@unique([programId, userId])
+  @@index([programId, status, registeredAt])
+  @@index([userId, registeredAt])
+  @@map("support_program_registrations")
+}
+
+model PartnerApplication {
+  id                 String                       @id @default(cuid())
+  applicantId        String                       @unique @map("applicant_id")
+  applicant          User                         @relation("PartnerApplicant", fields: [applicantId], references: [id])
+  organizationName   String                       @map("organization_name")
+  representativeName String                       @map("representative_name")
+  phone              String
+  email              String
+  address            String
+  introduction       String
+  documentKeys       String[]                     @default([]) @map("document_keys")
+  status             PartnerApplicationStatus     @default(PENDING)
+  reviewReason       String?                      @map("review_reason")
+  reviewedById       String?                      @map("reviewed_by_id")
+  reviewedBy         User?                        @relation("PartnerReviewer", fields: [reviewedById], references: [id])
+  reviewedAt         DateTime?                    @map("reviewed_at")
+  membership         PartnerMembership?
+  documents          PartnerApplicationDocument[]
+  createdAt          DateTime                     @default(now()) @map("created_at")
+  updatedAt          DateTime                     @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@index([reviewedById])
+  @@map("partner_applications")
+}
+
+model PartnerApplicationDocument {
+  id            String              @id @default(uuid())
+  ownerId       String              @map("owner_id")
+  owner         User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  applicationId String?             @map("application_id")
+  application   PartnerApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  storageKey    String              @unique @map("storage_key")
+  originalName  String              @map("original_name") @db.VarChar(255)
+  mimeType      String              @map("mime_type") @db.VarChar(100)
+  size          Int
+  createdAt     DateTime            @default(now()) @map("created_at")
+
+  @@index([ownerId, createdAt])
+  @@index([applicationId])
+  @@map("partner_application_documents")
+}
+
+model PartnerMembership {
+  id            String             @id @default(cuid())
+  userId        String             @unique @map("user_id")
+  user          User               @relation("PartnerMember", fields: [userId], references: [id])
+  applicationId String             @unique @map("application_id")
+  application   PartnerApplication @relation(fields: [applicationId], references: [id])
+  grantedById   String             @map("granted_by_id")
+  grantedBy     User               @relation("PartnerGranter", fields: [grantedById], references: [id])
+  grantedAt     DateTime           @default(now()) @map("granted_at")
+
+  @@index([grantedById])
+  @@map("partner_memberships")
 }
 
 model HairRegistration {

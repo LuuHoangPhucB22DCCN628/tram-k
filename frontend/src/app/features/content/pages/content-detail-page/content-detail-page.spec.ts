@@ -47,6 +47,12 @@ describe('ContentDetailPage', () => {
     expect(element.querySelectorAll('.detail-icon-button')).toHaveLength(2);
   });
 
+  it('shows the publication date from the article data', () => {
+    const date = fixture.nativeElement.querySelector('.detail-date') as HTMLElement;
+
+    expect(date.textContent?.replace(/\s+/g, ' ').trim()).toContain('29 Thg 08, 2026');
+  });
+
   it('toggles the article favorite state', () => {
     const button = fixture.nativeElement.querySelector(
       'button[aria-label="Thêm vào yêu thích"]',
@@ -57,5 +63,16 @@ describe('ContentDetailPage', () => {
 
     expect(button.getAttribute('aria-pressed')).toBe('true');
     expect(button.getAttribute('aria-label')).toBe('Bỏ khỏi danh sách yêu thích');
+  });
+
+  it('uses the shared reveal motion for the article without duplicating animation code', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const sections = [...element.querySelectorAll('.detail-section')];
+
+    expect(element.querySelector('.detail-header')?.classList).toContain('ui-reveal');
+    expect(sections.length).toBeGreaterThan(0);
+    expect(sections.every((section) => section.classList.contains('ui-reveal'))).toBe(true);
+    expect(element.querySelector('.detail-related')?.classList).toContain('ui-reveal--right');
+    expect(element.querySelector('.detail-comments')?.classList).toContain('ui-reveal');
   });
 });

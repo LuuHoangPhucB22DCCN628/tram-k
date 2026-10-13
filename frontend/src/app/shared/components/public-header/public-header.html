@@ -34,19 +34,45 @@
 
     <div class="hidden shrink-0 items-center gap-2 xl:flex">
       @if (auth.isAuthenticated()) {
-        <a
-          [routerLink]="auth.defaultRoute()"
-          class="rounded-xl px-3 py-2 text-[15px] font-semibold text-[var(--color-brand-primary)]"
-        >
-          {{ auth.currentUser()?.displayName }}
-        </a>
-        <button
-          type="button"
-          class="rounded-xl border border-[var(--color-border)] px-3 py-2 text-[15px] font-semibold text-[var(--color-text-muted)]"
-          (click)="logout()"
-        >
-          Đăng xuất
-        </button>
+        <div class="account-menu" (click)="$event.stopPropagation()">
+          <button
+            class="account-menu__trigger"
+            type="button"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="isAccountMenuOpen()"
+            (click)="toggleAccountMenu($event)"
+          >
+            @if (auth.currentUser()?.avatarUrl; as avatarUrl) {
+              <img class="account-menu__avatar" [src]="avatarUrl" alt="" width="40" height="40" />
+            } @else {
+              <span class="account-menu__avatar" aria-hidden="true">{{ accountInitials() }}</span>
+            }
+            <span class="account-menu__name">{{ auth.currentUser()?.displayName }}</span>
+            <span class="account-menu__chevron" aria-hidden="true"></span>
+          </button>
+
+          @if (isAccountMenuOpen()) {
+            <div class="account-menu__panel" role="menu">
+              <div class="account-menu__identity">
+                <strong>{{ auth.currentUser()?.displayName }}</strong>
+                <span>{{ accountRoleLabel() }}</span>
+              </div>
+              <nav aria-label="Chức năng tài khoản">
+                @for (item of accountMenuItems(); track item.path) {
+                  @if (item.group === 'support') {
+                    <span class="account-menu__section-title">Hỗ trợ cộng đồng</span>
+                  }
+                  <a [routerLink]="item.path" role="menuitem" (click)="closeAccountMenu()">
+                    {{ item.label }}
+                  </a>
+                }
+              </nav>
+              <button class="account-menu__logout" type="button" role="menuitem" (click)="logout()">
+                Đăng xuất
+              </button>
+            </div>
+          }
+        </div>
       } @else {
         <a
           routerLink="/dang-nhap"
@@ -64,6 +90,7 @@
       <!-- Nút tìm kiếm phía cuối header -->
       <a
         routerLink="/tim-kiem"
+        data-header-action="search"
         class="grid size-[45px] place-items-center rounded-xl border border-[var(--color-brand-primary)] bg-[var(--color-surface)]"
         aria-label="Tìm kiếm"
       >
@@ -77,12 +104,16 @@
         />
         <!-- Icon tìm kiếm xuất trực tiếp từ Figma -->
       </a>
+      @if (auth.isAuthenticated()) {
+        <app-account-notification-center data-header-action="notifications" />
+      }
     </div>
 
     <button
+      #mobileMenuButton
       type="button"
-      class="relative size-10 rounded-xl border border-[var(--color-brand-primary)] text-[var(--color-brand-primary)] xl:hidden"
-      aria-label="Mở hoặc đóng menu chính"
+      class="public-mobile-menu-toggle relative size-11 rounded-xl border border-[var(--color-brand-primary)] text-[var(--color-brand-primary)] xl:hidden"
+      [attr.aria-label]="isMobileMenuOpen() ? 'Đóng menu chính' : 'Mở menu chính'"
       aria-controls="mobile-navigation"
       [attr.aria-expanded]="isMobileMenuOpen()"
       (click)="toggleMobileMenu()"
@@ -97,11 +128,11 @@
         ></span>
         <!-- Nét thứ hai của biểu tượng đóng -->
       } @else {
-        <span class="absolute left-1/2 top-[13px] h-0.5 w-5 -translate-x-1/2 bg-current"></span>
+        <span class="absolute left-1/2 top-[15px] h-0.5 w-5 -translate-x-1/2 bg-current"></span>
         <!-- Thanh trên của biểu tượng menu -->
-        <span class="absolute left-1/2 top-[19px] h-0.5 w-5 -translate-x-1/2 bg-current"></span>
+        <span class="absolute left-1/2 top-[21px] h-0.5 w-5 -translate-x-1/2 bg-current"></span>
         <!-- Thanh giữa của biểu tượng menu -->
-        <span class="absolute left-1/2 top-[25px] h-0.5 w-5 -translate-x-1/2 bg-current"></span>
+        <span class="absolute left-1/2 top-[27px] h-0.5 w-5 -translate-x-1/2 bg-current"></span>
         <!-- Thanh dưới của biểu tượng menu -->
       }
     </button>
@@ -110,7 +141,7 @@
   @if (isMobileMenuOpen()) {
     <nav
       id="mobile-navigation"
-      class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 xl:hidden"
+      class="public-mobile-nav border-t border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 xl:hidden"
       aria-label="Điều hướng trên thiết bị di động"
     >
       <div class="mx-auto flex max-w-7xl flex-col gap-1">
@@ -144,18 +175,36 @@
           Tìm kiếm
         </a>
 
+        @if (auth.isAuthenticated()) {
+          <app-account-notification-center appearance="mobile" />
+        }
+
         <div class="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--color-border)] pt-4">
           @if (auth.isAuthenticated()) {
-            <a
-              [routerLink]="auth.defaultRoute()"
-              class="rounded-xl border border-[var(--color-brand-primary)] px-3 py-2.5 text-center font-semibold text-[var(--color-brand-primary)]"
-              (click)="closeMobileMenu()"
-            >
-              Tài khoản
-            </a>
+            <div class="mobile-account col-span-2">
+              <div class="mobile-account__identity">
+                @if (auth.currentUser()?.avatarUrl; as avatarUrl) {
+                  <img [src]="avatarUrl" alt="" width="40" height="40" />
+                } @else {
+                  <span aria-hidden="true">{{ accountInitials() }}</span>
+                }
+                <div>
+                  <strong>{{ auth.currentUser()?.displayName }}</strong>
+                  <small>{{ accountRoleLabel() }}</small>
+                </div>
+              </div>
+              <nav aria-label="Chức năng tài khoản trên thiết bị di động">
+                @for (item of accountMenuItems(); track item.path) {
+                  @if (item.group === 'support') {
+                    <span class="mobile-account__section-title">Hỗ trợ cộng đồng</span>
+                  }
+                  <a [routerLink]="item.path" (click)="closeAllMenus()">{{ item.label }}</a>
+                }
+              </nav>
+            </div>
             <button
               type="button"
-              class="rounded-xl bg-[var(--color-text-heading)] px-3 py-2.5 text-center font-semibold text-white"
+              class="col-span-2 rounded-xl bg-[var(--color-text-heading)] px-3 py-2.5 text-center font-semibold text-white"
               (click)="logout()"
             >
               Đăng xuất

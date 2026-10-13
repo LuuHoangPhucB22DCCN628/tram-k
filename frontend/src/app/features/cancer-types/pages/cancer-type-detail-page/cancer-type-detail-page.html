@@ -4,7 +4,7 @@
       <div class="medical-article__shell">
         <div>
           <a class="medical-article__back" routerLink="/loai-ung-thu">Loại ung thư</a>
-          <header class="medical-article__header">
+          <header class="medical-article__header" appReveal="up">
             <h1>{{ cancer.articleTitle }}</h1>
             <div>
               <span>{{ cancer.publishedAt }}</span
@@ -13,8 +13,16 @@
           </header>
           <p class="medical-article__lead">{{ cancer.intro }}</p>
 
-          @for (section of cancer.articleSections ?? []; track section.title) {
-            <section class="medical-article__section">
+          @for (
+            section of cancer.articleSections ?? [];
+            track section.title;
+            let sectionIndex = $index
+          ) {
+            <section
+              class="medical-article__section"
+              appReveal="up"
+              [revealDelay]="(sectionIndex % 3) * 70"
+            >
               <h2>{{ section.title }}</h2>
               @for (paragraph of section.paragraphs; track paragraph) {
                 <p>{{ paragraph }}</p>
@@ -25,7 +33,7 @@
             </section>
           }
 
-          <aside class="medical-note">
+          <aside class="medical-note" appReveal="up">
             <strong>Lưu ý y khoa</strong>
             <p>
               Nội dung chỉ mang tính tham khảo và không thay thế tư vấn, chẩn đoán hoặc điều trị của
@@ -34,7 +42,12 @@
           </aside>
         </div>
 
-        <aside class="related-cancers" aria-labelledby="related-cancers-title">
+        <aside
+          class="related-cancers"
+          aria-labelledby="related-cancers-title"
+          appReveal="right"
+          [revealDelay]="100"
+        >
           <h2 id="related-cancers-title">Chủ đề liên quan</h2>
           @for (item of relatedTypes(); track item.slug) {
             <a [routerLink]="['/loai-ung-thu', item.slug]">
@@ -50,7 +63,7 @@
     </article>
   } @else {
     <article class="cancer-detail" [class]="'cancer-detail cancer-detail--' + cancer.theme">
-      <nav class="cancer-detail__nav" aria-label="Ba loại ung thư phổ biến">
+      <nav class="cancer-detail__nav" aria-label="Ba loại ung thư phổ biến" appReveal="up">
         <a routerLink="/loai-ung-thu">← Tổng quan</a>
         @for (item of featuredDetails; track item.slug) {
           <a
@@ -63,7 +76,7 @@
       </nav>
 
       @if (cancer.theme === 'breast') {
-        <header class="breast-hero" aria-labelledby="breast-title">
+        <header class="breast-hero" aria-labelledby="breast-title" appReveal="scale">
           <img [src]="cancer.heroImage" alt="" width="1440" height="773" />
           <h1 id="breast-title" class="visually-hidden">{{ cancer.name }}</h1>
           <p class="visually-hidden">{{ cancer.tagline }}</p>
@@ -107,9 +120,9 @@
               height="291"
             />
           </div>
-          <p class="breast-page__intro">{{ cancer.intro }}</p>
+          <p class="breast-page__intro" appReveal="up">{{ cancer.intro }}</p>
 
-          <section class="breast-section" aria-labelledby="breast-signs-title">
+          <section class="breast-section" aria-labelledby="breast-signs-title" appReveal="up">
             <header class="breast-section__heading">
               <h2 id="breast-signs-title">{{ cancer.signs.title }}</h2>
               <p>{{ cancer.signs.subtitle }}</p>
@@ -136,7 +149,7 @@
             />
           </section>
 
-          <section class="breast-section" aria-labelledby="breast-risks-title">
+          <section class="breast-section" aria-labelledby="breast-risks-title" appReveal="up">
             <header class="breast-section__heading">
               <h2 id="breast-risks-title">{{ cancer.risks.title }}</h2>
               <p>{{ cancer.risks.subtitle }}</p>
@@ -161,6 +174,7 @@
           <section
             class="breast-section breast-section--stages"
             aria-labelledby="breast-stages-title"
+            appReveal="up"
           >
             <header class="breast-section__heading">
               <h2 id="breast-stages-title">{{ cancer.stages.title }}</h2>
@@ -184,6 +198,7 @@
           <section
             class="breast-section breast-section--treatment"
             aria-labelledby="breast-treatment-title"
+            appReveal="up"
           >
             <header class="breast-section__heading">
               <h2 id="breast-treatment-title">{{ cancer.treatment.title }}</h2>
@@ -202,7 +217,7 @@
             />
           </section>
 
-          <section class="breast-screening" aria-labelledby="breast-screening-title">
+          <section class="breast-screening" aria-labelledby="breast-screening-title" appReveal="up">
             <div class="breast-screening__card">
               <header class="breast-section__heading">
                 <p>Tầm soát định kỳ</p>
@@ -218,7 +233,7 @@
             </div>
           </section>
 
-          <section class="breast-story" aria-labelledby="breast-story-title">
+          <section class="breast-story" aria-labelledby="breast-story-title" appReveal="up">
             <header class="breast-story__heading">
               <h2 id="breast-story-title">“Tôi không còn chiến đấu với ung thư một mình”</h2>
               <p>Đoàn Thị Ngọc Hồng</p>
@@ -327,7 +342,7 @@
           </section>
         </div>
       } @else if (cancer.theme === 'lung') {
-        <header class="breast-hero" aria-labelledby="lung-title">
+        <header class="breast-hero" aria-labelledby="lung-title" appReveal="scale">
           <img [src]="cancer.heroImage" alt="" width="1440" height="598" />
           <h1 id="lung-title" class="visually-hidden">{{ cancer.name }}</h1>
           <p class="visually-hidden">{{ cancer.tagline }}</p>
@@ -361,9 +376,9 @@
               alt=""
             />
           </div>
-          <p class="breast-page__intro">{{ cancer.intro }}</p>
+          <p class="breast-page__intro" appReveal="up">{{ cancer.intro }}</p>
 
-          <section class="breast-section" aria-labelledby="lung-signs-title">
+          <section class="breast-section" aria-labelledby="lung-signs-title" appReveal="up">
             <header class="breast-section__heading">
               <h2 id="lung-signs-title">Những dấu hiệu</h2>
               <p>không thể bỏ qua</p>
@@ -413,7 +428,7 @@
             </div>
           </section>
 
-          <section class="breast-section" aria-labelledby="lung-risks-title">
+          <section class="breast-section" aria-labelledby="lung-risks-title" appReveal="up">
             <header class="breast-section__heading">
               <h2 id="lung-risks-title">Nguyên nhân</h2>
               <p>và các yếu tố nguy cơ</p>
@@ -458,7 +473,7 @@
             />
           </section>
 
-          <section class="breast-section" aria-labelledby="lung-stages-title">
+          <section class="breast-section" aria-labelledby="lung-stages-title" appReveal="up">
             <header class="breast-section__heading">
               <h2 id="lung-stages-title">Các giai đoạn của bệnh</h2>
             </header>
@@ -504,6 +519,7 @@
           <section
             class="breast-section lung-page__treatment"
             aria-labelledby="lung-treatment-title"
+            appReveal="up"
           >
             <header class="breast-section__heading">
               <p>Kỷ nguyên mới trong điều trị:</p>
@@ -555,7 +571,7 @@
             />
           </section>
 
-          <section class="lung-page__screening" aria-label="Tầm soát và phòng ngừa">
+          <section class="lung-page__screening" aria-label="Tầm soát và phòng ngừa" appReveal="up">
             <img
               class="lung-page__screening-desktop"
               src="/assets/images/cancer-types/details/lung-screening.svg"
@@ -595,7 +611,11 @@
             </div>
           </section>
 
-          <section class="breast-story lung-story" aria-labelledby="lung-story-title">
+          <section
+            class="breast-story lung-story"
+            aria-labelledby="lung-story-title"
+            appReveal="up"
+          >
             <header class="breast-story__heading">
               <h2 id="lung-story-title">Bảy năm<br />không cúi đầu</h2>
               <p>Vũ Kiều Oanh</p>
@@ -901,7 +921,7 @@
           </section>
         </div>
       } @else if (cancer.theme === 'thyroid') {
-        <header class="breast-hero thyroid-hero" aria-labelledby="thyroid-title">
+        <header class="breast-hero thyroid-hero" aria-labelledby="thyroid-title" appReveal="scale">
           <img [src]="cancer.heroImage" alt="" width="1440" height="749" />
           <div class="thyroid-hero__copy">
             <h1 id="thyroid-title">{{ cancer.name }}</h1>
@@ -938,9 +958,9 @@
             />
           </div>
 
-          <p class="breast-page__intro">{{ cancer.intro }}</p>
+          <p class="breast-page__intro" appReveal="up">{{ cancer.intro }}</p>
 
-          <section class="breast-section" aria-labelledby="thyroid-signs-title">
+          <section class="breast-section" aria-labelledby="thyroid-signs-title" appReveal="up">
             <header class="breast-section__heading">
               <h2 id="thyroid-signs-title">Những dấu hiệu</h2>
               <p>không thể bỏ qua</p>
@@ -991,7 +1011,7 @@
             </div>
           </section>
 
-          <section class="breast-section" aria-labelledby="thyroid-risks-title">
+          <section class="breast-section" aria-labelledby="thyroid-risks-title" appReveal="up">
             <header class="breast-section__heading">
               <h2 id="thyroid-risks-title">Nguyên nhân</h2>
               <p>và các yếu tố nguy cơ</p>
@@ -1040,7 +1060,7 @@
             />
           </section>
 
-          <section class="breast-section" aria-labelledby="thyroid-stages-title">
+          <section class="breast-section" aria-labelledby="thyroid-stages-title" appReveal="up">
             <header class="breast-section__heading">
               <h2 id="thyroid-stages-title">Các giai đoạn của bệnh</h2>
             </header>
@@ -1066,10 +1086,10 @@
                   thuật ở giai đoạn này đòi hỏi sự triệt để hơn.
                 </li>
                 <li>
-                  <strong>Ung thư thể không biệt hóa (Giai đoạn cuối/Nguy hiểm nhất):</strong> Tế
-                  bào ung thư phát triển, xâm lấn và di căn cực kỳ nhanh ra vùng cổ và các cơ quan
-                  xa. Đây là thể bệnh khó điều trị nhất, ít đáp ứng với các phương pháp thông thường
-                  và có tỷ lệ tử vong cao.
+                  <strong>Ung thư thể không biệt hóa (Giai đoạn cuối/Nguy hiểm nhất):</strong>
+                  Tế bào ung thư phát triển, xâm lấn và di căn cực kỳ nhanh ra vùng cổ và các cơ
+                  quan xa. Đây là thể bệnh khó điều trị nhất, ít đáp ứng với các phương pháp thông
+                  thường và có tỷ lệ tử vong cao.
                 </li>
               </ul>
             </div>
@@ -1083,7 +1103,11 @@
             />
           </section>
 
-          <section class="thyroid-treatment" aria-labelledby="thyroid-treatment-title">
+          <section
+            class="thyroid-treatment"
+            aria-labelledby="thyroid-treatment-title"
+            appReveal="up"
+          >
             <div class="thyroid-treatment__card">
               <header class="breast-section__heading">
                 <p>Kỷ nguyên mới trong điều trị</p>
@@ -1133,6 +1157,7 @@
           <section
             class="breast-section thyroid-prevention"
             aria-labelledby="thyroid-prevention-title"
+            appReveal="up"
           >
             <header class="breast-section__heading">
               <h2 id="thyroid-prevention-title">Tầm soát và phòng ngừa</h2>
@@ -1168,7 +1193,11 @@
             />
           </section>
 
-          <section class="breast-story thyroid-story" aria-labelledby="thyroid-story-title">
+          <section
+            class="breast-story thyroid-story"
+            aria-labelledby="thyroid-story-title"
+            appReveal="up"
+          >
             <header class="thyroid-story__heading">
               <p>MC Hoài Hương</p>
               <h2 id="thyroid-story-title">Hành trình đi qua<br />“bản án” ung thư tuyến giáp</h2>
@@ -1304,7 +1333,7 @@
           </section>
         </div>
       } @else {
-        <header class="cancer-detail__hero">
+        <header class="cancer-detail__hero" appReveal="scale">
           <img [src]="cancer.heroImage" [alt]="cancer.heroAlt" />
           <div>
             <p>Hiểu đúng để chủ động</p>
@@ -1313,10 +1342,14 @@
           </div>
         </header>
 
-        <p class="cancer-detail__intro">{{ cancer.intro }}</p>
+        <p class="cancer-detail__intro" appReveal="up">{{ cancer.intro }}</p>
 
         <div class="cancer-detail__body">
-          <section class="detail-section detail-section--center" aria-labelledby="signs-title">
+          <section
+            class="detail-section detail-section--center"
+            aria-labelledby="signs-title"
+            appReveal="up"
+          >
             <header>
               <h2 id="signs-title">{{ cancer.signs.title }}</h2>
               @if (cancer.signs.subtitle) {
@@ -1334,7 +1367,11 @@
             </ul>
           </section>
 
-          <section class="detail-section detail-section--split" aria-labelledby="risks-title">
+          <section
+            class="detail-section detail-section--split"
+            aria-labelledby="risks-title"
+            appReveal="up"
+          >
             <header>
               <h2 id="risks-title">{{ cancer.risks.title }}</h2>
               @if (cancer.risks.subtitle) {
@@ -1351,7 +1388,11 @@
             </div>
           </section>
 
-          <section class="detail-section detail-section--center" aria-labelledby="stages-title">
+          <section
+            class="detail-section detail-section--center"
+            aria-labelledby="stages-title"
+            appReveal="up"
+          >
             <header>
               <h2 id="stages-title">{{ cancer.stages.title }}</h2>
             </header>
@@ -1369,6 +1410,7 @@
           <section
             class="detail-section detail-section--treatment"
             aria-labelledby="treatment-title"
+            appReveal="up"
           >
             <header>
               <h2 id="treatment-title">{{ cancer.treatment.title }}</h2>
@@ -1387,6 +1429,7 @@
           <section
             class="detail-section detail-section--prevention"
             aria-labelledby="prevention-title"
+            appReveal="up"
           >
             <div>
               <p>Chủ động hôm nay</p>
@@ -1400,7 +1443,7 @@
             </ul>
           </section>
 
-          <aside class="medical-note">
+          <aside class="medical-note" appReveal="up">
             <strong>Lưu ý y khoa</strong>
             <p>
               Nội dung trên Trạm K chỉ mang tính tham khảo, không thay thế việc thăm khám, chẩn đoán

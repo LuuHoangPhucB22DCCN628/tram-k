@@ -58,6 +58,7 @@ $breakpoints: (
   --color-danger: #{$color-danger};
 
   --font-family-sans: #{$font-family-sans};
+  --font-family-display: #{$font-family-serif};
   --font-family-serif: #{$font-family-serif};
 
   --space-0: 0;
@@ -79,6 +80,15 @@ $breakpoints: (
   --radius-pill: 9999px;
   --shadow-card: 0 0.5rem 1.5rem rgb(37 41 74 / 10%);
   --content-max-width: 80rem;
+
+  // Motion dùng chung: ưu tiên chuyển động ngắn, nhẹ và nhất quán.
+  --motion-duration-fast: 160ms;
+  --motion-duration-base: 280ms;
+  --motion-duration-slow: 520ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-emphasized: cubic-bezier(0.22, 0.8, 0.32, 1);
+  --motion-distance-sm: 1rem;
+  --motion-distance-md: 2rem;
 
   --focus-ring-color: #{$color-brand-primary};
   --focus-ring-width: 0.1875rem;

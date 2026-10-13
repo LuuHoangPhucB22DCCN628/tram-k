@@ -160,6 +160,131 @@
           </div>
         </section>
 
+        <section class="profile-card profile-security" aria-labelledby="security-title">
+          <div class="profile-card__heading">
+            <h2 id="security-title">Bảo mật và phiên đăng nhập</h2>
+            <p>Thu hồi toàn bộ phiên nếu bạn dùng máy lạ hoặc nghi ngờ tài khoản bị truy cập.</p>
+          </div>
+
+          <div
+            class="profile-security__email-change"
+            [formGroup]="emailChangeForm"
+            (keydown.enter)="$event.preventDefault(); requestEmailChange()"
+          >
+            <div>
+              <h3>Đổi email đăng nhập</h3>
+              <p>
+                Email hiện tại <strong>{{ accountEmail }}</strong> vẫn được sử dụng cho đến khi bạn
+                xác minh địa chỉ mới. Sau khi đổi thành công, mọi phiên cũ sẽ bị thu hồi.
+              </p>
+            </div>
+
+            <div class="profile-form__grid">
+              <div class="profile-form__field">
+                <label for="profile-new-email">Email mới</label>
+                <input
+                  id="profile-new-email"
+                  type="email"
+                  formControlName="newEmail"
+                  autocomplete="email"
+                  placeholder="email-moi@example.com"
+                />
+                @if (
+                  emailChangeForm.controls.newEmail.touched &&
+                  emailChangeForm.controls.newEmail.invalid
+                ) {
+                  <p class="profile-form__error">Vui lòng nhập email mới hợp lệ.</p>
+                }
+              </div>
+
+              <div class="profile-form__field">
+                <label for="profile-current-password">Mật khẩu hiện tại</label>
+                <div class="auth-form__password">
+                  <input
+                    id="profile-current-password"
+                    [type]="showEmailChangePassword() ? 'text' : 'password'"
+                    formControlName="currentPassword"
+                    autocomplete="current-password"
+                  />
+                  <button
+                    class="auth-form__password-toggle"
+                    type="button"
+                    [attr.aria-label]="
+                      showEmailChangePassword() ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'
+                    "
+                    [attr.aria-pressed]="showEmailChangePassword()"
+                    aria-controls="profile-current-password"
+                    (click)="showEmailChangePassword.set(!showEmailChangePassword())"
+                  >
+                    {{ showEmailChangePassword() ? 'Ẩn' : 'Hiện' }}
+                  </button>
+                </div>
+                @if (
+                  emailChangeForm.controls.currentPassword.touched &&
+                  emailChangeForm.controls.currentPassword.invalid
+                ) {
+                  <p class="profile-form__error">Vui lòng nhập mật khẩu hiện tại.</p>
+                }
+              </div>
+            </div>
+
+            @if (emailChangeFeedback(); as result) {
+              <p
+                class="profile-feedback"
+                [class.profile-feedback--error]="result.type === 'error'"
+                [attr.role]="result.type === 'error' ? 'alert' : 'status'"
+              >
+                {{ result.message }}
+              </p>
+            }
+
+            <app-ui-button
+              type="button"
+              variant="secondary"
+              [loading]="isRequestingEmailChange()"
+              [disabled]="isRequestingEmailChange()"
+              (buttonClick)="requestEmailChange()"
+            >
+              Gửi liên kết xác minh
+            </app-ui-button>
+          </div>
+
+          @if (showLogoutAllConfirmation()) {
+            <div class="profile-security__confirmation" role="alert">
+              <p>
+                Tất cả thiết bị, kể cả thiết bị này, sẽ phải đăng nhập lại. Bạn có muốn tiếp tục?
+              </p>
+              <div>
+                <app-ui-button
+                  type="button"
+                  variant="ghost"
+                  [disabled]="isLoggingOutAll()"
+                  (buttonClick)="showLogoutAllConfirmation.set(false)"
+                >
+                  Hủy
+                </app-ui-button>
+                <app-ui-button
+                  type="button"
+                  variant="danger"
+                  [loading]="isLoggingOutAll()"
+                  [disabled]="isLoggingOutAll()"
+                  (buttonClick)="logoutAllDevices()"
+                >
+                  Xác nhận đăng xuất tất cả
+                </app-ui-button>
+              </div>
+            </div>
+          } @else {
+            <app-ui-button
+              type="button"
+              variant="danger"
+              (buttonClick)="showLogoutAllConfirmation.set(true)"
+            >
+              Đăng xuất khỏi mọi thiết bị
+            </app-ui-button>
+          }
+        </section>
+
         @if (feedback(); as result) {
           <p
             class="profile-feedback"
@@ -171,10 +296,16 @@
         }
 
         <div class="profile-actions">
-          <app-ui-button type="button" variant="secondary" (buttonClick)="resetForm()"
+          <app-ui-button
+            type="button"
+            variant="secondary"
+            [disabled]="isLoading() || isSaving()"
+            (buttonClick)="resetForm()"
             >Hoàn tác</app-ui-button
           >
-          <app-ui-button type="submit">Lưu thay đổi</app-ui-button>
+          <app-ui-button type="submit" [loading]="isSaving()" [disabled]="isLoading() || isSaving()"
+            >Lưu thay đổi</app-ui-button
+          >
         </div>
       </div>
     </div>

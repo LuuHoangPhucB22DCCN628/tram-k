@@ -29,7 +29,25 @@ export class HttpExceptionFilter implements ExceptionFilter {
       path: request.url,
     };
 
+    const retryAfterSeconds = this.getRetryAfterSeconds(exception);
+    if (retryAfterSeconds !== null)
+      response.setHeader("Retry-After", retryAfterSeconds);
+
     response.status(status).json(body);
+  }
+
+  private getRetryAfterSeconds(exception: unknown): number | null {
+    if (!(exception instanceof HttpException)) return null;
+    const exceptionResponse = exception.getResponse();
+    if (!exceptionResponse || typeof exceptionResponse !== "object")
+      return null;
+    const retryAfterSeconds =
+      "retryAfterSeconds" in exceptionResponse
+        ? exceptionResponse.retryAfterSeconds
+        : null;
+    return typeof retryAfterSeconds === "number" && retryAfterSeconds > 0
+      ? Math.ceil(retryAfterSeconds)
+      : null;
   }
 
   private getMessage(exception: unknown): string | readonly string[] {

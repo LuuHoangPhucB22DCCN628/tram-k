@@ -32,6 +32,7 @@ export class ProfileStorageService {
 
   private createDefault(user: AuthUser): MemberProfile {
     return {
+      version: 1,
       displayName: user.displayName,
       phone: '',
       city: '',

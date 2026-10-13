@@ -1,0 +1,185 @@
+<section class="partner-application" aria-labelledby="partner-application-title">
+  <div class="partner-application__heading">
+    <p>UC09 · Hồ sơ đối tác</p>
+    <h1 id="partner-application-title">Đăng ký trở thành đối tác Trạm K</h1>
+    <span>Quyền đối tác chỉ được cấp sau khi hồ sơ được quản trị viên phê duyệt.</span>
+  </div>
+
+  @if (currentApplication(); as application) {
+    <article class="partner-application__status" [attr.data-status]="application.status">
+      <div>
+        <span>Trạng thái hồ sơ</span><strong>{{ statusLabel(application.status) }}</strong>
+      </div>
+      <p>
+        {{ application.organizationName }} · gửi ngày
+        {{ application.createdAt | date: 'dd/MM/yyyy' }}
+      </p>
+      @if (application.reviewReason) {
+        <p><b>Lý do:</b> {{ application.reviewReason }}</p>
+      }
+      @if (application.status !== 'REJECTED') {
+        <p class="partner-application__notice">
+          {{
+            application.status === 'APPROVED'
+              ? 'Đăng xuất rồi đăng nhập lại để sử dụng khu vực đối tác.'
+              : 'Bạn không thể gửi hồ sơ thứ hai trong khi hồ sơ này đang chờ xử lý.'
+          }}
+        </p>
+      }
+    </article>
+  }
+
+  @if (!currentApplication() || currentApplication()?.status === 'REJECTED') {
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="partner-application__grid">
+        <label>
+          <span>Tên tổ chức/nhóm thiện nguyện <b aria-hidden="true">*</b></span>
+          <input
+            formControlName="organizationName"
+            autocomplete="organization"
+            [attr.aria-invalid]="showFieldError('organizationName')"
+            [attr.aria-describedby]="
+              showFieldError('organizationName') ? 'organization-error' : null
+            "
+          />
+          @if (showFieldError('organizationName')) {
+            <small id="organization-error" class="partner-application__field-error">
+              {{ fieldError('organizationName') }}
+            </small>
+          }
+        </label>
+        <label>
+          <span>Người đại diện <b aria-hidden="true">*</b></span>
+          <input
+            formControlName="representativeName"
+            autocomplete="name"
+            [attr.aria-invalid]="showFieldError('representativeName')"
+            [attr.aria-describedby]="
+              showFieldError('representativeName') ? 'representative-error' : null
+            "
+          />
+          @if (showFieldError('representativeName')) {
+            <small id="representative-error" class="partner-application__field-error">
+              {{ fieldError('representativeName') }}
+            </small>
+          }
+        </label>
+        <label>
+          <span>Số điện thoại <b aria-hidden="true">*</b></span>
+          <input
+            formControlName="phone"
+            inputmode="tel"
+            autocomplete="tel"
+            placeholder="Ví dụ: 0912345678"
+            [attr.aria-invalid]="showFieldError('phone')"
+            [attr.aria-describedby]="showFieldError('phone') ? 'phone-error' : null"
+          />
+          @if (showFieldError('phone')) {
+            <small id="phone-error" class="partner-application__field-error">
+              {{ fieldError('phone') }}
+            </small>
+          }
+        </label>
+        <label>
+          <span>Email liên hệ <b aria-hidden="true">*</b></span>
+          <input
+            formControlName="email"
+            type="email"
+            autocomplete="email"
+            placeholder="Ví dụ: lienhe@example.com"
+            [attr.aria-invalid]="showFieldError('email')"
+            [attr.aria-describedby]="showFieldError('email') ? 'email-error' : null"
+          />
+          @if (showFieldError('email')) {
+            <small id="email-error" class="partner-application__field-error">
+              {{ fieldError('email') }}
+            </small>
+          }
+        </label>
+      </div>
+      <label>
+        <span>Địa chỉ liên hệ <b aria-hidden="true">*</b></span>
+        <input
+          formControlName="address"
+          autocomplete="street-address"
+          placeholder="Số nhà, đường, phường/xã, tỉnh/thành phố"
+          [attr.aria-invalid]="showFieldError('address')"
+          [attr.aria-describedby]="showFieldError('address') ? 'address-error' : null"
+        />
+        @if (showFieldError('address')) {
+          <small id="address-error" class="partner-application__field-error">
+            {{ fieldError('address') }}
+          </small>
+        }
+      </label>
+      <label>
+        <span>Giới thiệu năng lực và hoạt động hỗ trợ <b aria-hidden="true">*</b></span>
+        <textarea
+          formControlName="introduction"
+          rows="5"
+          maxlength="2000"
+          placeholder="Mô tả kinh nghiệm, nguồn lực và hình thức hỗ trợ (ít nhất 30 ký tự)"
+          [attr.aria-invalid]="showFieldError('introduction')"
+          [attr.aria-describedby]="showFieldError('introduction') ? 'introduction-error' : null"
+        ></textarea>
+        <span class="partner-application__counter">
+          {{ form.controls.introduction.value.trim().length }}/2000 ký tự
+        </span>
+        @if (showFieldError('introduction')) {
+          <small id="introduction-error" class="partner-application__field-error">
+            {{ fieldError('introduction') }}
+          </small>
+        }
+      </label>
+      <label>
+        <span>Hồ sơ minh chứng <b aria-hidden="true">*</b></span>
+        <small class="partner-application__hint"
+          >PDF, JPG hoặc PNG · tối đa 5 MB/tệp · tối đa 10 tệp</small
+        >
+        <input
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          multiple
+          [attr.aria-invalid]="!!documentError()"
+          [attr.aria-describedby]="documentError() ? 'documents-error' : null"
+          (change)="selectDocuments($event)"
+        />
+      </label>
+      @if (documentNames().length) {
+        <p class="partner-application__files">Đã chọn: {{ documentNames().join(', ') }}</p>
+      }
+      @if (documentError()) {
+        <p id="documents-error" class="partner-application__field-error" role="alert">
+          {{ documentError() }}
+        </p>
+      }
+      <label class="partner-application__consent">
+        <input type="checkbox" formControlName="consent" />
+        <span
+          >Tôi xác nhận thông tin cung cấp là chính xác và đồng ý để Trạm K xác minh hồ sơ.</span
+        >
+      </label>
+      @if (submitted() && form.controls.consent.invalid) {
+        <p class="partner-application__field-error">Bạn cần xác nhận trước khi gửi hồ sơ.</p>
+      }
+      @if (submitted() && form.invalid) {
+        <p class="partner-application__error" role="alert" tabindex="-1">
+          Còn {{ invalidFieldCount() }} trường thông tin cần kiểm tra. Lỗi cụ thể được hiển thị ngay
+          dưới từng trường.
+        </p>
+      }
+      @if (feedback()) {
+        <p
+          class="partner-application__feedback"
+          [attr.data-state]="feedbackIsError() ? 'error' : 'success'"
+          [attr.role]="feedbackIsError() ? 'alert' : 'status'"
+        >
+          {{ feedback() }}
+        </p>
+      }
+      <button type="submit">
+        {{ currentApplication()?.status === 'REJECTED' ? 'Gửi lại hồ sơ' : 'Gửi hồ sơ xét duyệt' }}
+      </button>
+    </form>
+  }
+</section>

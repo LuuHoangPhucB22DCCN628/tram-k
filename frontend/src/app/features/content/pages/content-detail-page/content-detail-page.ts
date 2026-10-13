@@ -9,9 +9,13 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
+import { AuthService } from '@core/auth/auth.service';
+import { MemberCommentStorageService } from '@features/account/services/member-comment-storage.service';
+import { RevealDirective } from '@shared/directives/reveal.directive';
 import { UiEmptyState, UiErrorState, UiLoading } from '@shared/ui';
 
 import {
@@ -22,21 +26,51 @@ import {
 import { ContentService } from '../../services/content.service';
 import { ContentFavoritesService } from '../../services/content-favorites.service';
 
+interface ContentDetailPageConfig {
+  readonly kind: ContentDetail['kind'];
+  readonly articleBasePath: string;
+  readonly backPath: string;
+  readonly backLabel: string;
+}
+
+const DEFAULT_CONFIG: ContentDetailPageConfig = {
+  kind: 'GUIDE',
+  articleBasePath: '/cam-nang',
+  backPath: '/cam-nang',
+  backLabel: 'Cẩm nang',
+};
+
 @Component({
   selector: 'app-content-detail-page',
   standalone: true,
-  imports: [DatePipe, RouterLink, UiEmptyState, UiErrorState, UiLoading],
+  imports: [
+    DatePipe,
+    ReactiveFormsModule,
+    RouterLink,
+    RevealDirective,
+    UiEmptyState,
+    UiErrorState,
+    UiLoading,
+  ],
   templateUrl: './content-detail-page.html',
   styleUrl: './content-detail-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContentDetailPage {
   private readonly contentService = inject(ContentService);
+  protected readonly auth = inject(AuthService);
+  private readonly commentStorage = inject(MemberCommentStorageService);
+  private readonly formBuilder = inject(FormBuilder);
   private readonly favoritesService = inject(ContentFavoritesService);
   private readonly route = inject(ActivatedRoute);
   private readonly title = inject(Title);
   private readonly destroyRef = inject(DestroyRef);
   private slug = '';
+
+  protected readonly config: ContentDetailPageConfig = {
+    ...DEFAULT_CONFIG,
+    ...((this.route.snapshot?.data ?? {}) as Partial<ContentDetailPageConfig>),
+  };
 
   protected readonly content = signal<ContentDetail | null>(null);
   protected readonly categoryItems = signal<readonly ContentSummary[]>([]);
@@ -45,6 +79,13 @@ export class ContentDetailPage {
   protected readonly notFound = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly shareFeedback = signal('');
+  protected readonly commentFeedback = signal('');
+  protected readonly commentForm = this.formBuilder.nonNullable.group({
+    content: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(1000)]],
+  });
+  protected readonly comments = computed(() =>
+    this.commentStorage.commentsForSource(this.articlePath()),
+  );
   protected readonly isFavorite = computed(() => {
     const article = this.content();
     this.favoritesService.favoriteIds();
@@ -72,7 +113,7 @@ export class ContentDetailPage {
   }
 
   protected articleLink(item: ContentSummary): readonly string[] {
-    return ['/cam-nang', item.slug];
+    return [this.config.articleBasePath, item.slug];
   }
 
   protected toggleFavorite(): void {
@@ -105,6 +146,33 @@ export class ContentDetailPage {
     }
   }
 
+  protected submitComment(): void {
+    const article = this.content();
+    const user = this.auth.currentUser();
+    if (!article || !user) return;
+    if (this.commentForm.invalid) {
+      this.commentForm.markAllAsTouched();
+      return;
+    }
+
+    this.commentStorage.create(user.id, {
+      authorName: user.displayName,
+      content: this.commentForm.controls.content.value,
+      sourceTitle: article.title,
+      sourcePath: this.articlePath(),
+    });
+    this.commentForm.reset();
+    this.commentFeedback.set('Đã gửi bình luận của bạn.');
+  }
+
+  protected isOwnComment(userId: string): boolean {
+    return this.auth.currentUser()?.id === userId;
+  }
+
+  private articlePath(): string {
+    return this.slug ? `${this.config.articleBasePath}/${this.slug}` : '';
+  }
+
   private async loadContent(): Promise<void> {
     this.loading.set(true);
     this.notFound.set(false);
@@ -114,7 +182,9 @@ export class ContentDetailPage {
     this.relatedItems.set([]);
 
     try {
-      const detail = await firstValueFrom(this.contentService.getBySlug('GUIDE', this.slug));
+      const detail = await firstValueFrom(
+        this.contentService.getBySlug(this.config.kind, this.slug),
+      );
       this.content.set(detail);
       this.title.setTitle(`${detail.title} | Trạm K`);
       await this.loadSidebarItems(detail);
@@ -133,7 +203,7 @@ export class ContentDetailPage {
     try {
       const result = await firstValueFrom(
         this.contentService.list({
-          kind: 'GUIDE',
+          kind: this.config.kind,
           pageSize: 16,
         }),
       );

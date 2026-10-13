@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 
 import { AuthService } from '@core/auth/auth.service';
 
@@ -42,6 +42,23 @@ describe('AdminLoginPage', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'Email, mật khẩu hoặc quyền truy cập không hợp lệ.',
     );
+  });
+
+  it('accepts an Admin account and navigates to the Admin overview', async () => {
+    await configure();
+    const fixture = TestBed.createComponent(AdminLoginPage);
+    const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigateByUrl');
+    fixture.detectChanges();
+    fill(fixture.nativeElement, '#login-email', 'admin@tramk.vn');
+    fill(fixture.nativeElement, '#login-password', 'Matkhau123');
+
+    (fixture.nativeElement.querySelector('form') as HTMLFormElement).dispatchEvent(
+      new Event('submit'),
+    );
+    fixture.detectChanges();
+
+    expect(TestBed.inject(AuthService).currentUser()?.role).toBe('ADMIN');
+    expect(navigateSpy).toHaveBeenCalledWith('/admin');
   });
 
   async function configure(): Promise<void> {

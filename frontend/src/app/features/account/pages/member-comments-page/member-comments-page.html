@@ -1,0 +1,76 @@
+<section class="comments-page" aria-labelledby="comments-heading">
+  <header>
+    <p>Bình luận của bạn</p>
+    <h1 id="comments-heading">Bình luận của tôi</h1>
+    <span>Xem lại, chỉnh sửa hoặc xóa những bình luận bạn đã gửi trong cộng đồng.</span>
+  </header>
+
+  @if (feedback(); as notice) {
+    <p
+      class="comments-page__feedback"
+      aria-live="polite"
+      [class.comments-page__feedback--error]="notice.type === 'error'"
+    >
+      {{ notice.message }}
+    </p>
+  }
+
+  @if (comments().length) {
+    <div class="comment-list">
+      @for (comment of comments(); track comment.id) {
+        <article class="comment-card">
+          <div class="comment-card__source">
+            <div>
+              <small>Bình luận trong</small>
+              <a [routerLink]="comment.sourcePath">{{ comment.sourceTitle }}</a>
+            </div>
+            <time [attr.datetime]="comment.updatedAt">
+              {{ comment.updatedAt | date: 'dd/MM/yyyy, HH:mm' }}
+              @if (wasEdited(comment)) {
+                · Đã chỉnh sửa
+              }
+            </time>
+          </div>
+
+          @if (editingId() === comment.id) {
+            <form [formGroup]="editForm" (ngSubmit)="save(comment)">
+              <label [for]="'comment-' + comment.id">Nội dung bình luận</label>
+              <textarea
+                [id]="'comment-' + comment.id"
+                formControlName="content"
+                rows="4"
+                maxlength="1000"
+              ></textarea>
+              @if (editForm.controls.content.invalid && editForm.controls.content.touched) {
+                <small class="comment-card__error">Bình luận cần từ 2 đến 1.000 ký tự.</small>
+              }
+              <div class="comment-card__actions">
+                <button type="button" class="comment-card__secondary" (click)="cancelEditing()">
+                  Hủy
+                </button>
+                <button type="submit" class="comment-card__primary">Lưu thay đổi</button>
+              </div>
+            </form>
+          } @else {
+            <p class="comment-card__content">{{ comment.content }}</p>
+            <div class="comment-card__actions">
+              <button type="button" class="comment-card__secondary" (click)="startEditing(comment)">
+                Chỉnh sửa
+              </button>
+              <button type="button" class="comment-card__remove" (click)="remove(comment)">
+                Xóa
+              </button>
+            </div>
+          }
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="comments-page__empty">
+      <span aria-hidden="true">“</span>
+      <h2>Bạn chưa có bình luận nào</h2>
+      <p>Khi bạn bình luận trong một bài viết hoặc câu chuyện, nội dung sẽ xuất hiện tại đây.</p>
+      <a routerLink="/cau-chuyen">Khám phá câu chuyện</a>
+    </div>
+  }
+</section>

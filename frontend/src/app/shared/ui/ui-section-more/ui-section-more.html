@@ -1,0 +1,18 @@
+@if (visible()) {
+  @if (expanded() && totalPages() > 1) {
+    <app-ui-pagination
+      [page]="page()"
+      [totalPages]="totalPages()"
+      (pageChange)="pageChange.emit($event)"
+    />
+  }
+  <button
+    type="button"
+    [attr.aria-expanded]="expanded()"
+    [attr.aria-label]="accessibleLabel()"
+    (click)="toggled.emit()"
+  >
+    <span>{{ expanded() ? lessLabel() : moreLabel() }}</span>
+    <b aria-hidden="true">{{ expanded() ? '↑' : '→' }}</b>
+  </button>
+}

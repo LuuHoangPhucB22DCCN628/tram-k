@@ -36,6 +36,7 @@
   width: 750px;
   height: 847px;
   max-width: none;
+  object-fit: contain;
 }
 
 .hanoi-map-hero__marker {
@@ -49,24 +50,165 @@
   border: 0;
 }
 
-.hanoi-map-hero__marker--south-west {
-  top: 404px;
-  left: 461px;
-}
-
-.hanoi-map-hero__marker--center {
-  top: 364px;
-  left: 488px;
-}
-
-.hanoi-map-hero__marker--north-east {
-  top: 352px;
-  left: 526px;
+.hanoi-map-hero__marker:hover {
+  filter: drop-shadow(0 5px 5px rgb(37 41 74 / 20%));
 }
 
 .hanoi-map-hero__marker:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
+}
+
+.location-dialog-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  padding: 24px;
+  overflow-y: auto;
+  place-items: center;
+  background: rgb(27 32 52 / 34%);
+}
+
+.location-dialog {
+  position: relative;
+  display: grid;
+  width: min(885px, calc(100vw - 48px));
+  grid-template-columns: 304px minmax(0, 1fr);
+  gap: 40px;
+  align-items: end;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(27 32 52 / 22%);
+}
+
+.location-dialog__photo {
+  display: block;
+  width: 304px;
+  height: 380px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.location-dialog__content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 14px 0;
+}
+
+.location-dialog__content h2 {
+  max-width: calc(100% - 28px);
+  margin: 0;
+  color: #5e4dcb;
+  font: italic 26px/31px var(--font-family-serif);
+}
+
+.location-dialog__description {
+  color: #6d7898;
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.location-dialog__description p {
+  margin: 0;
+}
+
+.location-dialog__description p + p {
+  margin-top: 7px;
+}
+
+.location-dialog__description strong {
+  display: block;
+  margin-top: 7px;
+  font-weight: 700;
+}
+
+.location-dialog__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #1b2034;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.location-dialog__meta p {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.location-dialog__meta img {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  object-fit: contain;
+}
+
+.location-dialog__meta .location-dialog__contact {
+  padding-left: 25px;
+  color: #5e4dcb;
+}
+
+.location-dialog__register {
+  min-height: 45px;
+  padding: 11px 24px;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  background: #5e4dcb;
+  cursor: pointer;
+  font: 500 14px/18px var(--font-family-sans);
+}
+
+.location-dialog__register:hover:not(:disabled) {
+  background: var(--color-brand-primary-hover);
+}
+
+.location-dialog__register:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.location-dialog__register:focus-visible,
+.location-dialog__close:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.location-dialog__feedback {
+  margin: -12px 0 0;
+  color: #394366;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.location-dialog__close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  place-items: center;
+}
+
+.location-dialog__close img {
+  width: 20px;
+  height: 20px;
 }
 
 @media (max-width: 1000px) {
@@ -93,24 +235,20 @@
     height: 4.49%;
   }
 
-  .hanoi-map-hero__marker--south-west {
-    top: 47.7%;
-    left: 61.47%;
-  }
-
-  .hanoi-map-hero__marker--center {
-    top: 42.98%;
-    left: 65.07%;
-  }
-
-  .hanoi-map-hero__marker--north-east {
-    top: 41.56%;
-    left: 70.13%;
-  }
-
   .hanoi-map-hero__marker app-community-location-pin {
     width: 100%;
     height: 100%;
+  }
+
+  .location-dialog {
+    width: min(680px, calc(100vw - 48px));
+    grid-template-columns: minmax(220px, 42%) minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .location-dialog__photo {
+    width: 100%;
+    height: 380px;
   }
 }
 
@@ -126,5 +264,44 @@
 
   .hanoi-map-hero__map-shell {
     top: 150px;
+  }
+
+  .location-dialog-backdrop {
+    padding: 16px;
+    place-items: start center;
+  }
+
+  .location-dialog {
+    width: 100%;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin: auto 0;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .location-dialog__photo {
+    height: min(300px, 42vh);
+    margin-top: 36px;
+  }
+
+  .location-dialog__content {
+    gap: 18px;
+    padding: 0;
+  }
+
+  .location-dialog__content h2 {
+    max-width: 100%;
+    font-size: 24px;
+    line-height: 29px;
+  }
+
+  .location-dialog__register {
+    width: 100%;
+  }
+
+  .location-dialog__close {
+    top: 16px;
+    right: 16px;
   }
 }

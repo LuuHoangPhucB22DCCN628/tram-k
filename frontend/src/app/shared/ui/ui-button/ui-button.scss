@@ -15,9 +15,11 @@
   line-height: 1.25;
   cursor: pointer;
   transition:
-    background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard);
 
   &:disabled {
     cursor: not-allowed;
@@ -30,6 +32,7 @@
 
     &:not(:disabled):hover {
       background: var(--color-brand-primary-hover);
+      box-shadow: 0 0.5rem 1rem rgb(94 77 203 / 20%);
     }
   }
 
@@ -37,6 +40,10 @@
     border-color: var(--color-brand-primary);
     background: var(--color-surface);
     color: var(--color-brand-primary);
+
+    &:not(:disabled):hover {
+      background: var(--color-brand-soft);
+    }
   }
 
   &--ghost {
@@ -51,6 +58,15 @@
   &--danger {
     background: var(--color-danger);
     color: var(--color-surface);
+  }
+
+  &:not(:disabled):hover {
+    transform: translateY(-0.125rem);
+  }
+
+  &:not(:disabled):active {
+    box-shadow: none;
+    transform: translateY(0);
   }
 
   &__spinner {

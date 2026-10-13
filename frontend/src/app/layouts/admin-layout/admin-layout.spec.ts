@@ -17,8 +17,9 @@ describe('AdminLayout', () => {
   });
 
   it('should render the administration navigation', () => {
+    expect(fixture.nativeElement.textContent).toContain('Tổng quan');
     expect(fixture.nativeElement.textContent).toContain('Kiểm duyệt cộng đồng');
-    expect(fixture.nativeElement.textContent).toContain('Điểm phát cơm');
+    expect(fixture.nativeElement.textContent).toContain('Điểm tiếp nhận');
   });
 
   it('should provide a skip link and expose the mobile menu state', () => {
@@ -30,5 +31,6 @@ describe('AdminLayout', () => {
     expect(skipLink.getAttribute('href')).toBe('#admin-main-content');
     expect(menuButton.getAttribute('aria-expanded')).toBe('false');
     expect(menuButton.getAttribute('aria-label')).toBe('Mở menu quản trị');
+    expect(fixture.nativeElement.querySelector('main').classList).toContain('ui-route-content');
   });
 });

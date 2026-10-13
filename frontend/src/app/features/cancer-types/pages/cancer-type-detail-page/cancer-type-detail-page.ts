@@ -2,12 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 
+import { RevealDirective } from '../../../../shared/directives/reveal.directive';
+import { limitContentSection } from '../../../content/services/content-section.service';
 import { CANCER_DETAILS } from '../../data/cancer-details.data';
 import { CANCER_TYPES } from '../../data/cancer-types.data';
 
 @Component({
   selector: 'app-cancer-type-detail-page',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, RevealDirective],
   templateUrl: './cancer-type-detail-page.html',
   styleUrl: './cancer-type-detail-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -23,6 +25,6 @@ export class CancerTypeDetailPage {
   );
   protected readonly relatedTypes = computed(() => {
     const slug = this.params().get('slug');
-    return CANCER_TYPES.filter((item) => !item.featured && item.slug !== slug).slice(0, 4);
+    return limitContentSection(CANCER_TYPES.filter((item) => !item.featured && item.slug !== slug));
   });
 }

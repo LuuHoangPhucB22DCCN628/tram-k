@@ -1,0 +1,88 @@
+<section class="admin-dashboard" aria-labelledby="admin-dashboard-heading">
+  <header class="admin-dashboard__heading">
+    <div>
+      <p>Tổng quan hệ thống</p>
+      <h1 id="admin-dashboard-heading">Xin chào, Admin Trạm K</h1>
+      <span>Theo dõi hoạt động và xử lý các hạng mục cần chú ý trong một màn hình.</span>
+    </div>
+    <a routerLink="/" target="_blank" rel="noopener noreferrer">Xem trang công khai</a>
+  </header>
+
+  <section class="dashboard-metrics" aria-label="Thống kê hệ thống">
+    @for (metric of metrics(); track metric.label) {
+      <a class="metric-card" [attr.data-tone]="metric.tone" [routerLink]="metric.path">
+        <span>{{ metric.label }}</span>
+        <strong>{{ metric.value }}</strong>
+        <small>{{ metric.detail }}</small>
+      </a>
+    }
+  </section>
+
+  <div class="dashboard-grid">
+    <section class="review-panel" aria-labelledby="review-queue-heading">
+      <header>
+        <div>
+          <p>Ưu tiên xử lý</p>
+          <h2 id="review-queue-heading">Hàng đợi quản trị</h2>
+        </div>
+        <span>{{ reviewQueue().length }} nhóm công việc</span>
+      </header>
+
+      <div class="review-list">
+        @for (item of reviewQueue(); track item.label) {
+          <a [routerLink]="item.path">
+            <strong>{{ item.count }}</strong>
+            <span
+              ><b>{{ item.label }}</b
+              ><small>{{ item.description }}</small></span
+            >
+            <span aria-hidden="true">→</span>
+          </a>
+        }
+      </div>
+    </section>
+
+    <aside class="quick-panel" aria-labelledby="quick-actions-heading">
+      <p>Điều hướng nhanh</p>
+      <h2 id="quick-actions-heading">Quản lý hệ thống</h2>
+      <nav aria-label="Thao tác quản trị nhanh">
+        <a routerLink="/admin/nguoi-dung">Quản lý người dùng <span>→</span></a>
+        <a routerLink="/admin/kiem-duyet">Kiểm duyệt cộng đồng <span>→</span></a>
+        <a routerLink="/admin/noi-dung">Quản lý nội dung <span>→</span></a>
+        <a routerLink="/admin/chuong-trinh">Duyệt chương trình <span>→</span></a>
+        <a routerLink="/admin/diem-phat-com">Quản lý điểm tiếp nhận <span>→</span></a>
+      </nav>
+    </aside>
+  </div>
+
+  <section class="activity-panel" aria-labelledby="recent-activity-heading">
+    <header>
+      <div>
+        <p>Cập nhật gần đây</p>
+        <h2 id="recent-activity-heading">Hoạt động cộng đồng</h2>
+      </div>
+    </header>
+
+    @if (recentActivities().length) {
+      <div class="activity-list">
+        @for (activity of recentActivities(); track activity.type + activity.id) {
+          <a [routerLink]="activity.path">
+            <span class="activity-list__type">{{ activity.type }}</span>
+            <span
+              ><strong>{{ activity.title }}</strong
+              ><small>{{ activity.actor }}</small></span
+            >
+            <time [attr.datetime]="activity.updatedAt">{{
+              activity.updatedAt | date: 'dd/MM/yyyy, HH:mm'
+            }}</time>
+          </a>
+        }
+      </div>
+    } @else {
+      <div class="activity-panel__empty">
+        <strong>Chưa có hoạt động mới</strong>
+        <span>Bài viết hoặc chương trình mới sẽ xuất hiện tại đây.</span>
+      </div>
+    }
+  </section>
+</section>

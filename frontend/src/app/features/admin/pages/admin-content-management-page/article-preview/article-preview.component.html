@@ -1,0 +1,78 @@
+<div class="article-preview-backdrop" (click)="closeRequested.emit()">
+  <section
+    class="article-preview"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="article-preview-title"
+    appEscapeClose
+    (escapeClose)="closeRequested.emit()"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="article-preview__toolbar">
+      <div>
+        <strong>Bản xem trước</strong>
+        <span>Chưa xuất bản</span>
+      </div>
+      <button type="button" aria-label="Đóng bản xem trước" (click)="closeRequested.emit()">
+        ×
+      </button>
+    </header>
+
+    <article class="article-preview__page">
+      <header class="article-preview__lead">
+        <p>{{ article().categoryName }}</p>
+        <h1 id="article-preview-title">{{ article().title }}</h1>
+        <span>{{ article().excerpt }}</span>
+        <div class="article-preview__meta">
+          <strong>{{ article().authorName }}</strong>
+          <span>{{ previewDate }}</span>
+          <span>{{ article().readingMinutes }} phút đọc</span>
+        </div>
+      </header>
+
+      @if (article().coverImage; as cover) {
+        <figure class="article-preview__cover">
+          <img [src]="cover.url" [alt]="cover.alt" [width]="cover.width" [height]="cover.height" />
+          @if (cover.caption) {
+            <figcaption>{{ cover.caption }}</figcaption>
+          }
+        </figure>
+      }
+
+      <div class="article-preview__body">
+        @for (block of article().blocks; track block.id) {
+          @switch (block.type) {
+            @case ('HEADING') {
+              <h2>{{ block.text }}</h2>
+            }
+            @case ('PARAGRAPH') {
+              <p>{{ block.text }}</p>
+            }
+            @case ('BULLETS') {
+              <ul>
+                @for (item of bulletItems(block.text); track $index) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            }
+            @case ('IMAGE') {
+              @if (block.image; as image) {
+                <figure>
+                  <img
+                    [src]="image.url"
+                    [alt]="block.imageAlt"
+                    [width]="image.width"
+                    [height]="image.height"
+                  />
+                  @if (block.imageCaption) {
+                    <figcaption>{{ block.imageCaption }}</figcaption>
+                  }
+                </figure>
+              }
+            }
+          }
+        }
+      </div>
+    </article>
+  </section>
+</div>

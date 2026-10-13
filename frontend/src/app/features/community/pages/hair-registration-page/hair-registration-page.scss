@@ -113,7 +113,7 @@
 
 .hair-field em,
 .hair-form__actions em {
-  color: #f44;
+  color: #d92d20;
   font-style: normal;
 }
 
@@ -146,7 +146,7 @@
 .hair-field input::placeholder,
 .hair-field textarea::placeholder,
 .hair-field select:invalid {
-  color: #828dad;
+  color: var(--color-text-muted);
   opacity: 1;
 }
 
@@ -249,13 +249,13 @@
 
 .hair-form__actions p {
   margin: 0;
-  color: #828dad;
+  color: var(--color-text-muted);
   font-size: 13px;
   line-height: 20px;
 }
 
 .hair-form__actions button {
-  min-height: 42px;
+  min-height: 44px;
   padding: 12px 24px;
   border: 0;
   border-radius: 12px;
@@ -268,6 +268,14 @@
 .hair-form__actions button:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
+}
+
+.hair-form__actions button:hover:not(:disabled) {
+  background: var(--color-brand-primary-hover);
+}
+
+.hair-form__actions button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .hair-form__actions button:disabled {
@@ -290,7 +298,7 @@
 
 .hair-registration__privacy {
   margin: 32px auto 0;
-  color: #6d7898;
+  color: var(--color-text-muted);
   font-size: 14px;
   line-height: 18px;
   text-align: center;

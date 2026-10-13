@@ -7,7 +7,7 @@
       width="1141"
       height="742"
     />
-    <div class="community-hero__content">
+    <div class="community-hero__content" appReveal="left">
       <app-community-love-title id="community-hero-title" />
       <p class="community-hero__description">
         Mỗi suất cơm không chỉ mang đến bữa ăn đầy đủ dinh dưỡng mà còn gửi gắm sự quan tâm và sẻ
@@ -22,7 +22,7 @@
   </section>
 
   <section id="community-hair-library" class="hair-library" aria-labelledby="hair-library-title">
-    <header class="community-section-title">
+    <header class="community-section-title" appReveal="up">
       <img
         class="community-section-title__art"
         src="/assets/images/community/community-hair-title.svg"
@@ -36,8 +36,13 @@
     </header>
 
     <div class="hair-library__grid">
-      @for (card of hairLibraryCards; track card.title) {
-        <article class="hair-library-card hair-library-card--{{ card.tone }}">
+      @for (card of hairLibraryCards; track card.title; let index = $index) {
+        <article
+          class="hair-library-card hair-library-card--{{ card.tone }}"
+          appReveal="up"
+          [revealDelay]="index * 90"
+          data-ui-card
+        >
           <div>
             <h3>{{ card.title }}</h3>
             <p>{{ card.description }}</p>
@@ -52,7 +57,7 @@
   </section>
 
   <section id="community-donations" class="community-donations" aria-labelledby="donation-title">
-    <header class="community-section-title">
+    <header class="community-section-title" appReveal="up">
       <img
         class="community-section-title__art"
         src="/assets/images/community/community-donation-title.svg"
@@ -66,7 +71,7 @@
     </header>
 
     <div class="donation-layout">
-      <div class="donation-main">
+      <div class="donation-main" appReveal="left">
         <div class="donation-stats" aria-label="Số liệu đóng góp">
           @for (stat of donationStats; track stat.label) {
             <article class="donation-stat">
@@ -113,7 +118,13 @@
         </section>
       </div>
 
-      <aside class="donation-card" aria-labelledby="donation-card-title">
+      <aside
+        class="donation-card"
+        aria-labelledby="donation-card-title"
+        appReveal="scale"
+        [revealDelay]="120"
+        data-ui-card
+      >
         <header>
           <h3 id="donation-card-title">Quét mã để quyên góp</h3>
           <p>Mọi đóng góp đều được chúng tôi trân trọng</p>
@@ -168,7 +179,7 @@
     class="direct-donations"
     aria-labelledby="direct-donations-title"
   >
-    <header class="direct-donations__title">
+    <header class="direct-donations__title" appReveal="up">
       <img
         src="/assets/images/community/community-direct-title.svg"
         alt=""
@@ -182,8 +193,8 @@
     </header>
 
     <div class="direct-donations__grid">
-      @for (brand of directDonationBrands; track brand.name) {
-        <article class="brand-card">
+      @for (brand of directDonationBrands; track brand.name; let index = $index) {
+        <article class="brand-card" appReveal="up" [revealDelay]="(index % 4) * 70" data-ui-card>
           <div class="brand-card__image brand-card__image--{{ brand.imageStyle }}">
             <img [src]="brand.image" [alt]="'Logo ' + brand.name" />
           </div>

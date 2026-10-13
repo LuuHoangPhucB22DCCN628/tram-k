@@ -1,11 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { AuthService } from '@core/auth/auth.service';
 import { UiButton } from '@shared/ui';
 
-import type { MemberProfile, ProfileVisibility } from '../../profile.models';
-import { ProfileStorageService } from '../../profile-storage.service';
+import { ProfileApiService } from '../../profile-api.service';
+import { ProfileApiError, type MemberProfile, type ProfileVisibility } from '../../profile.models';
 
 type ProfileFeedback = { readonly type: 'success' | 'error'; readonly message: string };
 
@@ -17,21 +18,27 @@ type ProfileFeedback = { readonly type: 'success' | 'error'; readonly message: s
   styleUrl: './profile-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProfilePage {
+export class ProfilePage implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly auth = inject(AuthService);
-  private readonly storage = inject(ProfileStorageService);
+  private readonly router = inject(Router);
+  private readonly profileApi = inject(ProfileApiService);
   private readonly user = this.auth.currentUser();
-  private savedProfile = this.user ? this.storage.read(this.user) : null;
+  private savedProfile: MemberProfile | null = null;
 
   protected readonly currentYear = new Date().getFullYear();
   protected readonly accountEmail = this.user?.email ?? '';
   protected readonly accountRole = this.roleLabel(this.user?.role);
-  protected readonly avatarDataUrl = signal<string | null>(
-    this.savedProfile?.avatarDataUrl ?? null,
-  );
+  protected readonly avatarDataUrl = signal<string | null>(null);
   protected readonly submitted = signal(false);
+  protected readonly isLoading = signal(true);
+  protected readonly isSaving = signal(false);
   protected readonly feedback = signal<ProfileFeedback | null>(null);
+  protected readonly showLogoutAllConfirmation = signal(false);
+  protected readonly isLoggingOutAll = signal(false);
+  protected readonly isRequestingEmailChange = signal(false);
+  protected readonly showEmailChangePassword = signal(false);
+  protected readonly emailChangeFeedback = signal<ProfileFeedback | null>(null);
   protected initials(): string {
     const name = this.profileForm.controls.displayName.value.trim();
     return (
@@ -46,20 +53,26 @@ export class ProfilePage {
 
   protected readonly profileForm = this.formBuilder.nonNullable.group({
     displayName: [
-      this.savedProfile?.displayName ?? '',
+      this.user?.displayName ?? '',
       [Validators.required, Validators.minLength(2), Validators.maxLength(50)],
     ],
-    phone: [this.savedProfile?.phone ?? '', [Validators.pattern(/^(?:|0\d{9}|\+84\d{9})$/)]],
-    city: [this.savedProfile?.city ?? '', [Validators.maxLength(100)]],
-    birthYear: [
-      this.savedProfile?.birthYear ?? '',
-      [Validators.pattern(/^$|^(?:19\d{2}|20\d{2})$/)],
-    ],
-    bio: [this.savedProfile?.bio ?? '', [Validators.maxLength(500)]],
-    visibility: [this.savedProfile?.visibility ?? ('MEMBERS' as ProfileVisibility)],
-    showEmail: [this.savedProfile?.showEmail ?? false],
-    allowComments: [this.savedProfile?.allowComments ?? true],
+    phone: ['', [Validators.pattern(/^(?:|0\d{9}|\+84\d{9})$/)]],
+    city: ['', [Validators.maxLength(100)]],
+    birthYear: ['', [Validators.pattern(/^$|^(?:19\d{2}|20\d{2})$/)]],
+    bio: ['', [Validators.maxLength(500)]],
+    visibility: ['MEMBERS' as ProfileVisibility],
+    showEmail: [false],
+    allowComments: [true],
   });
+
+  protected readonly emailChangeForm = this.formBuilder.nonNullable.group({
+    newEmail: ['', [Validators.required, Validators.email]],
+    currentPassword: ['', Validators.required],
+  });
+
+  ngOnInit(): void {
+    this.loadProfile();
+  }
 
   protected hasError(
     field: 'displayName' | 'phone' | 'city' | 'birthYear' | 'bio',
@@ -124,6 +137,7 @@ export class ProfilePage {
     }
 
     const profile: MemberProfile = {
+      version: this.savedProfile?.version ?? 1,
       ...values,
       displayName: values.displayName.trim(),
       phone: values.phone.trim(),
@@ -133,19 +147,79 @@ export class ProfilePage {
       avatarDataUrl: this.avatarDataUrl(),
     };
 
-    try {
-      this.storage.write(this.user.id, profile);
-      this.savedProfile = profile;
-      this.profileForm.reset(profile);
-      this.auth.updateDisplayName(profile.displayName);
-      this.submitted.set(false);
-      this.feedback.set({ type: 'success', message: 'Đã lưu hồ sơ của bạn.' });
-    } catch {
-      this.feedback.set({
-        type: 'error',
-        message: 'Trình duyệt không đủ dung lượng để lưu. Hãy chọn avatar nhỏ hơn.',
-      });
+    this.isSaving.set(true);
+    this.profileApi.updateOwnProfile(this.user, this.auth.authMode(), profile).subscribe({
+      next: (saved) => {
+        this.isSaving.set(false);
+        this.applyProfile(saved);
+        this.auth.updateDisplayName(saved.displayName);
+        this.submitted.set(false);
+        this.feedback.set({ type: 'success', message: 'Đã lưu hồ sơ của bạn.' });
+      },
+      error: (error: unknown) => {
+        this.isSaving.set(false);
+        if (error instanceof ProfileApiError && error.code === 'CONFLICT') {
+          this.loadProfile('Hồ sơ đã thay đổi ở nơi khác. Dữ liệu mới nhất đã được tải lại.');
+          return;
+        }
+        this.feedback.set({
+          type: 'error',
+          message:
+            error instanceof ProfileApiError
+              ? error.message
+              : 'Không thể lưu hồ sơ. Vui lòng thử lại.',
+        });
+      },
+    });
+  }
+
+  protected logoutAllDevices(): void {
+    if (this.isLoggingOutAll()) return;
+    this.isLoggingOutAll.set(true);
+    this.feedback.set(null);
+    this.auth.logoutAll().subscribe({
+      next: () => void this.router.navigate(['/dang-nhap']),
+      error: () => {
+        this.isLoggingOutAll.set(false);
+        this.feedback.set({
+          type: 'error',
+          message: 'Không thể đăng xuất mọi thiết bị. Vui lòng thử lại.',
+        });
+      },
+    });
+  }
+
+  protected requestEmailChange(): void {
+    if (this.isRequestingEmailChange()) return;
+    this.emailChangeFeedback.set(null);
+    if (this.emailChangeForm.invalid) {
+      this.emailChangeForm.markAllAsTouched();
+      return;
     }
+
+    const value = this.emailChangeForm.getRawValue();
+    this.isRequestingEmailChange.set(true);
+    this.auth.requestEmailChange(value.newEmail.trim(), value.currentPassword).subscribe({
+      next: ({ pendingEmail }) => {
+        this.isRequestingEmailChange.set(false);
+        this.emailChangeForm.reset({ newEmail: pendingEmail, currentPassword: '' });
+        this.showEmailChangePassword.set(false);
+        this.emailChangeFeedback.set({
+          type: 'success',
+          message: `Đã gửi liên kết xác minh đến ${pendingEmail}. Email hiện tại vẫn được giữ cho đến khi bạn xác minh.`,
+        });
+      },
+      error: (error: unknown) => {
+        this.isRequestingEmailChange.set(false);
+        this.emailChangeFeedback.set({
+          type: 'error',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Không thể gửi yêu cầu đổi email. Vui lòng thử lại.',
+        });
+      },
+    });
   }
 
   private roleLabel(role: string | undefined): string {
@@ -156,5 +230,36 @@ export class ProfilePage {
       ADMIN: 'Quản trị viên',
     };
     return role ? (labels[role] ?? role) : '';
+  }
+
+  private loadProfile(conflictMessage?: string): void {
+    if (!this.user) {
+      this.isLoading.set(false);
+      return;
+    }
+    this.isLoading.set(true);
+    this.profileApi.getOwnProfile(this.user, this.auth.authMode()).subscribe({
+      next: (profile) => {
+        this.isLoading.set(false);
+        this.applyProfile(profile);
+        if (conflictMessage) this.feedback.set({ type: 'error', message: conflictMessage });
+      },
+      error: (error: unknown) => {
+        this.isLoading.set(false);
+        this.feedback.set({
+          type: 'error',
+          message:
+            error instanceof ProfileApiError
+              ? error.message
+              : 'Không thể tải hồ sơ. Vui lòng thử lại.',
+        });
+      },
+    });
+  }
+
+  private applyProfile(profile: MemberProfile): void {
+    this.savedProfile = profile;
+    this.profileForm.reset(profile);
+    this.avatarDataUrl.set(profile.avatarDataUrl);
   }
 }

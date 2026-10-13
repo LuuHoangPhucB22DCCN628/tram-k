@@ -22,11 +22,13 @@ export class AdminLayout {
   protected readonly isSidebarOpen = signal(false); // Điều khiển sidebar trên màn hình nhỏ.
 
   protected readonly menuItems: readonly AdminMenuItem[] = [
+    { label: 'Tổng quan', path: '/admin/tong-quan' },
     { label: 'Người dùng', path: '/admin/nguoi-dung' },
+    { label: 'Hồ sơ đối tác', path: '/admin/doi-tac' },
     { label: 'Kiểm duyệt cộng đồng', path: '/admin/kiem-duyet' },
     { label: 'Quản lý nội dung', path: '/admin/noi-dung' },
     { label: 'Chương trình hỗ trợ', path: '/admin/chuong-trinh' },
-    { label: 'Điểm phát cơm', path: '/admin/diem-phat-com' },
+    { label: 'Điểm tiếp nhận', path: '/admin/diem-phat-com' },
   ];
 
   protected toggleSidebar(): void {

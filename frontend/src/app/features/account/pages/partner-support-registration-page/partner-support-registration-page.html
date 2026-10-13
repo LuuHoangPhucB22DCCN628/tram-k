@@ -1,0 +1,126 @@
+<section class="support-page" aria-labelledby="support-heading">
+  <header>
+    <p>Hỗ trợ cộng đồng</p>
+    <h1 id="support-heading">{{ isEditing ? 'Chỉnh sửa đề xuất' : 'Đăng ký hỗ trợ' }}</h1>
+    <span>
+      {{
+        isEditing
+          ? 'Cập nhật đề xuất bị từ chối và gửi lại để Trạm K xét duyệt.'
+          : 'Đề xuất một chương trình từ thiện để Trạm K kiểm tra và kết nối với cộng đồng.'
+      }}
+    </span>
+  </header>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <fieldset>
+      <legend>Thông tin chương trình</legend>
+      <div class="support-form__grid">
+        <label class="support-form__wide">
+          Tên chương trình <span aria-hidden="true">*</span>
+          <input formControlName="title" maxlength="120" placeholder="Ví dụ: Bữa cơm yêu thương" />
+          @if (hasError('title')) {
+            <small>Tên chương trình cần từ 5 đến 120 ký tự.</small>
+          }
+        </label>
+
+        <label>
+          Hình thức hỗ trợ <span aria-hidden="true">*</span>
+          <select formControlName="supportType">
+            <option value="">Chọn hình thức</option>
+            <option value="MEAL">Suất ăn</option>
+            <option value="FINANCIAL">Hỗ trợ chi phí</option>
+            <option value="TRANSPORT">Hỗ trợ di chuyển</option>
+            <option value="OTHER">Hình thức khác</option>
+          </select>
+          @if (hasError('supportType')) {
+            <small>Vui lòng chọn hình thức hỗ trợ.</small>
+          }
+        </label>
+
+        <label>
+          Khả năng hỗ trợ mỗi đợt <span aria-hidden="true">*</span>
+          <input formControlName="capacity" type="number" min="1" max="100000" />
+          @if (hasError('capacity')) {
+            <small>Số lượng cần lớn hơn 0.</small>
+          }
+        </label>
+
+        <label class="support-form__wide">
+          Mô tả chương trình <span aria-hidden="true">*</span>
+          <textarea
+            formControlName="description"
+            rows="6"
+            maxlength="2000"
+            placeholder="Mục tiêu, đối tượng nhận hỗ trợ và cách thức thực hiện..."
+          ></textarea>
+          @if (hasError('description')) {
+            <small>Mô tả cần ít nhất 30 ký tự.</small>
+          }
+        </label>
+
+        <label>
+          Tỉnh/Thành phố <span aria-hidden="true">*</span>
+          <select formControlName="regionId">
+            <option value="">Chọn tỉnh/thành phố</option>
+            @for (region of regions; track region.id) {
+              <option [value]="region.id">{{ region.name }}</option>
+            }
+          </select>
+          @if (hasError('regionId')) {
+            <small>Vui lòng chọn tỉnh hoặc thành phố.</small>
+          }
+        </label>
+
+        <label>
+          Lịch dự kiến <span aria-hidden="true">*</span>
+          <input formControlName="schedule" maxlength="200" placeholder="Sáng thứ Bảy hằng tuần" />
+          @if (hasError('schedule')) {
+            <small>Vui lòng nhập lịch dự kiến.</small>
+          }
+        </label>
+
+        <label class="support-form__wide">
+          Địa chỉ tổ chức <span aria-hidden="true">*</span>
+          <input formControlName="address" maxlength="250" placeholder="Địa chỉ cụ thể" />
+          @if (hasError('address')) {
+            <small>Vui lòng nhập địa chỉ tổ chức.</small>
+          }
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Người liên hệ</legend>
+      <div class="support-form__grid support-form__grid--three">
+        <label>
+          Họ và tên <span aria-hidden="true">*</span>
+          <input formControlName="contactName" maxlength="80" />
+          @if (hasError('contactName')) {
+            <small>Vui lòng nhập tên người liên hệ.</small>
+          }
+        </label>
+        <label>
+          Số điện thoại <span aria-hidden="true">*</span>
+          <input formControlName="phone" inputmode="tel" placeholder="0912345678" />
+          @if (hasError('phone')) {
+            <small>Số điện thoại chưa đúng định dạng.</small>
+          }
+        </label>
+        <label>
+          Email <span aria-hidden="true">*</span>
+          <input formControlName="email" type="email" />
+          @if (hasError('email')) {
+            <small>Email chưa đúng định dạng.</small>
+          }
+        </label>
+      </div>
+    </fieldset>
+
+    <p class="support-form__note">
+      Sau khi gửi, đề xuất sẽ ở trạng thái “Chờ duyệt”. Bạn có thể theo dõi trong mục Quản lý chương
+      trình từ thiện.
+    </p>
+    <button type="submit">{{ isEditing ? 'Cập nhật và gửi lại' : 'Gửi đề xuất' }}</button>
+    <span class="visually-hidden" aria-live="polite">{{ feedback() }}</span>
+  </form>
+</section>

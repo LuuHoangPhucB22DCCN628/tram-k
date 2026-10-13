@@ -1,0 +1,149 @@
+<section class="registrations-page" aria-labelledby="registrations-heading">
+  <header>
+    <p>Hoạt động cộng đồng</p>
+    <h1 id="registrations-heading">Các chương trình đã đăng ký</h1>
+    <span>Theo dõi địa điểm, lịch phát và trạng thái xác nhận của từng chương trình.</span>
+  </header>
+
+  @if (feedback()) {
+    <p class="registrations-page__feedback" aria-live="polite">{{ feedback() }}</p>
+  }
+
+  @if (hasRegistrations()) {
+    @if (registrations().length) {
+      <section class="registration-group" aria-labelledby="meal-registrations-heading">
+        <div class="registration-group__heading">
+          <div>
+            <p>Suất cơm thiện nguyện</p>
+            <h2 id="meal-registrations-heading">Địa điểm phát cơm đã đăng ký</h2>
+          </div>
+          <span>{{ registrations().length }} đăng ký</span>
+        </div>
+        <div class="registration-list">
+          @for (item of registrations(); track item.registration.locationId) {
+            <article class="registration-card">
+              <img
+                [src]="item.location.image"
+                [alt]="item.location.title"
+                width="240"
+                height="180"
+                loading="lazy"
+              />
+              <div class="registration-card__body">
+                <div class="registration-card__meta">
+                  <span>{{
+                    item.location.status === 'ACTIVE' ? 'Chờ xác nhận' : 'Điểm phát tạm ngưng'
+                  }}</span>
+                  <time [attr.datetime]="item.registration.registeredAt">
+                    Đăng ký {{ item.registration.registeredAt | date: 'dd/MM/yyyy, HH:mm' }}
+                  </time>
+                </div>
+                <h2>{{ item.location.title }}</h2>
+                <dl>
+                  <div>
+                    <dt>Lịch phát</dt>
+                    <dd>{{ item.location.schedule }}</dd>
+                  </div>
+                  <div>
+                    <dt>Địa điểm</dt>
+                    <dd>{{ item.location.address }}</dd>
+                  </div>
+                </dl>
+                <div class="registration-card__actions">
+                  <a
+                    [routerLink]="['/cong-dong/diem-quyen-gop', item.location.regionId]"
+                    [queryParams]="{ location: item.location.id }"
+                  >
+                    Xem chi tiết
+                  </a>
+                  <button type="button" (click)="cancel(item.location.id)">Hủy đăng ký</button>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (programRegistrations().length) {
+      <section class="registration-group" aria-labelledby="support-registrations-heading">
+        <div class="registration-group__heading">
+          <div>
+            <p>Chương trình hỗ trợ</p>
+            <h2 id="support-registrations-heading">Chương trình từ nhà hảo tâm</h2>
+          </div>
+          <span>{{ programRegistrations().length }} đăng ký</span>
+        </div>
+        <div class="registration-list">
+          @for (item of programRegistrations(); track item.registration.programId) {
+            <article
+              class="registration-card"
+              [class.registration-card--highlighted]="
+                highlightedProgramId() === item.registration.programId
+              "
+              [id]="'program-registration-' + item.registration.programId"
+            >
+              <div
+                class="registration-card__program-visual"
+                [attr.data-type]="item.program.supportType"
+              >
+                <span aria-hidden="true">♡</span>
+                <small>Đã được Trạm K xác minh</small>
+              </div>
+              <div class="registration-card__body">
+                <div class="registration-card__meta">
+                  <span [attr.data-status]="item.registration.status">
+                    {{ programStatusLabel(item.registration.status) }}
+                  </span>
+                  <time [attr.datetime]="item.registration.registeredAt">
+                    Đăng ký {{ item.registration.registeredAt | date: 'dd/MM/yyyy, HH:mm' }}
+                  </time>
+                </div>
+                <h2>{{ item.program.title }}</h2>
+                <dl>
+                  <div>
+                    <dt>Đơn vị</dt>
+                    <dd>{{ item.program.ownerName }}</dd>
+                  </div>
+                  <div>
+                    <dt>Thời gian</dt>
+                    <dd>{{ item.program.schedule }}</dd>
+                  </div>
+                  <div>
+                    <dt>Địa điểm</dt>
+                    <dd>{{ item.program.address }}, {{ item.program.city }}</dd>
+                  </div>
+                </dl>
+                @if (item.registration.status === 'REJECTED' && item.registration.decisionReason) {
+                  <p class="registration-card__reason">
+                    <strong>Lý do từ chối:</strong> {{ item.registration.decisionReason }}
+                  </p>
+                }
+                <div class="registration-card__actions">
+                  <a
+                    routerLink="/cong-dong/chuong-trinh-ho-tro"
+                    [queryParams]="{ program: item.program.id }"
+                  >
+                    Xem chi tiết
+                  </a>
+                  @if (item.registration.status !== 'COMPLETED') {
+                    <button type="button" (click)="cancelProgram(item.program.id)">
+                      Hủy đăng ký
+                    </button>
+                  }
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+  } @else {
+    <div class="registrations-page__empty">
+      <span aria-hidden="true">♡</span>
+      <h2>Bạn chưa đăng ký chương trình nào</h2>
+      <p>Khám phá các địa điểm phát cơm thiện nguyện và chọn chương trình phù hợp với bạn.</p>
+      <a routerLink="/cong-dong/diem-quyen-gop">Khám phá chương trình cộng đồng</a>
+    </div>
+  }
+</section>

@@ -1,21 +1,33 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 
-import { AuthMockApiService } from './auth-mock-api.service';
-import type { AuthResult, AuthUser, LoginCredentials, LoginPortal, UserRole } from './auth.models';
+import { AuthApiService } from './auth-api.service';
+import type {
+  AuthResult,
+  AuthMode,
+  AuthUser,
+  EmailChangeRequestResult,
+  EmailChangeVerificationResult,
+  LoginCredentials,
+  LoginPortal,
+  RegisterCredentials,
+  UserRole,
+} from './auth.models';
 import { AuthSessionStorageService } from './auth-session-storage.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly api = inject(AuthMockApiService);
+  private readonly api = inject(AuthApiService);
   private readonly storage = inject(AuthSessionStorageService);
   private readonly userState = signal<AuthUser | null>(null);
   private readonly accessTokenState = signal<string | null>(null);
   private readonly rememberMeState = signal(false);
+  private readonly authModeState = signal<AuthMode>('LOCAL');
 
   readonly currentUser = this.userState.asReadonly();
   readonly accessToken = this.accessTokenState.asReadonly();
   readonly isAuthenticated = computed(() => this.userState() !== null);
+  readonly authMode = this.authModeState.asReadonly();
 
   constructor() {
     this.restoreSession();
@@ -30,11 +42,42 @@ export class AuthService {
     );
   }
 
+  register(credentials: RegisterCredentials): Observable<AuthUser> {
+    return this.api.register(credentials);
+  }
+
+  verifyEmail(token: string): Observable<void> {
+    return this.api.verifyEmail(token);
+  }
+
+  resendVerification(email: string): Observable<void> {
+    return this.api.resendVerification(email);
+  }
+
+  forgotPassword(email: string): Observable<void> {
+    return this.api.forgotPassword(email);
+  }
+
+  resetPassword(token: string, password: string): Observable<void> {
+    return this.api.resetPassword(token, password);
+  }
+
+  requestEmailChange(
+    newEmail: string,
+    currentPassword: string,
+  ): Observable<EmailChangeRequestResult> {
+    return this.api.requestEmailChange(newEmail, currentPassword, this.authModeState());
+  }
+
+  verifyEmailChange(token: string): Observable<EmailChangeVerificationResult> {
+    return this.api.verifyEmailChange(token).pipe(tap(() => this.clearSession()));
+  }
+
   refreshAccessToken(): Observable<string | null> {
     const user = this.userState();
     if (!user) return of(null);
 
-    return this.api.refresh(user).pipe(
+    return this.api.refresh(user, this.authModeState()).pipe(
       tap((result) => this.acceptSession(result, this.rememberMeState())),
       map((result) => result.accessToken),
       catchError(() => {
@@ -45,8 +88,12 @@ export class AuthService {
   }
 
   logout(): void {
-    this.api.logout().subscribe();
+    this.api.logout(this.authModeState()).subscribe();
     this.clearSession();
+  }
+
+  logoutAll(): Observable<void> {
+    return this.api.logoutAll(this.authModeState()).pipe(tap(() => this.clearSession()));
   }
 
   hasRole(roles: readonly UserRole[]): boolean {
@@ -88,6 +135,7 @@ export class AuthService {
 
     this.userState.set(storedSession.user);
     this.rememberMeState.set(storedSession.rememberMe);
+    this.authModeState.set(storedSession.authMode ?? 'LOCAL');
     this.refreshAccessToken().subscribe();
   }
 
@@ -95,6 +143,7 @@ export class AuthService {
     this.userState.set(result.user);
     this.accessTokenState.set(result.accessToken);
     this.rememberMeState.set(rememberMe);
+    this.authModeState.set(result.authMode ?? 'LOCAL');
     this.storage.write({
       user: result.user,
       rememberMe,
@@ -105,6 +154,7 @@ export class AuthService {
           : rememberMe
             ? 30 * 24 * 60 * 60 * 1000
             : 8 * 60 * 60 * 1000),
+      authMode: result.authMode ?? 'LOCAL',
     });
   }
 
@@ -112,6 +162,7 @@ export class AuthService {
     this.userState.set(null);
     this.accessTokenState.set(null);
     this.rememberMeState.set(false);
+    this.authModeState.set('LOCAL');
     this.storage.clear();
   }
 }

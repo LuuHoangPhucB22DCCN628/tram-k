@@ -156,6 +156,115 @@
   }
 }
 
+.detail-comments {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e2e6f1;
+
+  form {
+    display: grid;
+    justify-items: end;
+    gap: 0.6rem;
+
+    label {
+      width: 100%;
+      color: #1b2034;
+      font-weight: 600;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1px solid #d8ddec;
+      border-radius: 0.75rem;
+      color: #1b2034;
+      font: inherit;
+      resize: vertical;
+    }
+
+    small {
+      width: 100%;
+      color: var(--color-danger);
+    }
+
+    button {
+      padding: 0.7rem 1rem;
+      border: 0;
+      border-radius: 0.75rem;
+      color: #fff;
+      background: var(--color-brand-primary);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 600;
+    }
+  }
+}
+
+.detail-comments__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h2 {
+    margin: 0;
+    color: #1b2034;
+    font-size: 1.4rem;
+  }
+
+  span {
+    color: #6d7898;
+    font-size: 0.85rem;
+  }
+}
+
+.detail-comments__login {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: var(--color-surface-subtle);
+
+  a {
+    color: var(--color-brand-primary);
+    font-weight: 700;
+  }
+}
+
+.detail-comments__list {
+  display: grid;
+  gap: 1rem;
+
+  article {
+    padding: 1rem;
+    border: 1px solid #e2e6f1;
+    border-radius: 0.75rem;
+
+    > div {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    strong {
+      color: #1b2034;
+    }
+
+    time {
+      color: #6d7898;
+      font-size: 0.75rem;
+    }
+
+    p {
+      margin: 0.65rem 0 0;
+      color: #1b2034;
+      white-space: pre-line;
+    }
+  }
+}
+
 .detail-related {
   position: sticky;
   top: 7rem;
@@ -228,16 +337,6 @@
       height: 1.3125rem;
     }
   }
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 .detail-state {

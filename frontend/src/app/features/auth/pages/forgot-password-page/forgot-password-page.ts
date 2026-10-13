@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { UiButton } from '@shared/ui';
+import { AuthService } from '@core/auth/auth.service';
 
 import { type AuthFeedback, shouldShowError } from '../../auth-form.utils';
 
@@ -15,8 +16,10 @@ import { type AuthFeedback, shouldShowError } from '../../auth-form.utils';
 })
 export class ForgotPasswordPage {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
 
   protected readonly submitted = signal(false);
+  protected readonly isSubmitting = signal(false);
   protected readonly feedback = signal<AuthFeedback | null>(null);
   protected readonly forgotForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -35,10 +38,29 @@ export class ForgotPasswordPage {
       return;
     }
 
-    // Luôn trả cùng một thông báo để không làm lộ email nào đã có tài khoản.
-    this.feedback.set({
-      type: 'success',
-      message: 'Nếu email tồn tại, Trạm K sẽ gửi hướng dẫn đặt lại mật khẩu.',
+    this.isSubmitting.set(true);
+    this.auth.forgotPassword(this.forgotForm.controls.email.value).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.feedback.set({
+          type: 'success',
+          message: 'Nếu email tồn tại, Trạm K sẽ gửi hướng dẫn đặt lại mật khẩu.',
+        });
+      },
+      error: (error: { readonly code?: string }) => {
+        this.isSubmitting.set(false);
+        this.feedback.set(
+          error.code === 'PASSWORD_RESET_RATE_LIMITED'
+            ? {
+                type: 'error',
+                message: 'Bạn đã yêu cầu quá nhiều lần. Vui lòng thử lại sau.',
+              }
+            : {
+                type: 'success',
+                message: 'Nếu email tồn tại, Trạm K sẽ gửi hướng dẫn đặt lại mật khẩu.',
+              },
+        );
+      },
     });
   }
 }
