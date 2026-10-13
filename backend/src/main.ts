@@ -22,6 +22,8 @@ async function bootstrap(): Promise<void> {
           "http://127.0.0.1:4200",
           "http://localhost:4201",
           "http://127.0.0.1:4201",
+          "http://localhost:4203",
+          "http://127.0.0.1:4203",
         ];
 
   app.enableCors({
