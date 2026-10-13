@@ -8,7 +8,7 @@ import { ConfigService } from "@nestjs/config";
 import { RoleName } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { mkdir, readFile, stat, writeFile } from "fs/promises";
-import { extname, resolve } from "path";
+import { extname, isAbsolute, relative, resolve, sep } from "path";
 
 import { AuthenticatedUser } from "../auth/auth-user.interface";
 import { MediaKind, StoredMedia, UploadedMediaFile } from "./media.types";
@@ -110,9 +110,12 @@ export class MediaService {
 
   private resolveFile(fileName: string): string {
     const filePath = resolve(this.storagePath, fileName);
+    const relativePath = relative(this.storagePath, filePath);
     if (
-      !filePath.startsWith(`${this.storagePath}\\`) &&
-      filePath !== this.storagePath
+      !relativePath ||
+      relativePath === ".." ||
+      relativePath.startsWith(`..${sep}`) ||
+      isAbsolute(relativePath)
     ) {
       throw new NotFoundException("Không tìm thấy tệp phương tiện.");
     }
