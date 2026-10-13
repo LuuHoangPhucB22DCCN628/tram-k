@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
+
+import { AuthService } from '@core/auth/auth.service';
 
 import { ForgotPasswordPage } from './forgot-password-page';
 
@@ -7,7 +10,10 @@ describe('ForgotPasswordPage', () => {
   it('should show a neutral success response for a valid email', async () => {
     await TestBed.configureTestingModule({
       imports: [ForgotPasswordPage],
-      providers: [provideRouter([])],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: { forgotPassword: () => of(undefined) } },
+      ],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(ForgotPasswordPage);

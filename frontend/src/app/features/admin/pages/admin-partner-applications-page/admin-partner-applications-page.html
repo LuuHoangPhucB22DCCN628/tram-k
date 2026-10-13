@@ -1,0 +1,79 @@
+<section class="admin-partners" aria-labelledby="admin-partners-title">
+  <header>
+    <div>
+      <p>UC11 · Xác minh đối tác</p>
+      <h1 id="admin-partners-title">Hồ sơ đăng ký đối tác</h1>
+    </div>
+    <label
+      >Trạng thái<select [value]="selectedStatus()" (change)="setStatus($event)">
+        <option value="PENDING">Chờ duyệt</option>
+        <option value="APPROVED">Đã duyệt</option>
+        <option value="REJECTED">Đã từ chối</option>
+        <option value="ALL">Tất cả</option>
+      </select></label
+    >
+  </header>
+  @if (feedback()) {
+    <p class="admin-partners__feedback" role="status">{{ feedback() }}</p>
+  }
+  <div class="admin-partners__list">
+    @for (application of applications(); track application.id) {
+      <article>
+        <div class="admin-partners__summary">
+          <div>
+            <span [attr.data-status]="application.status">{{
+              statusLabel(application.status)
+            }}</span>
+            <h2>{{ application.organizationName }}</h2>
+            <p>
+              {{ application.applicantName }} · {{ application.email }} · {{ application.phone }}
+            </p>
+          </div>
+          <time>{{ application.createdAt | date: 'dd/MM/yyyy HH:mm' }}</time>
+        </div>
+        <dl>
+          <div>
+            <dt>Người đại diện</dt>
+            <dd>{{ application.representativeName }}</dd>
+          </div>
+          <div>
+            <dt>Địa chỉ</dt>
+            <dd>{{ application.address }}</dd>
+          </div>
+          <div>
+            <dt>Minh chứng</dt>
+            <dd>
+              @for (document of application.documents ?? []; track document.storageKey) {
+                <button
+                  type="button"
+                  (click)="downloadDocument(document.storageKey, document.originalName)"
+                >
+                  {{ document.originalName }}
+                </button>
+              } @empty {
+                {{ application.documentNames.join(', ') }}
+              }
+            </dd>
+          </div>
+        </dl>
+        <p>{{ application.introduction }}</p>
+        @if (application.reviewReason) {
+          <p class="admin-partners__reason"><b>Lý do:</b> {{ application.reviewReason }}</p>
+        }
+        @if (application.status === 'PENDING') {
+          <div class="admin-partners__actions">
+            <button type="button" (click)="approve(application)">Duyệt và cấp quyền</button
+            ><label
+              >Lý do từ chối<input
+                #reason
+                [value]="rejectionReasons()[application.id]"
+                (input)="updateReason(application.id, reason.value)" /></label
+            ><button class="reject" type="button" (click)="reject(application)">Từ chối</button>
+          </div>
+        }
+      </article>
+    } @empty {
+      <p class="admin-partners__empty">Chưa có hồ sơ ở trạng thái này.</p>
+    }
+  </div>
+</section>

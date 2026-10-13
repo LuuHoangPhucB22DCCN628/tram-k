@@ -1,0 +1,99 @@
+<section class="posts-page" aria-labelledby="posts-heading">
+  <header class="posts-page__header">
+    <div>
+      <p class="posts-page__eyebrow">Không gian của bạn</p>
+      <h1 id="posts-heading">Bài viết của tôi</h1>
+      <p>Viết câu chuyện, lưu bản nháp hoặc gửi để quản trị viên duyệt trước khi xuất bản.</p>
+    </div>
+    <button class="posts-page__primary" type="button" (click)="openComposer()">Viết bài mới</button>
+  </header>
+
+  @if (feedback(); as notice) {
+    <p
+      class="posts-page__feedback"
+      aria-live="polite"
+      [class.posts-page__feedback--error]="notice.type === 'error'"
+    >
+      {{ notice.message }}
+    </p>
+  }
+
+  @if (isComposerOpen()) {
+    <form class="post-composer" [formGroup]="postForm" (ngSubmit)="save('PENDING')">
+      <div class="post-composer__heading">
+        <h2>Tạo bài viết</h2>
+        <button type="button" aria-label="Đóng trình soạn thảo" (click)="closeComposer()">×</button>
+      </div>
+      <label>
+        Tiêu đề
+        <input formControlName="title" maxlength="120" placeholder="Nhập tiêu đề bài viết" />
+      </label>
+      @if (hasError('title')) {
+        <small>Tiêu đề cần từ 5 đến 120 ký tự.</small>
+      }
+      <label>
+        Nội dung
+        <textarea
+          formControlName="content"
+          rows="9"
+          maxlength="5000"
+          placeholder="Chia sẻ câu chuyện của bạn..."
+        ></textarea>
+      </label>
+      @if (hasError('content')) {
+        <small>Nội dung cần ít nhất 20 ký tự.</small>
+      }
+      <div class="post-composer__actions">
+        <button type="button" class="posts-page__secondary" (click)="save('DRAFT')">
+          Lưu bản nháp
+        </button>
+        <button type="submit" class="posts-page__primary">Gửi duyệt</button>
+      </div>
+    </form>
+  }
+
+  @if (posts().length) {
+    <div class="post-list">
+      @for (post of posts(); track post.id) {
+        <article class="post-card">
+          <div class="post-card__meta">
+            <span class="post-card__status" [attr.data-status]="post.status">
+              {{ statusLabel(post.status) }}
+            </span>
+            <time [attr.datetime]="post.updatedAt">
+              Cập nhật {{ post.updatedAt | date: 'dd/MM/yyyy, HH:mm' }}
+            </time>
+          </div>
+          <h2>{{ post.title }}</h2>
+          <p>{{ post.content }}</p>
+          @if (post.status === 'REJECTED' && post.rejectionReason) {
+            <p class="post-card__rejection">
+              <strong>Lý do cần chỉnh sửa:</strong> {{ post.rejectionReason }}
+            </p>
+          }
+          <div class="post-card__actions">
+            @if (post.status === 'DRAFT' || post.status === 'REJECTED') {
+              <button type="button" (click)="submitPost(post)">
+                {{ post.status === 'REJECTED' ? 'Gửi duyệt lại' : 'Gửi duyệt' }}
+              </button>
+            }
+            @if (post.status !== 'PUBLISHED') {
+              <button class="post-card__remove" type="button" (click)="removePost(post)">
+                Xóa
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  } @else if (!isComposerOpen()) {
+    <div class="posts-page__empty">
+      <span aria-hidden="true">✦</span>
+      <h2>Bạn chưa có bài viết nào</h2>
+      <p>Hãy bắt đầu bằng một câu chuyện, trải nghiệm hoặc lời động viên dành cho cộng đồng.</p>
+      <button class="posts-page__primary" type="button" (click)="openComposer()">
+        Viết bài đầu tiên
+      </button>
+    </div>
+  }
+</section>

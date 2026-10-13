@@ -1,0 +1,565 @@
+<section class="admin-content" aria-labelledby="admin-content-heading">
+  <header>
+    <div>
+      <p>Kho nội dung</p>
+      <h1 id="admin-content-heading">Quản lý nội dung</h1>
+      <span>Tìm kiếm, chỉnh sửa và kiểm soát trạng thái hiển thị của nội dung Trạm K.</span>
+    </div>
+    <div class="admin-content__header-actions">
+      <button type="button" (click)="openCreate()">Tạo nội dung</button>
+      <button type="button" (click)="openPodcastCreate()">Thêm podcast</button>
+    </div>
+  </header>
+
+  @if (bootstrapLoading()) {
+    <p class="admin-content__feedback" aria-live="polite">Đang tải kho nội dung từ máy chủ…</p>
+  } @else if (bootstrapMessage()) {
+    <p class="admin-content__feedback" aria-live="polite">{{ bootstrapMessage() }}</p>
+  }
+  @if (syncError()) {
+    <p class="admin-content__feedback" role="alert">{{ syncError() }}</p>
+  }
+
+  <div class="admin-content__filters">
+    <label>
+      <span class="visually-hidden">Tìm kiếm nội dung</span>
+      <input
+        type="search"
+        placeholder="Tìm theo tiêu đề, mô tả, danh mục..."
+        (input)="updateSearch($event)"
+      />
+    </label>
+    <label>
+      <span class="visually-hidden">Lọc loại nội dung</span>
+      <select [value]="kindFilter()" (change)="updateKind($event)">
+        <option value="ALL">Tất cả nội dung</option>
+        <option value="GUIDE">Cẩm nang</option>
+        <option value="STORY">Câu chuyện</option>
+        <option value="CANCER_TYPE">Loại ung thư</option>
+      </select>
+    </label>
+  </div>
+
+  <section class="admin-podcasts" aria-labelledby="admin-podcasts-heading">
+    <div class="admin-podcasts__heading">
+      <div>
+        <p>Góc tâm lý và tinh thần</p>
+        <h2 id="admin-podcasts-heading">Podcast</h2>
+      </div>
+      <span>Tối đa 3 tập công khai mới nhất xuất hiện trong “Các Podcast khác”.</span>
+    </div>
+    <div
+      class="content-table-wrap"
+      role="region"
+      tabindex="0"
+      aria-label="Bảng quản lý podcast có thể cuộn ngang"
+    >
+      <table>
+        <thead>
+          <tr>
+            <th>Podcast</th>
+            <th>Nguồn</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (podcast of podcastItems(); track podcast.id) {
+            <tr>
+              <td>
+                <strong>{{ podcast.title }}</strong>
+                <small>{{ podcast.description }}</small>
+              </td>
+              <td>{{ podcast.source }}</td>
+              <td>
+                <span class="content-status" [attr.data-status]="podcast.status">
+                  {{ statusLabel(podcast.status) }}
+                </span>
+              </td>
+              <td>
+                <div class="content-actions">
+                  <button type="button" (click)="openPodcastEdit(podcast)">Chỉnh sửa</button>
+                  <button type="button" (click)="togglePodcastVisibility(podcast)">
+                    {{ podcast.status === 'PUBLISHED' ? 'Ẩn' : 'Công khai' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  @if (feedback()) {
+    <p class="admin-content__feedback" aria-live="polite">{{ feedback() }}</p>
+  }
+
+  <div
+    class="content-table-wrap"
+    role="region"
+    tabindex="0"
+    aria-label="Bảng nội dung có thể cuộn ngang"
+  >
+    <table>
+      <thead>
+        <tr>
+          <th>Nội dung</th>
+          <th>Loại</th>
+          <th>Trạng thái</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.id) {
+          <tr>
+            <td>
+              <strong>{{ item.title }}</strong
+              ><small>{{ item.category.name }}</small>
+            </td>
+            <td>{{ kindLabel(item.kind) }}</td>
+            <td>
+              <span class="content-status" [attr.data-status]="item.status">{{
+                statusLabel(item.status)
+              }}</span>
+            </td>
+            <td>
+              <div class="content-actions">
+                <button type="button" (click)="openEdit(item)">Chỉnh sửa</button>
+                <button type="button" (click)="toggleVisibility(item)">
+                  {{ item.status === 'PUBLISHED' ? 'Ẩn' : 'Công khai' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4" class="admin-content__empty">Không tìm thấy nội dung phù hợp.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (editorOpen()) {
+    <div class="content-editor-backdrop" (click)="closeEditor()">
+      <form
+        class="content-editor"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="content-editor-title"
+        appEscapeClose
+        [formGroup]="form"
+        (ngSubmit)="save()"
+        (escapeClose)="closeEditor()"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          class="content-editor__close"
+          type="button"
+          aria-label="Đóng"
+          (click)="closeEditor()"
+        >
+          ×
+        </button>
+        <header class="content-editor__header">
+          <p>Biên tập nội dung</p>
+          <h2 id="content-editor-title">
+            {{ editingId() ? 'Chỉnh sửa bài viết' : 'Tạo bài viết mới' }}
+          </h2>
+          <span>Hoàn thiện nội dung và ảnh đại diện trước khi xuất bản.</span>
+        </header>
+
+        <div class="content-editor__layout">
+          <main class="content-editor__main">
+            <section class="editor-section" aria-labelledby="article-copy-heading">
+              <div class="editor-section__heading">
+                <span>01</span>
+                <div>
+                  <h3 id="article-copy-heading">Thông tin chính</h3>
+                  <p>Tiêu đề và tóm tắt giúp độc giả nhanh chóng hiểu bài viết.</p>
+                </div>
+              </div>
+
+              <div class="content-editor__fields">
+                <label>
+                  <span>Tiêu đề bài viết <b aria-hidden="true">*</b></span>
+                  <input
+                    formControlName="title"
+                    maxlength="160"
+                    placeholder="Nhập tiêu đề rõ ràng, thu hút..."
+                  />
+                  <small>{{ form.controls.title.value.length }}/160 ký tự</small>
+                </label>
+                <label>
+                  <span>Tóm tắt <b aria-hidden="true">*</b></span>
+                  <textarea
+                    formControlName="excerpt"
+                    rows="3"
+                    maxlength="500"
+                    placeholder="Tóm tắt nội dung chính trong 2–3 câu..."
+                  ></textarea>
+                  <small>{{ form.controls.excerpt.value.length }}/500 ký tự</small>
+                </label>
+              </div>
+            </section>
+
+            <section class="editor-section" aria-labelledby="cover-image-heading">
+              <div class="editor-section__heading">
+                <span>02</span>
+                <div>
+                  <h3 id="cover-image-heading">Ảnh đại diện</h3>
+                  <p>Ảnh ngang, rõ nét giúp bài viết nổi bật trên trang tin.</p>
+                </div>
+              </div>
+
+              <input
+                #coverInput
+                class="visually-hidden"
+                id="content-cover-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                (change)="selectCoverImage($event)"
+              />
+              <div
+                class="cover-upload"
+                [class.cover-upload--active]="imageDragActive()"
+                [class.cover-upload--has-image]="coverImage()"
+                (dragover)="activateImageDropzone($event)"
+                (dragleave)="deactivateImageDropzone($event)"
+                (drop)="dropCoverImage($event)"
+              >
+                @if (coverImage(); as image) {
+                  <figure>
+                    <img
+                      [src]="image.url"
+                      [alt]="form.controls.imageAlt.value || image.alt"
+                      [width]="image.width"
+                      [height]="image.height"
+                    />
+                    <figcaption>
+                      <span>Ảnh đại diện bài viết</span>
+                      <small>{{ image.width }} × {{ image.height }} px</small>
+                    </figcaption>
+                  </figure>
+                  <div class="cover-upload__actions">
+                    <button type="button" (click)="coverInput.click()">Thay ảnh</button>
+                    <button type="button" (click)="removeCoverImage()">Xóa ảnh</button>
+                  </div>
+                } @else {
+                  <div class="cover-upload__empty" aria-hidden="true">+</div>
+                  <strong>Kéo và thả ảnh vào đây</strong>
+                  <span>hoặc</span>
+                  <button type="button" (click)="coverInput.click()">Chọn ảnh từ máy</button>
+                  <small>JPG, PNG hoặc WebP · tối đa 2 MB · nên dùng tỷ lệ 16:9</small>
+                }
+              </div>
+
+              @if (coverImage()) {
+                <div class="cover-metadata">
+                  <label>
+                    <span>Mô tả ảnh (alt) <b aria-hidden="true">*</b></span>
+                    <input
+                      formControlName="imageAlt"
+                      maxlength="160"
+                      placeholder="Mô tả ngắn nội dung trong ảnh"
+                    />
+                  </label>
+                  <label>
+                    <span>Chú thích ảnh</span>
+                    <input
+                      formControlName="imageCaption"
+                      maxlength="240"
+                      placeholder="Nguồn ảnh hoặc chú thích (không bắt buộc)"
+                    />
+                  </label>
+                </div>
+              }
+              @if (imageError()) {
+                <p class="content-editor__error" role="alert">{{ imageError() }}</p>
+              }
+            </section>
+
+            <app-article-block-editor
+              [blocks]="blocks()"
+              [errors]="blockErrors()"
+              (addRequested)="addBlock($event)"
+              (fieldChanged)="updateBlockField($event.blockId, $event.field, $event.value)"
+              (moveRequested)="moveBlock($event.blockId, $event.direction)"
+              (removeRequested)="removeBlock($event)"
+              (imageSelected)="selectInlineImage($event.blockId, $event.file)"
+              (imageRemoved)="removeInlineImage($event)"
+            />
+          </main>
+
+          <aside class="content-editor__settings" aria-labelledby="publish-settings-heading">
+            <div>
+              <p>Thiết lập xuất bản</p>
+              <h3 id="publish-settings-heading">Thông tin phân loại</h3>
+            </div>
+            <label>
+              <span>Loại nội dung</span>
+              <select formControlName="kind" (change)="changeEditorKind()">
+                <option value="GUIDE">Cẩm nang</option>
+                <option value="STORY">Câu chuyện</option>
+                <option value="CANCER_TYPE">Loại ung thư</option>
+              </select>
+            </label>
+            <label>
+              <span>Danh mục</span>
+              <input
+                formControlName="categoryName"
+                maxlength="80"
+                list="content-category-suggestions"
+                [placeholder]="categoryPlaceholder(form.controls.kind.value)"
+                aria-describedby="content-category-help"
+              />
+              <datalist id="content-category-suggestions">
+                @for (
+                  category of kindSetting(form.controls.kind.value).categories;
+                  track category.id
+                ) {
+                  <option [value]="category.name"></option>
+                }
+              </datalist>
+              <small id="content-category-help" class="content-editor__field-help">
+                Chọn danh mục có sẵn hoặc nhập tên mới.
+              </small>
+            </label>
+            <label>
+              <span>Trạng thái</span>
+              <select formControlName="status">
+                <option value="DRAFT">Bản nháp</option>
+                <option value="PUBLISHED">Công khai</option>
+                <option value="ARCHIVED">Ẩn</option>
+              </select>
+            </label>
+            <div class="content-editor__destination" aria-live="polite">
+              <p>Vị trí hiển thị dự kiến</p>
+              <strong>{{ kindSetting(form.controls.kind.value).destination }}</strong>
+              <span>
+                Danh mục:
+                <b>{{ form.controls.categoryName.value.trim() || 'Chưa chọn' }}</b>
+              </span>
+              <span class="content-editor__destination-path">
+                {{ kindSetting(form.controls.kind.value).publicPath }}
+              </span>
+              <small>{{ publicationStatusMessage(form.controls.status.value) }}</small>
+            </div>
+            <div class="content-editor__note">
+              <strong>Lưu ý</strong>
+              <p>Bài công khai cần có ảnh đại diện và mô tả ảnh đầy đủ.</p>
+            </div>
+          </aside>
+        </div>
+
+        @if (form.invalid && submitted()) {
+          <p class="content-editor__error" role="alert">
+            Vui lòng kiểm tra tiêu đề, tóm tắt và danh mục trước khi lưu.
+          </p>
+        }
+        @if (editorError()) {
+          <p class="content-editor__error" role="alert">{{ editorError() }}</p>
+        }
+        <footer class="content-editor__actions">
+          <span>Mọi thay đổi chỉ được ghi nhận sau khi bạn bấm lưu.</span>
+          <div>
+            <button type="button" (click)="closeEditor()">Hủy</button>
+            <button class="content-editor__preview-button" type="button" (click)="openPreview()">
+              Xem trước
+            </button>
+            <button type="submit">
+              {{
+                form.controls.status.value === 'PUBLISHED'
+                  ? 'Đăng bài'
+                  : 'Lưu
+            nội dung'
+              }}
+            </button>
+          </div>
+        </footer>
+      </form>
+    </div>
+
+    @if (preview(); as articlePreview) {
+      <app-article-preview [article]="articlePreview" (closeRequested)="closePreview()" />
+    }
+  }
+
+  @if (podcastEditorOpen()) {
+    <div class="content-editor-backdrop" (click)="closePodcastEditor()">
+      <form
+        class="content-editor podcast-editor"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="podcast-editor-title"
+        appEscapeClose
+        [formGroup]="podcastForm"
+        (ngSubmit)="savePodcast()"
+        (escapeClose)="closePodcastEditor()"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          class="content-editor__close"
+          type="button"
+          aria-label="Đóng"
+          (click)="closePodcastEditor()"
+        >
+          ×
+        </button>
+        <header class="content-editor__header">
+          <p>Biên tập Podcast</p>
+          <h2 id="podcast-editor-title">
+            {{ podcastEditingId() ? 'Chỉnh sửa podcast' : 'Thêm podcast mới' }}
+          </h2>
+          <span
+            >Podcast công khai sẽ được xếp theo ngày mới nhất nhưng luôn giữ 3 thẻ như Figma.</span
+          >
+        </header>
+
+        <div class="podcast-editor__body">
+          <section class="editor-section">
+            <div class="editor-section__heading">
+              <span>01</span>
+              <div>
+                <h3>Thông tin tập</h3>
+                <p>Nội dung này xuất hiện trên thẻ và hộp thoại “Xem thêm”.</p>
+              </div>
+            </div>
+            <div class="content-editor__fields podcast-editor__copy">
+              <label>
+                <span>Tiêu đề <b aria-hidden="true">*</b></span>
+                <input formControlName="title" maxlength="160" placeholder="Tên tập podcast" />
+              </label>
+              <label>
+                <span>Nguồn/đơn vị phát hành <b aria-hidden="true">*</b></span>
+                <input formControlName="source" maxlength="100" placeholder="Ví dụ: Trạm K" />
+              </label>
+              <label class="podcast-editor__wide">
+                <span>Mô tả <b aria-hidden="true">*</b></span>
+                <textarea
+                  formControlName="description"
+                  rows="4"
+                  maxlength="500"
+                  placeholder="Tóm tắt nội dung tập podcast..."
+                ></textarea>
+                <small>{{ podcastForm.controls.description.value.length }}/500 ký tự</small>
+              </label>
+            </div>
+          </section>
+
+          <section class="editor-section">
+            <div class="editor-section__heading">
+              <span>02</span>
+              <div>
+                <h3>Ảnh đại diện</h3>
+                <p>Ảnh vuông hoặc dọc sẽ được tự cắt vừa khung thẻ, không đổi bố cục trang.</p>
+              </div>
+            </div>
+            <input
+              #podcastCoverInput
+              class="visually-hidden"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              (change)="selectPodcastCover($event)"
+            />
+            <div class="podcast-cover-upload">
+              @if (podcastCoverImage(); as image) {
+                <img [src]="image.url" [alt]="podcastForm.controls.imageAlt.value || image.alt" />
+                <div>
+                  <strong>Ảnh đại diện đã sẵn sàng</strong>
+                  <span>Ảnh được hiển thị bằng object-fit: cover.</span>
+                  <p>
+                    <button type="button" (click)="podcastCoverInput.click()">Thay ảnh</button>
+                    <button type="button" (click)="removePodcastCover()">Xóa ảnh</button>
+                  </p>
+                </div>
+              } @else {
+                <div class="cover-upload__empty" aria-hidden="true">+</div>
+                <div>
+                  <strong>Chọn ảnh đại diện</strong>
+                  <span>JPG, PNG hoặc WebP · tối đa 2 MB</span>
+                  <button type="button" (click)="podcastCoverInput.click()">Chọn ảnh</button>
+                </div>
+              }
+            </div>
+            <label class="podcast-editor__image-alt">
+              <span>Mô tả ảnh (alt) <b aria-hidden="true">*</b></span>
+              <input
+                formControlName="imageAlt"
+                maxlength="160"
+                placeholder="Mô tả nội dung ảnh cho trình đọc màn hình"
+              />
+            </label>
+          </section>
+
+          <section class="editor-section">
+            <div class="editor-section__heading">
+              <span>03</span>
+              <div>
+                <h3>Âm thanh và xuất bản</h3>
+                <p>Tải tệp tối đa 30 MB hoặc dùng đường dẫn âm thanh.</p>
+              </div>
+            </div>
+            <div class="podcast-editor__media-grid">
+              <div class="podcast-audio-upload">
+                <input
+                  #podcastAudioInput
+                  class="visually-hidden"
+                  type="file"
+                  accept="audio/*"
+                  (change)="selectPodcastAudio($event)"
+                />
+                <strong>{{ podcastAudioName() || 'Chưa chọn tệp âm thanh' }}</strong>
+                <span>Tải trực tiếp tối đa 30 MB</span>
+                <div>
+                  <button type="button" (click)="podcastAudioInput.click()">Chọn tệp</button>
+                  @if (podcastAudioUrl()) {
+                    <button type="button" (click)="removePodcastAudio()">Xóa tệp</button>
+                  }
+                </div>
+              </div>
+              <label>
+                <span>Hoặc đường dẫn âm thanh</span>
+                <input
+                  formControlName="audioUrl"
+                  maxlength="2000"
+                  placeholder="https://.../tap-podcast.mp3"
+                />
+                <small>Dùng URL cho tập dài để tránh vượt dung lượng trình duyệt.</small>
+              </label>
+              <label>
+                <span>Trạng thái</span>
+                <select formControlName="status">
+                  <option value="DRAFT">Bản nháp</option>
+                  <option value="PUBLISHED">Công khai</option>
+                  <option value="ARCHIVED">Ẩn</option>
+                </select>
+              </label>
+            </div>
+          </section>
+        </div>
+
+        @if (podcastForm.invalid && podcastSubmitted()) {
+          <p class="content-editor__error" role="alert">
+            Vui lòng kiểm tra tiêu đề, mô tả, nguồn và mô tả ảnh.
+          </p>
+        }
+        @if (podcastError()) {
+          <p class="content-editor__error" role="alert">{{ podcastError() }}</p>
+        }
+        <footer class="content-editor__actions">
+          <span>Bài mới chỉ thay vị trí thẻ cũ, không tăng số cột hoặc thay đổi giao diện.</span>
+          <div>
+            <button type="button" (click)="closePodcastEditor()">Hủy</button>
+            <button type="submit">
+              {{
+                podcastForm.controls.status.value === 'PUBLISHED' ? 'Đăng podcast' : 'Lưu podcast'
+              }}
+            </button>
+          </div>
+        </footer>
+      </form>
+    </div>
+  }
+</section>

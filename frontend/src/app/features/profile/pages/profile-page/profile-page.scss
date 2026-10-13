@@ -258,6 +258,54 @@
   }
 }
 
+.profile-security {
+  &__email-change {
+    display: grid;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h3 {
+      color: var(--color-text-heading);
+      font-size: 1rem;
+    }
+
+    p {
+      color: var(--color-text-muted);
+    }
+
+    app-ui-button {
+      justify-self: start;
+    }
+  }
+
+  &__confirmation {
+    padding: var(--space-4);
+    border: 1px solid color-mix(in srgb, var(--color-danger) 35%, white);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--color-danger) 7%, white);
+
+    p {
+      margin: 0;
+      color: var(--color-text-body);
+    }
+
+    div {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+    }
+  }
+}
+
 .profile-actions {
   display: flex;
   flex-wrap: wrap;

@@ -40,7 +40,7 @@ describe('AdminUsersPage', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeTruthy();
-    expect(fixture.nativeElement.textContent).toContain('Xác nhận khóa');
+    expect(fixture.nativeElement.textContent).toContain('Xác nhận Đã khóa');
   });
 
   it('should persist the status after Admin confirms', () => {
@@ -50,13 +50,36 @@ describe('AdminUsersPage', () => {
     actionButton.click();
     fixture.detectChanges();
 
+    const reason = fixture.nativeElement.querySelector(
+      '[role="dialog"] textarea',
+    ) as HTMLTextAreaElement;
+    reason.value = 'Khóa do phát hiện hoạt động bất thường.';
+    reason.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
     const confirmButton = Array.from<HTMLButtonElement>(
       fixture.nativeElement.querySelectorAll('[role="dialog"] app-ui-button button'),
-    ).find((button) => button.textContent?.includes('Xác nhận khóa'));
+    ).find((button) => button.textContent?.includes('Xác nhận Đã khóa'));
     confirmButton?.click();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Đã khóa tài khoản Nguyễn Minh Anh.');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Đã chuyển tài khoản Nguyễn Minh Anh sang đã khóa.',
+    );
     expect(localStorage.getItem('tram-k.admin.users')).toContain('LOCKED');
+  });
+
+  it('requires a reason of at least 10 characters', () => {
+    const actionButton = fixture.nativeElement.querySelector(
+      'tbody app-ui-button button',
+    ) as HTMLButtonElement;
+    actionButton.click();
+    fixture.detectChanges();
+
+    const confirmButton = Array.from<HTMLButtonElement>(
+      fixture.nativeElement.querySelectorAll('[role="dialog"] app-ui-button button'),
+    ).find((button) => button.textContent?.includes('Xác nhận Đã khóa'));
+
+    expect(confirmButton?.disabled).toBe(true);
   });
 });

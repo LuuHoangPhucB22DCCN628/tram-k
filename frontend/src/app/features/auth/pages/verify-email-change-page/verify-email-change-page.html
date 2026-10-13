@@ -1,0 +1,31 @@
+<section class="auth-page" aria-labelledby="verify-email-change-title">
+  <div class="auth-page__card">
+    <p class="auth-page__eyebrow">Bảo vệ tài khoản</p>
+    <h1 id="verify-email-change-title">Xác minh email mới</h1>
+
+    @switch (state()) {
+      @case ('loading') {
+        <p class="auth-page__intro" role="status">Trạm K đang kiểm tra liên kết xác minh…</p>
+      }
+      @case ('success') {
+        <p class="auth-form__alert auth-form__alert--success" role="status">
+          Email đã được đổi thành <strong>{{ verifiedEmail() }}</strong
+          >. Mọi phiên đăng nhập cũ đã được thu hồi để bảo vệ tài khoản.
+        </p>
+        <app-ui-button (buttonClick)="goToLogin()">Đăng nhập bằng email mới</app-ui-button>
+      }
+      @case ('missing') {
+        <p class="auth-form__alert auth-form__alert--error" role="alert">
+          Liên kết không chứa mã xác minh.
+        </p>
+      }
+      @case ('error') {
+        <p class="auth-form__alert auth-form__alert--error" role="alert">
+          Liên kết không hợp lệ, đã hết hạn hoặc đã được sử dụng.
+        </p>
+      }
+    }
+
+    <p class="auth-page__footer"><a routerLink="/">Về trang chủ</a></p>
+  </div>
+</section>

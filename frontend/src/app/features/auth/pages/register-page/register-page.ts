@@ -2,10 +2,13 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { AuthApiError, type RegisterCredentials } from '@core/auth/auth.models';
+import { AuthService } from '@core/auth/auth.service';
 import { UiButton } from '@shared/ui';
 
 import {
   type AuthFeedback,
+  getPasswordValidationMessage,
   PASSWORD_PATTERN,
   passwordsMatchValidator,
   shouldShowError,
@@ -22,9 +25,12 @@ type RegisterField = 'displayName' | 'email' | 'role' | 'password' | 'confirmPas
 })
 export class RegisterPage {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
 
   protected readonly submitted = signal(false);
   protected readonly feedback = signal<AuthFeedback | null>(null);
+  protected readonly showPassword = signal(false);
+  protected readonly showConfirmPassword = signal(false);
   protected readonly registerForm = this.formBuilder.nonNullable.group(
     {
       displayName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
@@ -48,6 +54,13 @@ export class RegisterPage {
     );
   }
 
+  protected passwordValidationMessage(): string {
+    return (
+      getPasswordValidationMessage(this.registerForm.controls.password.value) ??
+      'Mật khẩu chưa đáp ứng yêu cầu.'
+    );
+  }
+
   protected submit(): void {
     this.submitted.set(true);
     this.feedback.set(null);
@@ -57,15 +70,28 @@ export class RegisterPage {
       return;
     }
 
-    // Mock quy ước: email này đại diện phản hồi 409 EMAIL_ALREADY_EXISTS.
-    if (this.registerForm.controls.email.value.toLowerCase() === 'daco@tramk.vn') {
-      this.feedback.set({ type: 'error', message: 'Email này đã được sử dụng.' });
-      return;
-    }
-
-    this.feedback.set({
-      type: 'success',
-      message: 'Tạo tài khoản mô phỏng thành công. Bạn có thể chuyển sang trang đăng nhập.',
-    });
+    const value = this.registerForm.getRawValue();
+    this.auth
+      .register({
+        displayName: value.displayName,
+        email: value.email,
+        password: value.password,
+        role: value.role as RegisterCredentials['role'],
+      })
+      .subscribe({
+        next: () =>
+          this.feedback.set({
+            type: 'success',
+            message: 'Tạo tài khoản thành công. Vui lòng kiểm tra email để xác minh tài khoản.',
+          }),
+        error: (error: unknown) =>
+          this.feedback.set({
+            type: 'error',
+            message:
+              error instanceof AuthApiError && error.code === 'EMAIL_ALREADY_EXISTS'
+                ? 'Email này đã được sử dụng.'
+                : 'Chưa thể tạo tài khoản. Vui lòng thử lại.',
+          }),
+      });
   }
 }

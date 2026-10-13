@@ -13,7 +13,7 @@ import {
 } from '@shared/ui';
 
 import type { AdminUser, AdminUserStatus } from '../../admin-user.models';
-import { AdminUsersMockService } from '../../admin-users-mock.service';
+import { AdminUsersApiService } from '../../admin-users-api.service';
 
 @Component({
   selector: 'app-admin-users-page',
@@ -25,13 +25,17 @@ import { AdminUsersMockService } from '../../admin-users-mock.service';
 })
 export class AdminUsersPage {
   private readonly pageSize = 5;
-  private readonly usersService = inject(AdminUsersMockService);
+  private readonly usersService = inject(AdminUsersApiService);
 
-  protected readonly users = signal<readonly AdminUser[]>(this.usersService.list());
+  protected readonly users = signal<readonly AdminUser[]>([]);
+  protected readonly isLoading = signal(true);
+  protected readonly isSaving = signal(false);
   protected readonly searchTerm = signal('');
   protected readonly statusFilter = signal<AdminUserStatus | 'ALL'>('ALL');
   protected readonly currentPage = signal(1);
   protected readonly selectedUser = signal<AdminUser | null>(null);
+  protected readonly selectedStatus = signal<AdminUserStatus | null>(null);
+  protected readonly reason = signal('');
   protected readonly feedback = signal('');
 
   protected readonly filteredUsers = computed(() => {
@@ -63,11 +67,27 @@ export class AdminUsersPage {
     () => this.users().filter((user) => user.status === 'ACTIVE').length,
   );
   protected readonly pendingUserCount = computed(
-    () => this.users().filter((user) => user.status === 'PENDING').length,
+    () => this.users().filter((user) => user.status === 'PENDING_VERIFY').length,
   );
   protected readonly lockedUserCount = computed(
     () => this.users().filter((user) => user.status === 'LOCKED').length,
   );
+  protected readonly disabledUserCount = computed(
+    () => this.users().filter((user) => user.status === 'DISABLED').length,
+  );
+
+  constructor() {
+    this.usersService.list().subscribe({
+      next: (users) => {
+        this.users.set(users);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.feedback.set('Không thể tải danh sách tài khoản. Vui lòng thử lại.');
+        this.isLoading.set(false);
+      },
+    });
+  }
 
   protected updateSearchTerm(value: string): void {
     this.searchTerm.set(value);
@@ -79,29 +99,68 @@ export class AdminUsersPage {
     this.currentPage.set(1);
   }
 
-  protected openStatusConfirmation(user: AdminUser): void {
+  protected openStatusConfirmation(user: AdminUser, status: AdminUserStatus): void {
     this.selectedUser.set(user);
+    this.selectedStatus.set(status);
+    this.reason.set('');
   }
 
   protected closeStatusConfirmation(): void {
     this.selectedUser.set(null);
+    this.selectedStatus.set(null);
+    this.reason.set('');
   }
 
   protected confirmStatusChange(): void {
     const selectedUser = this.selectedUser();
-    if (!selectedUser) return;
+    const selectedStatus = this.selectedStatus();
+    const reason = this.reason().trim();
+    if (!selectedUser || !selectedStatus || reason.length < 10 || this.isSaving()) return;
 
-    const action = selectedUser.status === 'LOCKED' ? 'mở khóa' : 'khóa';
-    this.users.set(this.usersService.toggleLocked(selectedUser.id));
-    this.feedback.set(`Đã ${action} tài khoản ${selectedUser.displayName}.`);
-    this.closeStatusConfirmation();
+    this.isSaving.set(true);
+    this.usersService.updateStatus(selectedUser, selectedStatus, reason).subscribe({
+      next: (updated) => {
+        this.users.update((users) =>
+          users.map((user) => (user.id === updated.id ? updated : user)),
+        );
+        this.feedback.set(
+          `Đã chuyển tài khoản ${selectedUser.displayName} sang ${this.statusLabel(selectedStatus).toLocaleLowerCase('vi')}.`,
+        );
+        this.isSaving.set(false);
+        this.closeStatusConfirmation();
+      },
+      error: (error: { readonly error?: { readonly error?: { readonly message?: string } } }) => {
+        this.feedback.set(
+          error.error?.error?.message ?? 'Không thể thay đổi trạng thái. Vui lòng tải lại dữ liệu.',
+        );
+        this.isSaving.set(false);
+      },
+    });
+  }
+
+  protected updateReason(event: Event): void {
+    this.reason.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  protected actionLabel(status: AdminUserStatus | null): string {
+    return status ? this.statusLabel(status) : 'thay đổi trạng thái';
   }
 
   protected statusLabel(status: AdminUserStatus): string {
-    return { ACTIVE: 'Đang hoạt động', PENDING: 'Chờ xác minh', LOCKED: 'Đã khóa' }[status];
+    return {
+      ACTIVE: 'Đang hoạt động',
+      PENDING_VERIFY: 'Chờ xác minh',
+      LOCKED: 'Đã khóa',
+      DISABLED: 'Đã vô hiệu hóa',
+    }[status];
   }
 
   protected statusVariant(status: AdminUserStatus): UiBadgeVariant {
-    return { ACTIVE: 'success', PENDING: 'warning', LOCKED: 'danger' }[status] as UiBadgeVariant;
+    return {
+      ACTIVE: 'success',
+      PENDING_VERIFY: 'warning',
+      LOCKED: 'danger',
+      DISABLED: 'neutral',
+    }[status] as UiBadgeVariant;
   }
 }

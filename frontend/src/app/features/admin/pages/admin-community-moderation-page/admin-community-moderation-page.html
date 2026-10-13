@@ -1,0 +1,205 @@
+<section class="moderation-page" aria-labelledby="moderation-heading">
+  <header>
+    <p>Quản trị cộng đồng</p>
+    <h1 id="moderation-heading">Kiểm duyệt cộng đồng</h1>
+    <span>Duyệt bài viết thành viên và xử lý bình luận vi phạm.</span>
+  </header>
+
+  <div
+    class="moderation-tabs"
+    role="tablist"
+    aria-label="Loại nội dung kiểm duyệt"
+    (keydown)="handleTabKeydown($event)"
+  >
+    <button
+      id="moderation-tab-posts"
+      type="button"
+      role="tab"
+      data-tab="POSTS"
+      aria-controls="moderation-panel-posts"
+      [attr.aria-selected]="activeTab() === 'POSTS'"
+      [attr.tabindex]="activeTab() === 'POSTS' ? 0 : -1"
+      (click)="selectTab('POSTS')"
+    >
+      Bài viết ({{ posts().length }})
+    </button>
+    <button
+      id="moderation-tab-comments"
+      type="button"
+      role="tab"
+      data-tab="COMMENTS"
+      aria-controls="moderation-panel-comments"
+      [attr.aria-selected]="activeTab() === 'COMMENTS'"
+      [attr.tabindex]="activeTab() === 'COMMENTS' ? 0 : -1"
+      (click)="selectTab('COMMENTS')"
+    >
+      Bình luận ({{ comments().length }})
+    </button>
+  </div>
+
+  @if (feedback()) {
+    <p class="moderation-page__feedback" aria-live="polite">{{ feedback() }}</p>
+  }
+
+  @if (activeTab() === 'POSTS') {
+    @if (posts().length) {
+      <div
+        id="moderation-panel-posts"
+        class="moderation-list"
+        role="tabpanel"
+        aria-labelledby="moderation-tab-posts"
+      >
+        @for (post of posts(); track post.id) {
+          <article class="moderation-card">
+            <div class="moderation-card__meta">
+              <span [attr.data-status]="post.status">{{ postStatusLabel(post.status) }}</span>
+              <time [attr.datetime]="post.updatedAt">
+                {{ post.updatedAt | date: 'dd/MM/yyyy, HH:mm' }}
+              </time>
+            </div>
+            <h2>{{ post.title }}</h2>
+            <small>{{ post.authorName }}</small>
+            <p>{{ post.content }}</p>
+            @if (post.rejectionReason) {
+              <p class="moderation-card__reason">{{ post.rejectionReason }}</p>
+            }
+            <div class="moderation-card__actions">
+              <button type="button" (click)="openPost(post)">Xem đầy đủ</button>
+              @if (post.status === 'PENDING') {
+                <button class="moderation-card__approve" type="button" (click)="publish(post)">
+                  Xuất bản
+                </button>
+                <button class="moderation-card__reject" type="button" (click)="openReject(post)">
+                  Yêu cầu sửa
+                </button>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <div
+        id="moderation-panel-posts"
+        class="moderation-page__empty"
+        role="tabpanel"
+        aria-labelledby="moderation-tab-posts"
+      >
+        Chưa có bài viết nào để kiểm duyệt.
+      </div>
+    }
+  } @else {
+    @if (comments().length) {
+      <div
+        id="moderation-panel-comments"
+        class="moderation-list"
+        role="tabpanel"
+        aria-labelledby="moderation-tab-comments"
+      >
+        @for (comment of comments(); track comment.id) {
+          <article class="moderation-card moderation-card--comment">
+            <div class="moderation-card__meta">
+              <strong>{{ comment.authorName }}</strong>
+              <time [attr.datetime]="comment.updatedAt">
+                {{ comment.updatedAt | date: 'dd/MM/yyyy, HH:mm' }}
+              </time>
+            </div>
+            <a [routerLink]="comment.sourcePath">{{ comment.sourceTitle }}</a>
+            <p>{{ comment.content }}</p>
+            <div class="moderation-card__actions">
+              <button
+                class="moderation-card__reject"
+                type="button"
+                (click)="removeComment(comment)"
+              >
+                Gỡ bình luận
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <div
+        id="moderation-panel-comments"
+        class="moderation-page__empty"
+        role="tabpanel"
+        aria-labelledby="moderation-tab-comments"
+      >
+        Chưa có bình luận nào.
+      </div>
+    }
+  }
+
+  @if (selectedPost(); as post) {
+    <div class="moderation-dialog-backdrop" (click)="closePost()">
+      <article
+        class="moderation-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="post-dialog-title"
+        appEscapeClose
+        (escapeClose)="closePost()"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          class="moderation-dialog__close"
+          type="button"
+          aria-label="Đóng"
+          (click)="closePost()"
+        >
+          ×
+        </button>
+        <span>{{ postStatusLabel(post.status) }}</span>
+        <h2 id="post-dialog-title">{{ post.title }}</h2>
+        <small>{{ post.authorName }}</small>
+        <p>{{ post.content }}</p>
+      </article>
+    </div>
+  }
+
+  @if (rejectingPost(); as post) {
+    <div class="moderation-dialog-backdrop" (click)="closeReject()">
+      <section
+        class="moderation-dialog moderation-dialog--reject"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="post-reject-title"
+        appEscapeClose
+        (escapeClose)="closeReject()"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          class="moderation-dialog__close"
+          type="button"
+          aria-label="Đóng"
+          (click)="closeReject()"
+        >
+          ×
+        </button>
+        <h2 id="post-reject-title">Yêu cầu chỉnh sửa bài viết</h2>
+        <p>{{ post.title }}</p>
+        <label for="post-rejection-reason">Nội dung cần chỉnh sửa</label>
+        <textarea
+          id="post-rejection-reason"
+          rows="5"
+          maxlength="1000"
+          [value]="rejectionReason()"
+          (input)="updateReason($event)"
+        ></textarea>
+        @if (rejectionReason().length > 0 && rejectionReason().trim().length < 10) {
+          <small>Lý do cần ít nhất 10 ký tự.</small>
+        }
+        <div class="moderation-card__actions">
+          <button type="button" (click)="closeReject()">Hủy</button>
+          <button
+            class="moderation-card__reject"
+            type="button"
+            [disabled]="rejectionReason().trim().length < 10"
+            (click)="reject()"
+          >
+            Gửi yêu cầu sửa
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</section>

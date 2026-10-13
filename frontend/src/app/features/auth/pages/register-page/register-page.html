@@ -33,8 +33,11 @@
           <select id="register-role" formControlName="role">
             <option value="PATIENT">Bệnh nhân</option>
             <option value="CARER">Người thân / người chăm sóc</option>
-            <option value="PARTNER">Nhà hảo tâm / đối tác</option>
           </select>
+          <p class="auth-form__hint">
+            Quyền đối tác không được cấp khi đăng ký tài khoản; hồ sơ đối tác cần được quản trị viên
+            duyệt riêng.
+          </p>
         </div>
       </div>
 
@@ -61,40 +64,66 @@
       <div class="auth-form__row">
         <div class="auth-form__field">
           <label for="register-password">Mật khẩu</label>
-          <input
-            id="register-password"
-            type="password"
-            formControlName="password"
-            autocomplete="new-password"
-            [attr.aria-invalid]="
-              registerForm.controls.password.invalid && submitted() ? true : null
-            "
-            aria-describedby="register-password-hint register-password-error"
-          />
+          <div class="auth-form__password">
+            <input
+              id="register-password"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="new-password"
+              [attr.aria-invalid]="
+                registerForm.controls.password.invalid && submitted() ? true : null
+              "
+              aria-describedby="register-password-hint register-password-error"
+            />
+            <button
+              class="auth-form__password-toggle"
+              type="button"
+              [attr.aria-label]="showPassword() ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'"
+              [attr.aria-pressed]="showPassword()"
+              aria-controls="register-password"
+              (click)="showPassword.set(!showPassword())"
+            >
+              {{ showPassword() ? 'Ẩn' : 'Hiện' }}
+            </button>
+          </div>
           <p id="register-password-hint" class="auth-form__hint">
-            Ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số.
+            Từ 15 đến 128 ký tự, gồm chữ hoa, chữ thường và số.
           </p>
           @if (hasError('password', 'required')) {
             <p id="register-password-error" class="auth-form__error">Vui lòng nhập mật khẩu.</p>
           } @else if (hasError('password', 'pattern')) {
             <p id="register-password-error" class="auth-form__error">
-              Mật khẩu chưa đáp ứng yêu cầu.
+              {{ passwordValidationMessage() }}
             </p>
           }
         </div>
 
         <div class="auth-form__field">
           <label for="register-confirm-password">Nhập lại mật khẩu</label>
-          <input
-            id="register-confirm-password"
-            type="password"
-            formControlName="confirmPassword"
-            autocomplete="new-password"
-            [attr.aria-invalid]="passwordsDoNotMatch() ? true : null"
-            [attr.aria-describedby]="
-              passwordsDoNotMatch() ? 'register-confirm-password-error' : null
-            "
-          />
+          <div class="auth-form__password">
+            <input
+              id="register-confirm-password"
+              [type]="showConfirmPassword() ? 'text' : 'password'"
+              formControlName="confirmPassword"
+              autocomplete="new-password"
+              [attr.aria-invalid]="passwordsDoNotMatch() ? true : null"
+              [attr.aria-describedby]="
+                passwordsDoNotMatch() ? 'register-confirm-password-error' : null
+              "
+            />
+            <button
+              class="auth-form__password-toggle"
+              type="button"
+              [attr.aria-label]="
+                showConfirmPassword() ? 'Ẩn mật khẩu nhập lại' : 'Hiển thị mật khẩu nhập lại'
+              "
+              [attr.aria-pressed]="showConfirmPassword()"
+              aria-controls="register-confirm-password"
+              (click)="showConfirmPassword.set(!showConfirmPassword())"
+            >
+              {{ showConfirmPassword() ? 'Ẩn' : 'Hiện' }}
+            </button>
+          </div>
           @if (hasError('confirmPassword', 'required')) {
             <p id="register-confirm-password-error" class="auth-form__error">
               Vui lòng nhập lại mật khẩu.

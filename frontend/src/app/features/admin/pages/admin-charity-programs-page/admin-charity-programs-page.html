@@ -1,0 +1,170 @@
+<section class="admin-programs" aria-labelledby="admin-programs-heading">
+  <header>
+    <div>
+      <p>Quản trị cộng đồng</p>
+      <h1 id="admin-programs-heading">Chương trình hỗ trợ</h1>
+      <span>Duyệt các đề xuất chương trình do nhà hảo tâm gửi tới Trạm K.</span>
+    </div>
+    <label>
+      Trạng thái
+      <select [value]="statusFilter()" (change)="changeFilter($event)">
+        <option value="ALL">Tất cả</option>
+        <option value="PENDING">Chờ duyệt</option>
+        <option value="PUBLISHED">Đã xuất bản</option>
+        <option value="REJECTED">Cần chỉnh sửa</option>
+      </select>
+    </label>
+  </header>
+
+  @if (feedback()) {
+    <p class="admin-programs__feedback" aria-live="polite">{{ feedback() }}</p>
+  }
+
+  @if (proposals().length) {
+    <div class="admin-program-list">
+      @for (proposal of proposals(); track proposal.id) {
+        <article class="admin-program-card">
+          <div class="admin-program-card__meta">
+            <span [attr.data-status]="proposal.status">{{ statusLabel(proposal.status) }}</span>
+            <time [attr.datetime]="proposal.createdAt">
+              Gửi {{ proposal.createdAt | date: 'dd/MM/yyyy, HH:mm' }}
+            </time>
+          </div>
+          <h2>{{ proposal.title }}</h2>
+          <p>{{ proposal.description }}</p>
+          <dl>
+            <div>
+              <dt>Nhà hảo tâm</dt>
+              <dd>{{ proposal.ownerName }}</dd>
+            </div>
+            <div>
+              <dt>Hình thức</dt>
+              <dd>{{ supportTypeLabel(proposal.supportType) }}</dd>
+            </div>
+            <div>
+              <dt>Địa điểm</dt>
+              <dd>{{ proposal.city }}</dd>
+            </div>
+          </dl>
+          <div class="admin-program-card__actions">
+            <button type="button" (click)="openDetails(proposal)">Xem chi tiết</button>
+            @if (proposal.status === 'PENDING') {
+              <button class="admin-program-card__approve" type="button" (click)="approve(proposal)">
+                Duyệt
+              </button>
+              <button
+                class="admin-program-card__reject"
+                type="button"
+                (click)="openReject(proposal)"
+              >
+                Từ chối
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="admin-programs__empty">
+      <h2>Không có đề xuất phù hợp</h2>
+      <p>Hãy thay đổi bộ lọc hoặc quay lại sau khi có đề xuất mới.</p>
+    </div>
+  }
+
+  @if (selected(); as proposal) {
+    <div class="admin-dialog-backdrop" (click)="closeDetails()">
+      <section
+        class="admin-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-program-dialog-title"
+        appEscapeClose
+        (escapeClose)="closeDetails()"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          type="button"
+          class="admin-dialog__close"
+          aria-label="Đóng"
+          (click)="closeDetails()"
+        >
+          ×
+        </button>
+        <span class="admin-dialog__status" [attr.data-status]="proposal.status">
+          {{ statusLabel(proposal.status) }}
+        </span>
+        <h2 id="admin-program-dialog-title">{{ proposal.title }}</h2>
+        <p>{{ proposal.description }}</p>
+        <dl>
+          <div>
+            <dt>Nhà hảo tâm</dt>
+            <dd>{{ proposal.ownerName }}</dd>
+          </div>
+          <div>
+            <dt>Hình thức</dt>
+            <dd>{{ supportTypeLabel(proposal.supportType) }}</dd>
+          </div>
+          <div>
+            <dt>Địa điểm</dt>
+            <dd>{{ proposal.address }}, {{ proposal.city }}</dd>
+          </div>
+          <div>
+            <dt>Lịch dự kiến</dt>
+            <dd>{{ proposal.schedule }}</dd>
+          </div>
+          <div>
+            <dt>Quy mô</dt>
+            <dd>{{ proposal.capacity }} người/suất mỗi đợt</dd>
+          </div>
+          <div>
+            <dt>Liên hệ</dt>
+            <dd>{{ proposal.contactName }} · {{ proposal.phone }} · {{ proposal.email }}</dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+  }
+
+  @if (rejecting(); as proposal) {
+    <div class="admin-dialog-backdrop" (click)="closeReject()">
+      <section
+        class="admin-dialog admin-dialog--reject"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reject-dialog-title"
+        appEscapeClose
+        (escapeClose)="closeReject()"
+        (click)="$event.stopPropagation()"
+      >
+        <button type="button" class="admin-dialog__close" aria-label="Đóng" (click)="closeReject()">
+          ×
+        </button>
+        <h2 id="reject-dialog-title">Yêu cầu chỉnh sửa</h2>
+        <p>{{ proposal.title }}</p>
+        <label for="rejection-reason">Lý do từ chối</label>
+        <textarea
+          id="rejection-reason"
+          rows="5"
+          maxlength="1000"
+          placeholder="Nêu rõ nội dung nhà hảo tâm cần bổ sung hoặc chỉnh sửa..."
+          [value]="rejectionReason()"
+          (input)="updateReason($event)"
+        ></textarea>
+        @if (rejectionReason().length > 0 && rejectionReason().trim().length < 10) {
+          <small>Lý do cần ít nhất 10 ký tự.</small>
+        }
+        <div class="admin-dialog__actions">
+          <button type="button" (click)="closeReject()">Hủy</button>
+          <button
+            type="button"
+            class="admin-program-card__reject"
+            [disabled]="rejectionReason().trim().length < 10"
+            (click)="reject()"
+          >
+            Gửi yêu cầu chỉnh sửa
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</section>

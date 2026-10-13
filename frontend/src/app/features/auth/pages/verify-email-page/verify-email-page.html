@@ -1,0 +1,52 @@
+<section class="auth-page" aria-labelledby="verify-email-title">
+  <div class="auth-page__card">
+    <p class="auth-page__eyebrow">Bảo vệ tài khoản</p>
+    <h1 id="verify-email-title">Xác minh email</h1>
+
+    @switch (state()) {
+      @case ('loading') {
+        <p class="auth-page__intro" role="status">Trạm K đang kiểm tra liên kết xác minh…</p>
+      }
+      @case ('success') {
+        <p class="auth-form__alert auth-form__alert--success" role="status">
+          Email đã được xác minh. Tài khoản của bạn đã sẵn sàng.
+        </p>
+        <app-ui-button (buttonClick)="goToLogin()">Đăng nhập</app-ui-button>
+      }
+      @case ('missing') {
+        <p class="auth-form__alert auth-form__alert--error" role="alert">
+          Liên kết không chứa mã xác minh.
+        </p>
+      }
+      @case ('error') {
+        <p class="auth-form__alert auth-form__alert--error" role="alert">
+          Liên kết không hợp lệ, đã hết hạn hoặc đã được sử dụng.
+        </p>
+      }
+    }
+
+    @if (state() === 'error' || state() === 'missing') {
+      <form class="auth-form" [formGroup]="resendForm" (ngSubmit)="resend()" novalidate>
+        <div class="auth-form__field">
+          <label for="verification-email">Email đăng ký</label>
+          <input
+            id="verification-email"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            placeholder="ban@example.com"
+          />
+          @if (resendForm.controls.email.touched && resendForm.controls.email.invalid) {
+            <p class="auth-form__error">Vui lòng nhập email hợp lệ.</p>
+          }
+        </div>
+        @if (resendMessage(); as message) {
+          <p class="auth-form__alert" role="status">{{ message }}</p>
+        }
+        <app-ui-button type="submit">Gửi lại email xác minh</app-ui-button>
+      </form>
+    }
+
+    <p class="auth-page__footer"><a routerLink="/">Về trang chủ</a></p>
+  </div>
+</section>

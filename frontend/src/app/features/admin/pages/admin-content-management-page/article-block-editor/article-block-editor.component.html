@@ -1,0 +1,150 @@
+<section class="article-builder" aria-labelledby="article-builder-heading">
+  <div class="article-builder__heading">
+    <span>03</span>
+    <div>
+      <h3 id="article-builder-heading">Nội dung bài</h3>
+      <p>Ghép các khối theo đúng thứ tự trình bày như một trang báo.</p>
+    </div>
+  </div>
+
+  <div class="article-builder__toolbar" aria-label="Thêm khối nội dung">
+    <span>Thêm khối</span>
+    <button type="button" (click)="addRequested.emit('HEADING')">T+ Tiêu đề phụ</button>
+    <button type="button" (click)="addRequested.emit('PARAGRAPH')">¶ Đoạn văn</button>
+    <button type="button" (click)="addRequested.emit('BULLETS')">☷ Danh sách</button>
+    <button type="button" (click)="addRequested.emit('IMAGE')">▧ Hình ảnh</button>
+  </div>
+
+  <div class="article-builder__blocks">
+    @for (
+      block of blocks();
+      track block.id;
+      let index = $index;
+      let first = $first;
+      let last = $last
+    ) {
+      <article class="article-block">
+        <header>
+          <span class="article-block__order">{{ index + 1 }}</span>
+          <strong>{{ blockTypeLabel(block.type) }}</strong>
+          <div class="article-block__actions">
+            <button
+              type="button"
+              aria-label="Di chuyển khối lên"
+              [disabled]="first"
+              (click)="moveRequested.emit({ blockId: block.id, direction: -1 })"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              aria-label="Di chuyển khối xuống"
+              [disabled]="last"
+              (click)="moveRequested.emit({ blockId: block.id, direction: 1 })"
+            >
+              ↓
+            </button>
+            <button type="button" aria-label="Xóa khối" (click)="removeRequested.emit(block.id)">
+              ×
+            </button>
+          </div>
+        </header>
+
+        @if (block.type === 'HEADING') {
+          <label>
+            <span>Nội dung tiêu đề phụ</span>
+            <input
+              [value]="block.text"
+              maxlength="180"
+              placeholder="Ví dụ: Chuẩn bị trước khi điều trị"
+              (input)="changeField(block.id, 'text', $event)"
+            />
+          </label>
+        } @else if (block.type === 'PARAGRAPH') {
+          <label>
+            <span>Đoạn văn</span>
+            <textarea
+              [value]="block.text"
+              rows="5"
+              maxlength="5000"
+              placeholder="Nhập nội dung đoạn văn..."
+              (input)="changeField(block.id, 'text', $event)"
+            ></textarea>
+          </label>
+        } @else if (block.type === 'BULLETS') {
+          <label>
+            <span>Các ý trong danh sách</span>
+            <textarea
+              [value]="block.text"
+              rows="5"
+              maxlength="3000"
+              placeholder="Mỗi dòng là một ý trong danh sách..."
+              (input)="changeField(block.id, 'text', $event)"
+            ></textarea>
+          </label>
+          <small class="article-block__hint">Nhấn Enter để thêm một ý mới.</small>
+        } @else {
+          <input
+            #inlineImageInput
+            class="visually-hidden"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            (change)="chooseImage(block.id, $event)"
+          />
+          @if (block.image; as image) {
+            <figure class="article-block__image-preview">
+              <img
+                [src]="image.url"
+                [alt]="block.imageAlt || image.alt"
+                [width]="image.width"
+                [height]="image.height"
+              />
+              <figcaption>
+                <button type="button" (click)="inlineImageInput.click()">Thay ảnh</button>
+                <button type="button" (click)="imageRemoved.emit(block.id)">Xóa ảnh</button>
+              </figcaption>
+            </figure>
+            <div class="article-block__metadata">
+              <label>
+                <span>Mô tả ảnh (alt) <b aria-hidden="true">*</b></span>
+                <input
+                  [value]="block.imageAlt"
+                  maxlength="160"
+                  placeholder="Mô tả nội dung trong ảnh"
+                  (input)="changeField(block.id, 'imageAlt', $event)"
+                />
+              </label>
+              <label>
+                <span>Chú thích ảnh</span>
+                <input
+                  [value]="block.imageCaption"
+                  maxlength="240"
+                  placeholder="Chú thích hoặc nguồn ảnh"
+                  (input)="changeField(block.id, 'imageCaption', $event)"
+                />
+              </label>
+            </div>
+          } @else {
+            <button
+              class="article-block__image-picker"
+              type="button"
+              (click)="inlineImageInput.click()"
+            >
+              <span aria-hidden="true">+</span>
+              <strong>Chọn ảnh chèn vào bài</strong>
+              <small>JPG, PNG hoặc WebP · tối đa 2 MB</small>
+            </button>
+          }
+          @if (errors()[block.id]; as blockError) {
+            <p class="article-block__error" role="alert">{{ blockError }}</p>
+          }
+        }
+      </article>
+    } @empty {
+      <div class="article-builder__empty">
+        <strong>Bài viết chưa có nội dung</strong>
+        <span>Chọn một loại khối phía trên để bắt đầu biên tập.</span>
+      </div>
+    }
+  </div>
+</section>

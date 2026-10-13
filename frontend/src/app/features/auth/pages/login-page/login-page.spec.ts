@@ -37,17 +37,37 @@ describe('LoginPage', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Vui lòng nhập email.');
 
-    fill('#login-email', 'phuc@tramk.vn');
-    fill('#login-password', 'Matkhau123');
+    fill(fixture.nativeElement, '#login-email', 'phuc@tramk.vn');
+    fill(fixture.nativeElement, '#login-password', 'Matkhau123');
     form.dispatchEvent(new Event('submit'));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Đăng nhập thành công.');
     expect(navigateSpy).toHaveBeenCalledWith('/');
-
-    function fill(selector: string, value: string): void {
-      const input = fixture.nativeElement.querySelector(selector) as HTMLInputElement;
-      input.value = value;
-      input.dispatchEvent(new Event('input'));
-    }
   });
+
+  it('returns a partner account to the public home page after login', async () => {
+    await TestBed.configureTestingModule({
+      imports: [LoginPage],
+      providers: [provideRouter([{ path: '', component: HomeTestPage }])],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(LoginPage);
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigateByUrl');
+    fixture.detectChanges();
+
+    fill(fixture.nativeElement, '#login-email', 'doitac@tramk.vn');
+    fill(fixture.nativeElement, '#login-password', 'Matkhau123');
+    (fixture.nativeElement.querySelector('form') as HTMLFormElement).dispatchEvent(
+      new Event('submit'),
+    );
+    fixture.detectChanges();
+
+    expect(navigateSpy).toHaveBeenCalledWith('/');
+  });
+
+  function fill(host: HTMLElement, selector: string, value: string): void {
+    const input = host.querySelector(selector) as HTMLInputElement;
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+  }
 });

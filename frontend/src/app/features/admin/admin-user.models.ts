@@ -1,4 +1,4 @@
-export type AdminUserStatus = 'ACTIVE' | 'PENDING' | 'LOCKED';
+export type AdminUserStatus = 'PENDING_VERIFY' | 'ACTIVE' | 'LOCKED' | 'DISABLED';
 export type AdminUserRole = 'Bệnh nhân' | 'Người thân' | 'Đối tác' | 'Admin';
 
 export interface AdminUser {
@@ -8,4 +8,5 @@ export interface AdminUser {
   readonly role: AdminUserRole;
   readonly joinedAt: string;
   readonly status: AdminUserStatus;
+  readonly authVersion: number;
 }

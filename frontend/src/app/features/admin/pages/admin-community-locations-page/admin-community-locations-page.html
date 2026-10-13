@@ -1,0 +1,176 @@
+<section class="admin-locations" aria-labelledby="admin-locations-heading">
+  <header>
+    <div>
+      <p>Mạng lưới cộng đồng</p>
+      <h1 id="admin-locations-heading">Điểm tiếp nhận quyên góp</h1>
+      <span>Quản lý tỉnh/thành, địa điểm, lịch tiếp nhận và vị trí hiển thị trên bản đồ.</span>
+    </div>
+    <button type="button" (click)="openCreate()">Thêm địa điểm</button>
+  </header>
+
+  <div class="admin-locations__filters">
+    <label>
+      <span class="visually-hidden">Tìm kiếm điểm phát</span>
+      <input
+        type="search"
+        placeholder="Tìm theo tên, địa chỉ hoặc liên hệ..."
+        (input)="updateSearch($event)"
+      />
+    </label>
+    <label>
+      <span class="visually-hidden">Lọc trạng thái</span>
+      <select [value]="statusFilter()" (change)="updateStatus($event)">
+        <option value="ALL">Tất cả trạng thái</option>
+        <option value="ACTIVE">Đang tiếp nhận</option>
+        <option value="INACTIVE">Tạm ngưng</option>
+      </select>
+    </label>
+  </div>
+
+  @if (feedback()) {
+    <p class="admin-locations__feedback" aria-live="polite">{{ feedback() }}</p>
+  }
+
+  <div
+    class="location-table-wrap"
+    role="region"
+    tabindex="0"
+    aria-label="Bảng điểm phát cơm có thể cuộn ngang"
+  >
+    <table>
+      <thead>
+        <tr>
+          <th>Điểm phát</th>
+          <th>Tỉnh/thành</th>
+          <th>Lịch và liên hệ</th>
+          <th>Vị trí bản đồ</th>
+          <th>Trạng thái</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (location of locations(); track location.id) {
+          <tr>
+            <td class="location-summary">
+              <img [src]="location.image" [alt]="location.title" width="72" height="72" />
+              <span
+                ><strong>{{ location.title }}</strong
+                ><small>{{ location.address }}</small></span
+              >
+            </td>
+            <td>{{ regionName(location.regionId) }}</td>
+            <td>
+              <strong>{{ location.schedule }}</strong>
+              <small>{{ location.contactName }} · {{ location.phone }}</small>
+            </td>
+            <td>{{ location.mapTopPercent }}% / {{ location.mapLeftPercent }}%</td>
+            <td>
+              <span class="location-status" [attr.data-status]="location.status">
+                {{ statusLabel(location.status) }}
+              </span>
+            </td>
+            <td>
+              <div class="location-actions">
+                <button type="button" (click)="openEdit(location)">Chỉnh sửa</button>
+                <button type="button" (click)="toggleStatus(location)">
+                  {{ location.status === 'ACTIVE' ? 'Tạm ngưng' : 'Tiếp nhận' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="admin-locations__empty">Không tìm thấy điểm phát phù hợp.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (editorOpen()) {
+    <div class="location-editor-backdrop" (click)="closeEditor()">
+      <form
+        class="location-editor"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="location-editor-title"
+        appEscapeClose
+        [formGroup]="form"
+        (ngSubmit)="save()"
+        (escapeClose)="closeEditor()"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          class="location-editor__close"
+          type="button"
+          aria-label="Đóng"
+          (click)="closeEditor()"
+        >
+          ×
+        </button>
+        <h2 id="location-editor-title">
+          {{ editingId() ? 'Chỉnh sửa điểm tiếp nhận' : 'Thêm điểm tiếp nhận mới' }}
+        </h2>
+        <div class="location-editor__grid">
+          <label
+            >Tỉnh/thành<select formControlName="regionId">
+              @for (region of regionOptions(); track region.id) {
+                <option [value]="region.id">{{ region.name }}</option>
+              }
+            </select></label
+          >
+          <label class="location-editor__wide"
+            >Tên điểm phát<input formControlName="title" maxlength="160"
+          /></label>
+          <label>Lịch phát<input formControlName="schedule" maxlength="160" /></label>
+          <label
+            >Trạng thái<select formControlName="status">
+              <option value="ACTIVE">Đang tiếp nhận</option>
+              <option value="INACTIVE">Tạm ngưng</option>
+            </select></label
+          >
+          <label>Đơn vị liên hệ<input formControlName="contactName" maxlength="120" /></label>
+          <label>Số điện thoại<input formControlName="phone" maxlength="30" /></label>
+          <label class="location-editor__wide"
+            >Địa chỉ<input formControlName="address" maxlength="300"
+          /></label>
+          <label class="location-editor__wide"
+            >Đường dẫn ảnh<input formControlName="image"
+          /></label>
+          <label
+            >Vị trí dọc trên bản đồ (%)<input
+              type="number"
+              formControlName="mapTopPercent"
+              min="0"
+              max="100"
+              step="0.01"
+          /></label>
+          <label
+            >Vị trí ngang trên bản đồ (%)<input
+              type="number"
+              formControlName="mapLeftPercent"
+              min="0"
+              max="100"
+              step="0.01"
+          /></label>
+          <label class="location-editor__wide"
+            >Mô tả <small>Tách các đoạn bằng một dòng trống.</small
+            ><textarea formControlName="description" rows="7" maxlength="2000"></textarea>
+          </label>
+          <label class="location-editor__wide"
+            >Thông điệp nhấn mạnh (không bắt buộc)<input formControlName="emphasis" maxlength="200"
+          /></label>
+        </div>
+        @if (form.invalid && submitted()) {
+          <p class="location-editor__error">
+            Vui lòng nhập đủ thông tin; tọa độ bản đồ phải nằm trong khoảng 0–100%.
+          </p>
+        }
+        <div class="location-editor__actions">
+          <button type="button" (click)="closeEditor()">Hủy</button>
+          <button type="submit">Lưu địa điểm</button>
+        </div>
+      </form>
+    </div>
+  }
+</section>

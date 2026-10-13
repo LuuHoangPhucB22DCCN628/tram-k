@@ -1,0 +1,268 @@
+<section class="programs-page" aria-labelledby="programs-heading">
+  <header class="programs-page__header">
+    <div>
+      <p>Hỗ trợ cộng đồng</p>
+      <h1 id="programs-heading">Quản lý chương trình từ thiện</h1>
+      <span>Theo dõi trạng thái xét duyệt và quản lý các đề xuất của bạn.</span>
+    </div>
+    <a routerLink="/doi-tac/dang-ky-ho-tro">Đăng ký hỗ trợ mới</a>
+  </header>
+
+  @if (feedback()) {
+    <p class="programs-page__feedback" aria-live="polite">{{ feedback() }}</p>
+  }
+
+  @if (proposals().length) {
+    <div class="program-list">
+      @for (proposal of proposals(); track proposal.id) {
+        <article class="program-card">
+          <div class="program-card__meta">
+            <span [attr.data-status]="proposal.status">{{ statusLabel(proposal.status) }}</span>
+            <time [attr.datetime]="proposal.updatedAt">
+              Cập nhật {{ proposal.updatedAt | date: 'dd/MM/yyyy, HH:mm' }}
+            </time>
+          </div>
+          <h2>{{ proposal.title }}</h2>
+          <p>{{ proposal.description }}</p>
+          @if (proposal.status === 'REJECTED' && proposal.reviewReason) {
+            <p class="program-card__review-reason">
+              <strong>Lý do cần chỉnh sửa:</strong> {{ proposal.reviewReason }}
+            </p>
+          }
+          <dl>
+            <div>
+              <dt>Hình thức</dt>
+              <dd>{{ supportTypeLabel(proposal.supportType) }}</dd>
+            </div>
+            <div>
+              <dt>Địa điểm</dt>
+              <dd>{{ proposal.city }}</dd>
+            </div>
+            <div>
+              <dt>Quy mô</dt>
+              <dd>{{ proposal.capacity }} người/suất mỗi đợt</dd>
+            </div>
+            @if (proposal.status === 'PUBLISHED') {
+              <div>
+                <dt>Đăng ký</dt>
+                <dd>
+                  {{ registrationCount(proposal.id) }}/{{ proposal.capacity }} · còn
+                  {{ remainingCapacity(proposal) }} chỗ
+                </dd>
+              </div>
+            }
+          </dl>
+          <div class="program-card__actions">
+            <button type="button" (click)="openDetails(proposal)">Xem chi tiết</button>
+            @if (proposal.status === 'REJECTED') {
+              <a routerLink="/doi-tac/dang-ky-ho-tro" [queryParams]="{ edit: proposal.id }">
+                Chỉnh sửa và gửi lại
+              </a>
+            }
+            @if (proposal.status === 'PENDING') {
+              <button class="program-card__cancel" type="button" (click)="cancel(proposal)">
+                Hủy đề xuất
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="programs-page__empty">
+      <span aria-hidden="true">✦</span>
+      <h2>Bạn chưa có đề xuất nào</h2>
+      <p>Đăng ký một chương trình hỗ trợ để cùng Trạm K lan tỏa yêu thương.</p>
+      <a routerLink="/doi-tac/dang-ky-ho-tro">Đăng ký hỗ trợ</a>
+    </div>
+  }
+
+  @if (selected(); as proposal) {
+    <div class="program-dialog-backdrop" (click)="closeDetails()">
+      <section
+        class="program-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="program-dialog-title"
+        appEscapeClose
+        (escapeClose)="closeDetails()"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          class="program-dialog__close"
+          type="button"
+          aria-label="Đóng"
+          (click)="closeDetails()"
+        >
+          ×
+        </button>
+        <span class="program-dialog__status" [attr.data-status]="proposal.status">
+          {{ statusLabel(proposal.status) }}
+        </span>
+        <h2 id="program-dialog-title">{{ proposal.title }}</h2>
+        <p>{{ proposal.description }}</p>
+        @if (proposal.status === 'REJECTED' && proposal.reviewReason) {
+          <p class="program-dialog__review-reason">
+            <strong>Lý do cần chỉnh sửa:</strong> {{ proposal.reviewReason }}
+          </p>
+        }
+        <dl>
+          <div>
+            <dt>Hình thức hỗ trợ</dt>
+            <dd>{{ supportTypeLabel(proposal.supportType) }}</dd>
+          </div>
+          <div>
+            <dt>Địa điểm</dt>
+            <dd>{{ proposal.address }}, {{ proposal.city }}</dd>
+          </div>
+          <div>
+            <dt>Lịch dự kiến</dt>
+            <dd>{{ proposal.schedule }}</dd>
+          </div>
+          <div>
+            <dt>Khả năng hỗ trợ</dt>
+            <dd>{{ proposal.capacity }} người/suất mỗi đợt</dd>
+          </div>
+          <div>
+            <dt>Người liên hệ</dt>
+            <dd>{{ proposal.contactName }}</dd>
+          </div>
+          <div>
+            <dt>Điện thoại</dt>
+            <dd>{{ proposal.phone }}</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>{{ proposal.email }}</dd>
+          </div>
+        </dl>
+
+        @if (proposal.status === 'PUBLISHED') {
+          <section class="program-registrations" aria-labelledby="program-registrations-title">
+            <header class="program-registrations__header">
+              <div>
+                <p>NGƯỜI ĐĂNG KÝ</p>
+                <h3 id="program-registrations-title">
+                  {{ registrationCount(proposal.id) }}/{{ proposal.capacity }} chỗ đã sử dụng
+                </h3>
+                <span>Còn {{ remainingCapacity(proposal) }} chỗ trong đợt hỗ trợ này.</span>
+              </div>
+              <label>
+                <span>Lọc trạng thái</span>
+                <select [value]="registrationFilter()" (change)="updateRegistrationFilter($event)">
+                  <option value="ALL">Tất cả</option>
+                  <option value="PENDING_CONFIRMATION">Chờ xác nhận</option>
+                  <option value="CONFIRMED">Đã xác nhận</option>
+                  <option value="REJECTED">Đã từ chối</option>
+                  <option value="COMPLETED">Đã hoàn thành</option>
+                </select>
+              </label>
+            </header>
+
+            @if (registrationFeedback()) {
+              <p class="program-registrations__feedback" aria-live="polite">
+                {{ registrationFeedback() }}
+              </p>
+            }
+
+            @if (selectedRegistrations().length) {
+              <div class="program-registrations__list">
+                @for (registration of selectedRegistrations(); track registration.userId) {
+                  <article
+                    class="applicant-card"
+                    [class.applicant-card--highlighted]="
+                      highlightedRegistrationUserId() === registration.userId
+                    "
+                    [id]="'registration-' + registration.userId"
+                  >
+                    <div class="applicant-card__avatar" aria-hidden="true">
+                      {{ registration.applicantName.charAt(0).toLocaleUpperCase('vi') }}
+                    </div>
+                    <div class="applicant-card__content">
+                      <div class="applicant-card__heading">
+                        <div>
+                          <h4>{{ registration.applicantName }}</h4>
+                          @if (registration.applicantEmail) {
+                            <a [href]="'mailto:' + registration.applicantEmail">
+                              {{ registration.applicantEmail }}
+                            </a>
+                          }
+                        </div>
+                        <span [attr.data-status]="registration.status">
+                          {{ registrationStatusLabel(registration.status) }}
+                        </span>
+                      </div>
+                      <time [attr.datetime]="registration.registeredAt">
+                        Đăng ký {{ registration.registeredAt | date: 'dd/MM/yyyy, HH:mm' }}
+                      </time>
+                      @if (registration.status === 'REJECTED' && registration.decisionReason) {
+                        <p class="applicant-card__reason">
+                          <strong>Lý do:</strong> {{ registration.decisionReason }}
+                        </p>
+                      }
+
+                      @if (registration.status === 'PENDING_CONFIRMATION') {
+                        @if (rejectingUserId() === registration.userId) {
+                          <div class="applicant-card__rejection">
+                            <label [for]="'rejection-' + registration.userId">
+                              Lý do từ chối <span aria-hidden="true">*</span>
+                            </label>
+                            <textarea
+                              [id]="'rejection-' + registration.userId"
+                              rows="3"
+                              minlength="10"
+                              placeholder="Nêu lý do rõ ràng để người đăng ký có thể hiểu..."
+                              [value]="rejectionReason()"
+                              (input)="updateRejectionReason($event)"
+                            ></textarea>
+                            <div>
+                              <button type="button" (click)="cancelReject()">Hủy</button>
+                              <button
+                                type="button"
+                                class="applicant-card__danger"
+                                (click)="rejectRegistration(registration)"
+                              >
+                                Xác nhận từ chối
+                              </button>
+                            </div>
+                          </div>
+                        } @else {
+                          <div class="applicant-card__actions">
+                            <button type="button" (click)="beginReject(registration)">
+                              Từ chối
+                            </button>
+                            <button
+                              type="button"
+                              class="applicant-card__primary"
+                              (click)="confirmRegistration(registration)"
+                            >
+                              Xác nhận
+                            </button>
+                          </div>
+                        }
+                      } @else if (registration.status === 'CONFIRMED') {
+                        <div class="applicant-card__actions">
+                          <button
+                            type="button"
+                            class="applicant-card__primary"
+                            (click)="completeRegistration(registration)"
+                          >
+                            Đánh dấu đã hỗ trợ
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+            } @else {
+              <div class="program-registrations__empty">
+                Chưa có người đăng ký phù hợp với bộ lọc này.
+              </div>
+            }
+          </section>
+        }
+      </section>
+    </div>
+  }
+</section>

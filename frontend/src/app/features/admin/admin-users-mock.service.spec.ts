@@ -19,8 +19,19 @@ describe('AdminUsersMockService', () => {
   it('persists a locked status', () => {
     const service = TestBed.inject(AdminUsersMockService);
 
-    service.toggleLocked('USR-001');
+    service.updateStatus('USR-001', 1, 'LOCKED');
 
     expect(service.list().find((user) => user.id === 'USR-001')?.status).toBe('LOCKED');
+  });
+
+  it('treats DISABLED as a supported terminal status', () => {
+    const service = TestBed.inject(AdminUsersMockService);
+
+    service.updateStatus('USR-001', 1, 'DISABLED');
+
+    expect(service.list().find((user) => user.id === 'USR-001')).toMatchObject({
+      status: 'DISABLED',
+      authVersion: 2,
+    });
   });
 });
