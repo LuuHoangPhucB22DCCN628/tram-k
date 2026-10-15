@@ -23,9 +23,27 @@ export class ManagedResourcesService {
     private readonly search: SearchService,
   ) {}
 
-  async listPublished(type?: SearchDocumentType) {
-    const resources = await this.publishedResources(type);
-    return resources.map((resource) => this.toPublicResource(resource));
+  async listPublished(type?: SearchDocumentType, page = 1, pageSize = 12) {
+    const where = {
+      status: ManagedResourceStatus.PUBLISHED,
+      ...(type ? { type } : {}),
+    };
+    const [resources, totalItems] = await Promise.all([
+      this.prisma.managedResource.findMany({
+        where,
+        orderBy: [{ publishedAt: "desc" }, { updatedAt: "desc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.managedResource.count({ where }),
+    ]);
+    return {
+      items: resources.map((resource) => this.toPublicResource(resource)),
+      page,
+      pageSize,
+      totalItems,
+      totalPages: Math.ceil(totalItems / pageSize),
+    };
   }
 
   async publicState(type?: SearchDocumentType) {
@@ -39,18 +57,32 @@ export class ManagedResourcesService {
     };
   }
 
-  async adminState(actor: AuthenticatedUser, type?: SearchDocumentType) {
+  async adminState(
+    actor: AuthenticatedUser,
+    type?: SearchDocumentType,
+    page = 1,
+    limit = 20,
+  ) {
     const user = await this.activeUser(actor.id);
     if (user.role.name !== RoleName.ADMIN) {
       throw new ForbiddenException("Chỉ Admin được xem kho nội dung quản trị.");
     }
-    const resources = await this.prisma.managedResource.findMany({
-      where: type ? { type } : undefined,
-      orderBy: [{ updatedAt: "desc" }],
-    });
+    const where = type ? { type } : undefined;
+    const [resources, total] = await Promise.all([
+      this.prisma.managedResource.findMany({
+        where,
+        orderBy: [{ updatedAt: "desc" }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.managedResource.count({ where }),
+    ]);
     return {
-      initialized: resources.length > 0,
+      initialized: total > 0,
       items: resources.map((resource) => this.toPublicResource(resource)),
+      total,
+      page,
+      limit,
     };
   }
 

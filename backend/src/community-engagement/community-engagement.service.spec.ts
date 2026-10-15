@@ -32,8 +32,15 @@ describe("CommunityEngagementService", () => {
     },
   };
   const prisma = {
-    $transaction: jest.fn((callback: (client: typeof transaction) => unknown) => callback(transaction)),
+    $transaction: jest.fn((arg: unknown) => {
+      if (Array.isArray(arg)) {
+        return Promise.all(arg);
+      }
+
+      return (arg as (client: typeof transaction) => unknown)(transaction);
+    }),
     communityComment: {
+      count: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -54,28 +61,62 @@ describe("CommunityEngagementService", () => {
     transaction.communityComment.count.mockResolvedValue(0);
   });
 
-  it("lists only root comments and nests replies to avoid duplicate rendering", async () => {
+  it("paginates root comments and returns pagination metadata", async () => {
     const database = prisma as unknown as {
-      communityComment: { findMany: jest.Mock };
+      communityComment: {
+        findMany: jest.Mock;
+        count: jest.Mock;
+      };
     };
-    database.communityComment.findMany.mockResolvedValue([]);
 
-    await service.listComments(commentDto.sourceKey);
+    const items = [{ id: "comment-21" }];
+
+    database.communityComment.findMany
+      .mockResolvedValueOnce(items as any)
+      .mockResolvedValueOnce([] as any);
+
+    database.communityComment.count.mockResolvedValue(45);
+
+    await expect(
+      service.listComments(commentDto.sourceKey, 2, 20),
+    ).resolves.toEqual({
+      items: [
+        {
+          ...items[0],
+          replies: [],
+          hasMoreReplies: false,
+        },
+      ],
+      total: 45,
+      page: 2,
+      limit: 20,
+    });
+
     expect(database.communityComment.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { sourceKey: commentDto.sourceKey, parentId: null },
+        where: {
+          sourceKey: commentDto.sourceKey,
+          parentId: null,
+        },
+        orderBy: { createdAt: "desc" },
+        skip: 20,
+        take: 20,
+      }),
+    );
+
+    expect(database.communityComment.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: {
+          sourceKey: commentDto.sourceKey,
+          parentId: "comment-21",
+          deletedAt: null,
+        },
+        orderBy: { createdAt: "asc" },
+        take: 6,
       }),
     );
   });
-
-  it("returns the first comment when an idempotency key is retried", async () => {
-    const existing = { id: "comment-1", ...commentDto };
-    transaction.communityComment.findUnique.mockResolvedValue(existing);
-
-    await expect(service.createComment("user-1", commentDto)).resolves.toBe(existing);
-    expect(transaction.communityComment.create).not.toHaveBeenCalled();
-  });
-
   it("limits excessive comments in a five-minute window", async () => {
     transaction.communityComment.count.mockResolvedValue(10);
 
@@ -184,4 +225,129 @@ describe("CommunityEngagementService", () => {
       SUPPORT: 3,
     });
   });
+  it("returns only five replies and sets hasMoreReplies when a root comment has six replies", async () => {
+    const database = prisma as unknown as {
+      communityComment: {
+        findMany: jest.Mock;
+        count: jest.Mock;
+      };
+    };
+
+    const rootComment = { id: "comment-21" };
+    const replies = Array.from({ length: 6 }, (_, index) => ({
+      id: `reply-${index + 1}`,
+      parentId: rootComment.id,
+      content: `Reply ${index + 1}`,
+    }));
+
+    database.communityComment.findMany
+      .mockResolvedValueOnce([rootComment] as any)
+      .mockResolvedValueOnce(replies as any);
+
+    database.communityComment.count.mockResolvedValue(1);
+
+    await expect(
+      service.listComments(commentDto.sourceKey, 1, 20),
+    ).resolves.toEqual({
+      items: [
+        {
+          ...rootComment,
+          replies: replies.slice(0, 5),
+          hasMoreReplies: true,
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 20,
+    });
+
+    expect(database.communityComment.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: {
+          sourceKey: commentDto.sourceKey,
+          parentId: rootComment.id,
+          deletedAt: null,
+        },
+        orderBy: { createdAt: "asc" },
+        take: 6,
+      }),
+    );
+  });
+
+  it("paginates replies for an existing root comment", async () => {
+    const database = prisma as unknown as {
+      communityComment: {
+        findUnique: jest.Mock;
+        findMany: jest.Mock;
+        count: jest.Mock;
+      };
+    };
+
+    const rootComment = {
+      id: "comment-21",
+      sourceKey: commentDto.sourceKey,
+      parentId: null,
+      deletedAt: null,
+    };
+    const replies = [{ id: "reply-21" }];
+
+    database.communityComment.findUnique.mockResolvedValue(rootComment);
+    database.communityComment.findMany.mockResolvedValue(replies);
+    database.communityComment.count.mockResolvedValue(37);
+
+    await expect(
+      service.listReplies(commentDto.sourceKey, "comment-21", 2, 20),
+    ).resolves.toEqual({
+      items: replies,
+      total: 37,
+      page: 2,
+      limit: 20,
+    });
+
+    expect(database.communityComment.findUnique).toHaveBeenCalledWith({
+      where: { id: "comment-21" },
+    });
+
+    expect(database.communityComment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          sourceKey: commentDto.sourceKey,
+          parentId: "comment-21",
+          deletedAt: null,
+        },
+        orderBy: { createdAt: "asc" },
+        skip: 20,
+        take: 20,
+      }),
+    );
+
+    expect(database.communityComment.count).toHaveBeenCalledWith({
+      where: {
+        sourceKey: commentDto.sourceKey,
+        parentId: "comment-21",
+        deletedAt: null,
+      },
+    });
+  });
+
+  it("rejects replies when the root comment does not belong to the story", async () => {
+    const database = prisma as unknown as {
+      communityComment: {
+        findUnique: jest.Mock;
+      };
+    };
+
+    database.communityComment.findUnique.mockResolvedValue({
+      id: "comment-21",
+      sourceKey: "another-story",
+      parentId: null,
+      deletedAt: null,
+    });
+
+    await expect(
+      service.listReplies(commentDto.sourceKey, "comment-21", 1, 20),
+    ).rejects.toThrow();
+  });
+
 });

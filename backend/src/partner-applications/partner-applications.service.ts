@@ -106,7 +106,12 @@ export class PartnerApplicationsService {
     });
   }
 
-  async listForAdmin(adminId: string, status?: PartnerApplicationStatus) {
+  async listForAdmin(
+    adminId: string,
+    status?: PartnerApplicationStatus,
+    page = 1,
+    limit = 20,
+  ) {
     const admin = await this.prisma.user.findUnique({
       where: { id: adminId },
       include: { role: true },
@@ -119,17 +124,24 @@ export class PartnerApplicationsService {
     ) {
       throw new ForbiddenException("Chỉ quản trị viên được xem hồ sơ đối tác.");
     }
-    return this.prisma.partnerApplication.findMany({
-      where: status ? { status } : undefined,
-      include: {
-        applicant: {
-          select: { id: true, email: true, fullName: true, status: true },
+    const where = status ? { status } : undefined;
+    const [items, total] = await Promise.all([
+      this.prisma.partnerApplication.findMany({
+        where,
+        include: {
+          applicant: {
+            select: { id: true, email: true, fullName: true, status: true },
+          },
+          reviewedBy: { select: { id: true, fullName: true } },
+          documents: true,
         },
-        reviewedBy: { select: { id: true, fullName: true } },
-        documents: true,
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+        orderBy: { updatedAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.partnerApplication.count({ where }),
+    ]);
+    return { items, total, page, limit };
   }
 
   async review(

@@ -139,6 +139,7 @@ describe("ManagedResourcesService", () => {
         updatedAt: new Date("2026-10-12T08:05:00.000Z"),
       },
     ]);
+    managedResource.count.mockResolvedValue(1);
 
     const result = await service.listPublished(SearchDocumentType.PODCAST);
 
@@ -148,9 +149,23 @@ describe("ManagedResourcesService", () => {
           status: ManagedResourceStatus.PUBLISHED,
           type: SearchDocumentType.PODCAST,
         },
+        skip: 0,
+        take: 12,
       }),
     );
-    expect(result[0].sourceId).toBe("PODCAST-1");
+    expect(managedResource.count).toHaveBeenCalledWith({
+      where: {
+        status: ManagedResourceStatus.PUBLISHED,
+        type: SearchDocumentType.PODCAST,
+      },
+    });
+    expect(result).toMatchObject({
+      items: [{ sourceId: "PODCAST-1" }],
+      page: 1,
+      pageSize: 12,
+      totalItems: 1,
+      totalPages: 1,
+    });
   });
 
   it("distinguishes an initialized empty collection from an uninitialized one", async () => {
@@ -178,6 +193,7 @@ describe("ManagedResourcesService", () => {
         updatedAt: new Date("2026-10-12T09:00:00.000Z"),
       },
     ]);
+    managedResource.count.mockResolvedValue(1);
 
     const result = await service.adminState({
       id: "ADMIN-1",
@@ -187,5 +203,9 @@ describe("ManagedResourcesService", () => {
 
     expect(result.initialized).toBe(true);
     expect(result.items[0].status).toBe(ManagedResourceStatus.DRAFT);
+    expect(result).toMatchObject({ total: 1, page: 1, limit: 20 });
+    expect(managedResource.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 0, take: 20 }),
+    );
   });
 });
