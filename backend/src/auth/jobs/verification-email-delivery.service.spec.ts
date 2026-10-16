@@ -5,6 +5,16 @@ import { createServer } from "node:http";
 
 import { VerificationEmailDeliveryService } from "./verification-email-delivery.service";
 
+
+jest.mock("nodemailer", () => ({
+  __esModule: true,
+  default: {
+    createTransport: jest.fn(),
+  },
+}));
+
+import nodemailer from "nodemailer";
+
 const message = {
   recipient: "member@example.com",
   displayName: "Nguyễn Minh An",
@@ -12,9 +22,9 @@ const message = {
 };
 
 function createConfig(
-  overrides: Record<string, string | undefined> = {},
+  overrides: Record<string, unknown> = {},
 ): ConfigService {
-  const values: Record<string, string | undefined> = {
+  const values: Record<string, unknown> = {
     EMAIL_DELIVERY_MODE: "webhook",
     PUBLIC_WEB_URL: "http://localhost:4201",
     EMAIL_WEBHOOK_URL: "https://email-gateway.example.test/send",
@@ -22,8 +32,9 @@ function createConfig(
     EMAIL_FROM: "Trạm K <no-reply@tramk.local>",
     ...overrides,
   };
+
   return {
-    get: jest.fn((key: string, fallback?: string) => values[key] ?? fallback),
+    get: jest.fn((key: string, fallback?: unknown) => values[key] ?? fallback),
   } as unknown as ConfigService;
 }
 
@@ -49,6 +60,116 @@ describe("VerificationEmailDeliveryService", () => {
     expect(logSpy).toHaveBeenCalledWith(
       'Email "Xác minh tài khoản Trạm K" đã được xử lý cho me***@example.com.',
     );
+  });
+
+  it("sends verification email through SMTP and closes the transporter", async () => {
+    const sendMail = jest.fn().mockResolvedValue({
+      accepted: ["recipient@example.com"],
+      rejected: [],
+    });
+    const close = jest.fn();
+
+    jest.mocked(nodemailer.createTransport).mockReturnValue({
+      sendMail,
+      close,
+    } as never);
+
+    const service = new VerificationEmailDeliveryService(
+      createConfig({
+        EMAIL_DELIVERY_MODE: "smtp",
+        SMTP_HOST: "smtp.gmail.com",
+        SMTP_PORT: 465,
+        SMTP_SECURE: true,
+        SMTP_USER: "sender@gmail.com",
+        SMTP_PASS: "test-app-password",
+      }),
+    );
+
+    await service.sendVerification(message);
+
+    expect(nodemailer.createTransport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: {
+          user: "sender@gmail.com",
+          pass: "test-app-password",
+        },
+      }),
+    );
+
+    expect(sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: message.recipient,
+        subject: "Xác minh tài khoản Trạm K",
+        text: expect.stringContaining("/xac-minh-email?token="),
+        html: expect.stringContaining("Xác minh tài khoản"),
+      }),
+    );
+
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it("propagates SMTP errors and closes the transporter", async () => {
+    const sendMail = jest
+      .fn()
+      .mockRejectedValue(new Error("SMTP connection failed"));
+    const close = jest.fn();
+
+    jest.mocked(nodemailer.createTransport).mockReturnValue({
+      sendMail,
+      close,
+    } as never);
+
+    const service = new VerificationEmailDeliveryService(
+      createConfig({
+        EMAIL_DELIVERY_MODE: "smtp",
+        SMTP_HOST: "smtp.gmail.com",
+        SMTP_PORT: 465,
+        SMTP_SECURE: true,
+        SMTP_USER: "sender@gmail.com",
+        SMTP_PASS: "test-app-password",
+      }),
+    );
+
+    await expect(service.sendVerification(message)).rejects.toThrow(
+      "SMTP connection failed",
+    );
+
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an SMTP recipient rejected by the server and closes the transporter", async () => {
+    const sendMail = jest.fn().mockResolvedValue({
+      accepted: [],
+      rejected: [message.recipient],
+    });
+    const close = jest.fn();
+
+    jest.mocked(nodemailer.createTransport).mockReturnValue({
+      sendMail,
+      close,
+    } as never);
+
+    const service = new VerificationEmailDeliveryService(
+      createConfig({
+        EMAIL_DELIVERY_MODE: "smtp",
+        SMTP_HOST: "smtp.gmail.com",
+        SMTP_PORT: 465,
+        SMTP_SECURE: true,
+        SMTP_USER: "sender@gmail.com",
+        SMTP_PASS: "test-app-password",
+      }),
+    );
+
+    await expect(service.sendVerification(message)).rejects.toThrow(
+      "SMTP server rejected the email.",
+    );
+
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    expect(close).toHaveBeenCalledTimes(1);
   });
 
   it("sends a verification email through the configured webhook", async () => {

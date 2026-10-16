@@ -1,6 +1,6 @@
-import { ForbiddenException, UnauthorizedException } from "@nestjs/common";
+import { ForbiddenException, UnauthorizedException, HttpException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { AuthTokenPurpose, RoleName, UserStatus } from "@prisma/client";
+import { AuthTokenPurpose, RoleName, AuthTokenSource, UserStatus } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthService } from "./auth.service";
@@ -19,6 +19,7 @@ const registerDto = {
 describe("AuthService", () => {
   let storedUser: Record<string, unknown> | null;
   const transaction = {
+    $queryRaw: jest.fn().mockResolvedValue([]),
     role: { upsert: jest.fn() },
     user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     authToken: {
@@ -135,6 +136,12 @@ describe("AuthService", () => {
     expect(transaction.outboxEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         type: "AUTH_EMAIL_VERIFICATION_REQUESTED",
+      }),
+    });
+    expect(transaction.authToken.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        source: AuthTokenSource.SIGNUP,
       }),
     });
   });
@@ -428,6 +435,68 @@ describe("AuthService", () => {
         actorId: "user-1",
         action: "LOGOUT_ALL_DEVICES",
         after: { revokedSessions: 3 },
+      }),
+    });
+  });
+
+  it("rejects verification resends after three requests in one hour", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      email: "an@example.com",
+      fullName: "Nguyễn Minh An",
+      status: UserStatus.PENDING_VERIFY,
+      deletedAt: null,
+    });
+    transaction.authToken.count.mockResolvedValue(3);
+
+    await expect(
+      service.resendVerification("an@example.com"),
+    ).rejects.toBeInstanceOf(HttpException);
+
+    expect(transaction.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(transaction.authToken.count).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        source: AuthTokenSource.RESEND,
+        createdAt: { gte: expect.any(Date) },
+      },
+    });
+    expect(transaction.authToken.create).not.toHaveBeenCalled();
+    expect(transaction.authToken.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("creates a RESEND verification token when resend is allowed", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      email: "an@example.com",
+      fullName: "Nguyễn Minh An",
+      status: UserStatus.PENDING_VERIFY,
+      deletedAt: null,
+    });
+    transaction.authToken.count.mockResolvedValue(0);
+    transaction.authToken.create.mockResolvedValue({ id: "token-2" });
+
+    await expect(
+      service.resendVerification("AN@EXAMPLE.COM"),
+    ).resolves.toEqual({ accepted: true });
+
+    expect(transaction.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(transaction.authToken.count).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        source: AuthTokenSource.RESEND,
+        createdAt: { gte: expect.any(Date) },
+      },
+    });
+
+    expect(transaction.authToken.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: "user-1",
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        source: AuthTokenSource.RESEND,
+        expiresAt: expect.any(Date),
       }),
     });
   });
