@@ -18,20 +18,99 @@ const COMMENT_WINDOW_MS = 5 * 60 * 1000;
 
 @Injectable()
 export class CommunityEngagementService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
-  async listComments(sourceKey: string) {
-    return this.prisma.communityComment.findMany({
-      where: { sourceKey, parentId: null },
-      include: {
-        user: { select: { id: true, fullName: true } },
-        replies: {
-          include: { user: { select: { id: true, fullName: true } } },
-          orderBy: { createdAt: "asc" },
+  async listComments(sourceKey: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.communityComment.findMany({
+        where: { sourceKey, parentId: null },
+        include: {
+          user: { select: { id: true, fullName: true } }
         },
-      },
-      orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit
+      }),
+      this.prisma.communityComment.count({
+        where: { sourceKey, parentId: null }
+      })
+    ]);
+    const itemsWithReplies = await Promise.all(
+      items.map(async (comment) => {
+        const replies = await this.prisma.communityComment.findMany({
+          where: {
+            sourceKey,
+            parentId: comment.id,
+            deletedAt: null
+          },
+          include: {
+            user: { select: { id: true, fullName: true } }
+          },
+          orderBy: { createdAt: "asc" },
+          take: 6,
+        });
+
+        return {
+          ...comment,
+          replies: replies.slice(0, 5),
+          hasMoreReplies: replies.length > 5,
+        };
+      })
+    );
+    return {
+      items: itemsWithReplies,
+      total,
+      page,
+      limit
+    }
+  }
+
+  async listReplies(
+    sourceKey: string,
+    commentId: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
+    const rootComment = await this.prisma.communityComment.findUnique({
+      where: { id: commentId }
     });
+
+    if (
+      !rootComment ||
+      rootComment.deletedAt ||
+      rootComment.sourceKey !== sourceKey ||
+      rootComment.parentId !== null
+    ) {
+      throw new NotFoundException("Không tìm thấy bình luận gốc.");
+    }
+
+    const where = {
+      sourceKey,
+      parentId: commentId,
+      deletedAt: null
+    };
+    const skip = (page - 1) * limit;
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.communityComment.findMany({
+        where,
+        include: {
+          user: { select: { id: true, fullName: true } },
+        },
+        orderBy: { createdAt: "asc" },
+        skip,
+        take: limit
+      }),
+      this.prisma.communityComment.count({ where })
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit
+    };
   }
 
   async createComment(userId: string, dto: CreateCommunityCommentDto) {

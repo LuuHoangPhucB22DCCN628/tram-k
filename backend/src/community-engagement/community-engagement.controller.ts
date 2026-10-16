@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  Query
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
@@ -19,17 +20,43 @@ import { CommunitySourceKeyParamDto } from "./dto/community-source-key-param.dto
 import { CreateCommunityCommentBodyDto } from "./dto/create-community-comment-body.dto";
 import { ToggleCommunityReactionBodyDto } from "./dto/toggle-community-reaction-body.dto";
 import { UpdateCommunityCommentDto } from "./dto/update-community-comment.dto";
+import { ListCommunityCommentsQueryDto } from "./dto/list-community-comments-query.dto";
 
 @ApiTags("community engagement")
 @Controller("community/stories")
 export class CommunityEngagementController {
-  constructor(private readonly engagement: CommunityEngagementService) {}
+  constructor(private readonly engagement: CommunityEngagementService) { }
 
   @Get(":sourceKey/comments")
   async listComments(
     @Param() params: CommunitySourceKeyParamDto,
+    @Query() query: ListCommunityCommentsQueryDto
   ): Promise<ApiSuccessResponse<unknown>> {
-    return { success: true, data: await this.engagement.listComments(params.sourceKey) };
+    return {
+      success: true,
+      data: await this.engagement.listComments(
+        params.sourceKey,
+        query.page,
+        query.limit
+      )
+    };
+  }
+
+  @Get(":sourceKey/comments/:commentId/replies")
+  async listReplies(
+    @Param() param: CommunitySourceKeyParamDto,
+    @Param("commentId") commentId: string,
+    @Query() query: ListCommunityCommentsQueryDto,
+  ): Promise<ApiSuccessResponse<unknown>> {
+    return {
+      success: true,
+      data: await this.engagement.listReplies(
+        param.sourceKey,
+        commentId,
+        query.page,
+        query.limit
+      )
+    };
   }
 
   @Get(":sourceKey/reactions")
