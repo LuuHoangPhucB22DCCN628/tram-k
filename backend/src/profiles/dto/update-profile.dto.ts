@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUrl,
   Length,
   Matches,
   Max,
@@ -43,8 +44,8 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(1_500_000)
-  avatarDataUrl!: string | null;
+  @IsUrl({}, { message: "Avatar phải là một URL hợp lệ" })
+  avatarUrl!: string | null;
 
   @IsEnum(ProfileVisibility)
   visibility!: ProfileVisibility;

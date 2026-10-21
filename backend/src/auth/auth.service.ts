@@ -252,12 +252,43 @@ export class AuthService {
       );
     }
 
-    await this.prisma.$transaction([
-      this.prisma.authToken.update({
-        where: { id: token.id },
+    await this.prisma.$transaction(async (transaction) => {
+      const consumed = await transaction.authToken.updateMany({
+        where: {
+          id: token.id,
+          purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+          usedAt: null,
+          revokedAt: null,
+          expiresAt: { gt: now },
+        },
         data: { usedAt: now },
-      }),
-      this.prisma.authToken.updateMany({
+      });
+      if (consumed.count !== 1) {
+        throw new UnauthorizedException(
+          "Liên kết xác minh không hợp lệ hoặc đã hết hạn.",
+        );
+      }
+
+      const activated = await transaction.user.updateMany({
+        where: {
+          id: token.userId,
+          status: UserStatus.PENDING_VERIFY,
+          deletedAt: null,
+        },
+        data: {
+          status: UserStatus.ACTIVE,
+          emailVerifiedAt: now,
+          verificationCleanupAt: null,
+          loginBlockedUntil: null,
+        },
+      });
+      if (activated.count !== 1) {
+        throw new UnauthorizedException(
+          "Liên kết xác minh không hợp lệ hoặc đã hết hạn.",
+        );
+      }
+
+      await transaction.authToken.updateMany({
         where: {
           userId: token.userId,
           purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
@@ -266,17 +297,8 @@ export class AuthService {
           revokedAt: null,
         },
         data: { revokedAt: now },
-      }),
-      this.prisma.user.update({
-        where: { id: token.userId },
-        data: {
-          status: UserStatus.ACTIVE,
-          emailVerifiedAt: now,
-          verificationCleanupAt: null,
-          loginBlockedUntil: null,
-        },
-      }),
-      this.prisma.auditLog.create({
+      });
+      await transaction.auditLog.create({
         data: {
           actorType: "USER",
           actorId: token.userId,
@@ -288,8 +310,8 @@ export class AuthService {
           ipHash: this.hashIp(context.ip),
           correlationId: context.correlationId ?? randomUUID(),
         },
-      }),
-    ]);
+      });
+    });
     return { verified: true, userId: token.userId };
   }
 

@@ -204,7 +204,7 @@ model UserProfile {
   city          String?
   birthYear     Int?              @map("birth_year")
   bio           String?           @db.VarChar(500)
-  avatarDataUrl String?           @map("avatar_data_url") @db.Text
+  avatarUrl     String?
   visibility    ProfileVisibility @default(MEMBERS)
   showEmail     Boolean           @default(false) @map("show_email")
   allowComments Boolean           @default(true) @map("allow_comments")
@@ -393,6 +393,7 @@ model SearchDocument {
 
   @@unique([type, sourceId])
   @@index([active, type, publishedAt])
+  @@index([normalizedText(ops: raw("gin_trgm_ops"))], type: Gin)
   @@map("search_documents")
 }
 
