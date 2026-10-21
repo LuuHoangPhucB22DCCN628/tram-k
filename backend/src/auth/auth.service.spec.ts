@@ -563,4 +563,66 @@ describe("AuthService", () => {
       }),
     });
   });
+
+  it("rejects verification resends after three requests in one hour", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      email: "an@example.com",
+      fullName: "Nguyễn Minh An",
+      status: UserStatus.PENDING_VERIFY,
+      deletedAt: null,
+    });
+    transaction.authToken.count.mockResolvedValue(3);
+
+    await expect(
+      service.resendVerification("an@example.com"),
+    ).rejects.toBeInstanceOf(HttpException);
+
+    expect(transaction.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(transaction.authToken.count).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        source: AuthTokenSource.RESEND,
+        createdAt: { gte: expect.any(Date) },
+      },
+    });
+    expect(transaction.authToken.create).not.toHaveBeenCalled();
+    expect(transaction.authToken.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("creates a RESEND verification token when resend is allowed", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      email: "an@example.com",
+      fullName: "Nguyễn Minh An",
+      status: UserStatus.PENDING_VERIFY,
+      deletedAt: null,
+    });
+    transaction.authToken.count.mockResolvedValue(0);
+    transaction.authToken.create.mockResolvedValue({ id: "token-2" });
+
+    await expect(
+      service.resendVerification("AN@EXAMPLE.COM"),
+    ).resolves.toEqual({ accepted: true });
+
+    expect(transaction.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(transaction.authToken.count).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        source: AuthTokenSource.RESEND,
+        createdAt: { gte: expect.any(Date) },
+      },
+    });
+
+    expect(transaction.authToken.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: "user-1",
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        source: AuthTokenSource.RESEND,
+        expiresAt: expect.any(Date),
+      }),
+    });
+  });
 });
