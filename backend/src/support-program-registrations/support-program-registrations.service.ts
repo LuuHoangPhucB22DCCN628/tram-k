@@ -13,6 +13,7 @@ import {
   SearchDocumentType,
   SupportProgramRegistrationStatus,
   UserStatus,
+  PartnerStatus,
 } from "@prisma/client";
 
 import { AuthenticatedUser } from "../auth/auth-user.interface";
@@ -25,7 +26,7 @@ export class SupportProgramRegistrationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
-  ) {}
+  ) { }
 
   async mine(actor: AuthenticatedUser) {
     await this.activeUser(actor.id);
@@ -193,7 +194,16 @@ export class SupportProgramRegistrationsService {
     });
     if (!program) throw new NotFoundException("Không tìm thấy chương trình.");
     const payload = this.programPayload(program.payload);
-    if (user.role.name !== RoleName.ADMIN && payload.ownerId !== actor.id) {
+
+    if (user.role.name === RoleName.ADMIN) {
+      return program;
+    }
+
+    if (
+      !user.partnerMembership ||
+      user.partnerMembership.status !== PartnerStatus.ACTIVE ||
+      payload.ownerId !== actor.id
+    ) {
       throw new ForbiddenException("Bạn không có quyền quản lý đăng ký của chương trình này.");
     }
     return program;

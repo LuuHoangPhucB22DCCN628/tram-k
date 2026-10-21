@@ -38,6 +38,11 @@ enum AuthTokenPurpose {
   PASSWORD_RESET
 }
 
+enum AuthTokenSource {
+  SIGNUP
+  RESEND
+}
+
 enum OutboxStatus {
   PENDING
   PROCESSING
@@ -109,9 +114,9 @@ enum AiConversationMessageRole {
   ASSISTANT
 }
 
-enum AuthTokenSource {
-  SIGNUP
-  RESEND
+enum PartnerStatus {
+  ACTIVE
+  SUSPENDED
 }
 
 model Role {
@@ -473,6 +478,7 @@ model PartnerMembership {
   id            String             @id @default(cuid())
   userId        String             @unique @map("user_id")
   user          User               @relation("PartnerMember", fields: [userId], references: [id])
+  status        PartnerStatus      @default(ACTIVE)
   applicationId String             @unique @map("application_id")
   application   PartnerApplication @relation(fields: [applicationId], references: [id])
   grantedById   String             @map("granted_by_id")

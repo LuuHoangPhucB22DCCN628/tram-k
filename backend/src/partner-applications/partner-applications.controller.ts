@@ -2,10 +2,12 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   Param,
   Patch,
   Post,
   Query,
+  Req,
   StreamableFile,
   UploadedFiles,
   UseGuards,
@@ -24,6 +26,7 @@ import { ReviewPartnerApplicationDto } from "./dto/review-partner-application.dt
 import { SubmitPartnerApplicationDto } from "./dto/submit-partner-application.dto";
 import { PartnerApplicationDocumentsService } from "./partner-application-documents.service";
 import { PartnerApplicationsService } from "./partner-applications.service";
+import { ChangePartnerStatusDto } from "./dto/change-partner-status.dto";
 
 @ApiTags("partner applications")
 @ApiBearerAuth()
@@ -33,7 +36,7 @@ export class PartnerApplicationsController {
   constructor(
     private readonly applications: PartnerApplicationsService,
     private readonly documents: PartnerApplicationDocumentsService,
-  ) {}
+  ) { }
 
   @Get("mine")
   async mine(
@@ -106,6 +109,19 @@ export class PartnerApplicationsController {
     return {
       success: true,
       data: await this.applications.review(actor.id, applicationId, dto),
+    };
+  }
+
+  @Patch("admin/users/:userId/status")
+  async changePartnerStatus(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Param("userId") userId: string,
+    @Body() dto: ChangePartnerStatusDto,
+    @Headers("x-correlation-id") correlationId?: string,
+  ): Promise<ApiSuccessResponse<unknown>> {
+    return {
+      success: true,
+      data: await this.applications.changePartnerStatus(actor.id, userId, dto, correlationId),
     };
   }
 }

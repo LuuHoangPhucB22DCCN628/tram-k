@@ -9,6 +9,7 @@ import {
   RoleName,
   SearchDocumentType,
   UserStatus,
+  PartnerStatus,
 } from "@prisma/client";
 
 import { AuthenticatedUser } from "../auth/auth-user.interface";
@@ -21,7 +22,7 @@ export class ManagedResourcesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly search: SearchService,
-  ) {}
+  ) { }
 
   async listPublished(type?: SearchDocumentType, page = 1, pageSize = 12) {
     const where = {
@@ -148,8 +149,8 @@ export class ManagedResourcesService {
     sourceId: string,
     dto: UpsertManagedResourceDto,
   ) {
-    await this.assertCanWrite(actor, type, dto);
     const normalizedSourceId = sourceId.trim();
+    const payload = await this.assertCanWrite(actor, type, normalizedSourceId, dto);
     const publishedAt = new Date(dto.publishedAt);
 
     return this.prisma.$transaction(async (transaction) => {
@@ -161,14 +162,14 @@ export class ManagedResourcesService {
           status: dto.status,
           title: dto.title.trim(),
           description: dto.description.trim(),
-          payload: dto.payload as Prisma.InputJsonValue,
+          payload: payload as Prisma.InputJsonValue,
           publishedAt,
         },
         update: {
           status: dto.status,
           title: dto.title.trim(),
           description: dto.description.trim(),
-          payload: dto.payload as Prisma.InputJsonValue,
+          payload: payload as Prisma.InputJsonValue,
           publishedAt,
         },
       });
@@ -225,29 +226,54 @@ export class ManagedResourcesService {
   private async assertCanWrite(
     actor: AuthenticatedUser,
     type: SearchDocumentType,
+    sourceId: string,
     dto: UpsertManagedResourceDto,
-  ): Promise<void> {
+  ): Promise<Record<string, unknown>> {
     const user = await this.activeUser(actor.id);
-    const isAdmin = user.role.name === RoleName.ADMIN;
-    if (type !== SearchDocumentType.SUPPORT_PROGRAM) {
-      if (!isAdmin)
-        throw new ForbiddenException("Chỉ Admin được đồng bộ nội dung này.");
-      return;
+
+    if (user.role.name === RoleName.ADMIN) {
+      return dto.payload;
     }
 
-    if (isAdmin) return;
-    const isPartner =
-      actor.role === RoleName.PARTNER || Boolean(user.partnerMembership);
-    const ownerId = dto.payload["ownerId"];
     if (
-      !isPartner ||
-      ownerId !== actor.id ||
+      !user.partnerMembership ||
+      user.partnerMembership.status !== PartnerStatus.ACTIVE ||
+      type !== SearchDocumentType.SUPPORT_PROGRAM ||
       dto.status === ManagedResourceStatus.PUBLISHED
     ) {
-      throw new ForbiddenException(
-        "Bạn không có quyền cập nhật chương trình này.",
-      );
+      throw new ForbiddenException("Bạn không có quyền cập nhật chương trình này.");
     }
+
+    const existing = await this.prisma.managedResource.findUnique({
+      where: {
+        type_sourceId: {
+          type,
+          sourceId,
+        },
+      },
+    });
+
+    if (existing) {
+      const existingPayload = existing.payload;
+      const ownerId =
+        existingPayload !== null &&
+          typeof existingPayload === "object" &&
+          !Array.isArray(existingPayload) &&
+          "ownerId" in existingPayload
+          ? existingPayload.ownerId
+          : undefined;
+
+      if (ownerId !== actor.id) {
+        throw new ForbiddenException("Bạn không có quyền cập nhật chương trình này.");
+      }
+    } else if (dto.payload.ownerId !== actor.id) {
+      throw new ForbiddenException("Bạn không có quyền cập nhật chương trình này.");
+    }
+
+    return {
+      ...dto.payload,
+      ownerId: actor.id,
+    };
   }
 
   private async assertCanDelete(
@@ -262,8 +288,9 @@ export class ManagedResourcesService {
         ? payload["ownerId"]
         : null;
     if (
-      type !== SearchDocumentType.SUPPORT_PROGRAM ||
       !user.partnerMembership ||
+      user.partnerMembership.status !== PartnerStatus.ACTIVE ||
+      type !== SearchDocumentType.SUPPORT_PROGRAM ||
       ownerId !== actor.id
     ) {
       throw new ForbiddenException("Bạn không có quyền xóa nội dung này.");
