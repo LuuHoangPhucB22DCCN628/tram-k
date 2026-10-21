@@ -38,6 +38,11 @@ enum AuthTokenPurpose {
   PASSWORD_RESET
 }
 
+enum AuthTokenSource {
+  SIGNUP
+  RESEND
+}
+
 enum OutboxStatus {
   PENDING
   PROCESSING
@@ -107,6 +112,11 @@ enum SupportProgramRegistrationStatus {
 enum AiConversationMessageRole {
   USER
   ASSISTANT
+}
+
+enum PartnerStatus {
+  ACTIVE
+  SUSPENDED
 }
 
 model Role {
@@ -228,6 +238,7 @@ model AuthToken {
   purpose     AuthTokenPurpose
   tokenHash   String           @unique @map("token_hash")
   targetEmail String?          @unique @map("target_email")
+  source      AuthTokenSource  @default(SIGNUP)
   expiresAt   DateTime         @map("expires_at")
   usedAt      DateTime?        @map("used_at")
   revokedAt   DateTime?        @map("revoked_at")
@@ -467,6 +478,7 @@ model PartnerMembership {
   id            String             @id @default(cuid())
   userId        String             @unique @map("user_id")
   user          User               @relation("PartnerMember", fields: [userId], references: [id])
+  status        PartnerStatus      @default(ACTIVE)
   applicationId String             @unique @map("application_id")
   application   PartnerApplication @relation(fields: [applicationId], references: [id])
   grantedById   String             @map("granted_by_id")

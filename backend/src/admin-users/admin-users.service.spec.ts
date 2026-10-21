@@ -80,6 +80,15 @@ describe("AdminUsersService", () => {
     );
   });
 
+  it("denies account listing to a non-Admin", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(activePatient);
+
+    await expect(
+      service.list("user-1", { page: 1, limit: 20 }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prismaMock.user.findMany).not.toHaveBeenCalled();
+  });
+
   it("locks an account, increments authVersion and revokes every refresh session", async () => {
     const locked = {
       ...activePatient,

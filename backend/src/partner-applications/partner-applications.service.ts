@@ -1,4 +1,6 @@
+import { randomBytes, randomUUID } from 'node:crypto';
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -15,13 +17,14 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewPartnerApplicationDto } from "./dto/review-partner-application.dto";
 import { SubmitPartnerApplicationDto } from "./dto/submit-partner-application.dto";
+import { ChangePartnerStatusDto } from "./dto/change-partner-status.dto";
 
 @Injectable()
 export class PartnerApplicationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
-  ) {}
+  ) { }
 
   async submit(applicantId: string, dto: SubmitPartnerApplicationDto) {
     return this.prisma.$transaction(async (transaction) => {
@@ -175,6 +178,20 @@ export class PartnerApplicationsService {
         throw new ConflictException("Hồ sơ này đã được xử lý.");
       }
 
+      if (dto.decision === "APPROVED") {
+        const applicant = await transaction.user.findUnique({
+          where: { id: application.applicantId },
+        });
+
+        if (
+          !applicant ||
+          applicant.deletedAt !== null ||
+          applicant.status !== UserStatus.ACTIVE
+        ) {
+          throw new ConflictException("Không thể duyệt hồ sơ vì người nộp đơn không còn ở trạng thái ACTIVE hoặc đã bị xóa mềm.");
+        }
+      }
+
       const now = new Date();
       const status =
         dto.decision === "APPROVED"
@@ -235,6 +252,72 @@ export class PartnerApplicationsService {
       );
       return reviewed;
     });
+  }
+
+  async changePartnerStatus(
+    adminId: string,
+    targetUserId: string,
+    dto: ChangePartnerStatusDto,
+    correlationId?: string,
+  ) {
+    return this.prisma.$transaction(async (transaction) => {
+      const admin = await transaction.user.findUnique({
+        where: { id: adminId },
+        include: { role: true }
+      });
+
+
+      if (
+        !admin ||
+        admin.deletedAt ||
+        admin.status !== UserStatus.ACTIVE ||
+        admin.role.name !== RoleName.ADMIN
+      ) {
+        throw new ForbiddenException("Chỉ quản trị viên được thay đổi trạng thái đối tác.");
+      }
+
+      const membership = await transaction.partnerMembership.findUnique({
+        where: { userId: targetUserId },
+      });
+
+      if (!membership) {
+        throw new NotFoundException("Không tìm thấy thông tin đối tác của người dùng này.")
+      }
+
+      if (membership.status !== dto.expectedStatus) {
+        throw new ConflictException("Trạng thái đối tác đã thay đổi, vui lòng tải lại trang.")
+      }
+      if (membership.status === dto.status) {
+        throw new BadRequestException("Trạng thái mới phải khác trạng thái hiện tại.")
+      }
+
+      const updateResult = await transaction.partnerMembership.updateMany({
+        where: { userId: targetUserId, status: dto.expectedStatus },
+        data: {
+          status: dto.status,
+        },
+      });
+
+      if (updateResult.count !== 1) {
+        throw new ConflictException("Trạng thái đối tác đã thay đổi vui lòng tải lại.")
+      }
+
+      await transaction.auditLog.create({
+        data: {
+          actorType: "USER",
+          actorId: admin.id,
+          action: "CHANGE_PARTNER_STATUS",
+          entityType: "PARTNER_MEMBERSHIP",
+          entityId: membership.id,
+          before: { status: dto.expectedStatus },
+          after: { status: dto.status },
+          reason: dto.reason,
+          correlationId: correlationId ?? randomUUID(),
+        },
+      });
+
+      return { ...membership, status: dto.status };
+    })
   }
 
   private normalize(dto: SubmitPartnerApplicationDto) {

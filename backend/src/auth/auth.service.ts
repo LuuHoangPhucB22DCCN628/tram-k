@@ -10,6 +10,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import {
   AuthTokenPurpose,
+  AuthTokenSource,
   ConsentType,
   Prisma,
   RoleName,
@@ -155,6 +156,7 @@ export class AuthService {
           data: {
             userId: user.id,
             purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+            source: AuthTokenSource.SIGNUP,
             tokenHash: this.hashOpaqueToken(rawToken),
             expiresAt: new Date(now.getTime() + EMAIL_VERIFICATION_TTL_MS),
           },
@@ -298,24 +300,28 @@ export class AuthService {
       return { accepted: true };
     }
 
-    const since = new Date(Date.now() - 60 * 60 * 1000);
-    const recentCount = await this.prisma.authToken.count({
-      where: {
-        userId: user.id,
-        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
-        createdAt: { gte: since },
-      },
-    });
-    if (recentCount >= MAX_VERIFICATION_RESENDS_PER_HOUR) {
-      throw new HttpException(
-        "Bạn đã yêu cầu quá nhiều email. Vui lòng thử lại sau.",
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
     const now = new Date();
     const rawToken = randomBytes(32).toString("base64url");
     await this.prisma.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT pg_advisory_xact_lock(42, hashtext(${user.id}))`;
+
+      const since = new Date(Date.now() - 60 * 60 * 1000);
+      const recentCount = await transaction.authToken.count({
+        where: {
+          userId: user.id,
+          purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+          source: AuthTokenSource.RESEND,
+          createdAt: { gte: since },
+        },
+      });
+      if (recentCount >= MAX_VERIFICATION_RESENDS_PER_HOUR) {
+        throw new HttpException(
+          "Bạn đã yêu cầu quá nhiều email. Vui lòng thử lại sau.",
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+
       await transaction.authToken.updateMany({
         where: {
           userId: user.id,
@@ -329,6 +335,7 @@ export class AuthService {
         data: {
           userId: user.id,
           purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+          source: AuthTokenSource.RESEND,
           tokenHash: this.hashOpaqueToken(rawToken),
           expiresAt: new Date(now.getTime() + EMAIL_VERIFICATION_TTL_MS),
         },
@@ -922,20 +929,29 @@ export class AuthService {
       : session.user.role.name;
     const nextToken = randomBytes(32).toString("base64url");
     const now = new Date();
-    await this.prisma.$transaction([
-      this.prisma.authSession.update({
-        where: { id: session.id },
+    await this.prisma.$transaction(async (transaction) => {
+      const revoked = await transaction.authSession.updateMany({
+        where: {
+          id: session.id,
+          revokedAt: null,
+          authVersion: session.authVersion,
+        },
         data: { revokedAt: now },
-      }),
-      this.prisma.authSession.create({
+      });
+      if (revoked.count !== 1) {
+        throw new UnauthorizedException(
+          "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
+        );
+      }
+      await transaction.authSession.create({
         data: {
           userId: session.userId,
           tokenHash: this.hashOpaqueToken(nextToken),
           authVersion: session.user.authVersion,
           expiresAt: new Date(now.getTime() + this.refreshTtlMs(role)),
         },
-      }),
-    ]);
+      });
+    });
     return { result: this.toResult(session.user), refreshToken: nextToken };
   }
 

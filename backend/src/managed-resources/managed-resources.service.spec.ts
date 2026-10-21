@@ -1,5 +1,6 @@
 import {
   ManagedResourceStatus,
+  PartnerStatus,
   RoleName,
   SearchDocumentType,
   UserStatus,
@@ -113,7 +114,10 @@ describe("ManagedResourcesService", () => {
       deletedAt: null,
       status: UserStatus.ACTIVE,
       role: { name: RoleName.PATIENT },
-      partnerMembership: { id: "MEMBERSHIP-1" },
+      partnerMembership: {
+        id: "MEMBERSHIP-1",
+        status: PartnerStatus.ACTIVE,
+      },
     });
 
     await expect(
@@ -124,6 +128,157 @@ describe("ManagedResourcesService", () => {
         { ...dto, payload: { ownerId: "PARTNER-1" } },
       ),
     ).rejects.toThrow("Bạn không có quyền cập nhật chương trình này.");
+  });
+
+  it("allows an active partner to update their own draft and preserves its payload", async () => {
+    user.findUnique.mockResolvedValue({
+      id: "PARTNER-1",
+      deletedAt: null,
+      status: UserStatus.ACTIVE,
+      role: { name: RoleName.PATIENT },
+      partnerMembership: {
+        id: "MEMBERSHIP-1",
+        status: PartnerStatus.ACTIVE,
+      },
+    });
+    managedResource.findUnique.mockResolvedValue({
+      payload: { ownerId: "PARTNER-1" },
+    });
+    managedResource.upsert.mockResolvedValue({
+      sourceId: "PROGRAM-1",
+      type: SearchDocumentType.SUPPORT_PROGRAM,
+      status: ManagedResourceStatus.DRAFT,
+      updatedAt: new Date("2026-10-12T08:01:00.000Z"),
+    });
+
+    await service.upsert(
+      { id: "PARTNER-1", role: RoleName.PARTNER, authVersion: 1 },
+      SearchDocumentType.SUPPORT_PROGRAM,
+      "PROGRAM-1",
+      {
+        ...dto,
+        status: ManagedResourceStatus.DRAFT,
+        payload: { ownerId: "PARTNER-1", capacity: 10 },
+      },
+    );
+
+    expect(managedResource.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          payload: { ownerId: "PARTNER-1", capacity: 10 },
+        }),
+        update: expect.objectContaining({
+          payload: { ownerId: "PARTNER-1", capacity: 10 },
+        }),
+      }),
+    );
+  });
+
+  it("denies an active partner updates to another partner's program", async () => {
+    user.findUnique.mockResolvedValue({
+      id: "PARTNER-1",
+      deletedAt: null,
+      status: UserStatus.ACTIVE,
+      role: { name: RoleName.PARTNER },
+      partnerMembership: {
+        id: "MEMBERSHIP-1",
+        status: PartnerStatus.ACTIVE,
+      },
+    });
+    managedResource.findUnique.mockResolvedValue({
+      payload: { ownerId: "PARTNER-2" },
+    });
+
+    await expect(
+      service.upsert(
+        { id: "PARTNER-1", role: RoleName.PARTNER, authVersion: 1 },
+        SearchDocumentType.SUPPORT_PROGRAM,
+        "PROGRAM-2",
+        {
+          ...dto,
+          status: ManagedResourceStatus.DRAFT,
+          payload: { ownerId: "PARTNER-1" },
+        },
+      ),
+    ).rejects.toThrow("Bạn không có quyền cập nhật chương trình này.");
+    expect(managedResource.upsert).not.toHaveBeenCalled();
+  });
+
+  it("denies suspended partners updates and deletes of their programs", async () => {
+    const suspendedPartner = {
+      id: "PARTNER-1",
+      deletedAt: null,
+      status: UserStatus.ACTIVE,
+      role: { name: RoleName.PARTNER },
+      partnerMembership: {
+        id: "MEMBERSHIP-1",
+        status: PartnerStatus.SUSPENDED,
+      },
+    };
+    user.findUnique.mockResolvedValue(suspendedPartner);
+
+    await expect(
+      service.upsert(
+        { id: "PARTNER-1", role: RoleName.PARTNER, authVersion: 1 },
+        SearchDocumentType.SUPPORT_PROGRAM,
+        "PROGRAM-1",
+        {
+          ...dto,
+          status: ManagedResourceStatus.DRAFT,
+          payload: { ownerId: "PARTNER-1" },
+        },
+      ),
+    ).rejects.toThrow("Bạn không có quyền cập nhật chương trình này.");
+    expect(managedResource.upsert).not.toHaveBeenCalled();
+
+    managedResource.findUnique.mockResolvedValue({
+      id: "RESOURCE-1",
+      type: SearchDocumentType.SUPPORT_PROGRAM,
+      payload: { ownerId: "PARTNER-1" },
+    });
+    await expect(
+      service.remove(
+        { id: "PARTNER-1", role: RoleName.PARTNER, authVersion: 1 },
+        SearchDocumentType.SUPPORT_PROGRAM,
+        "PROGRAM-1",
+      ),
+    ).rejects.toThrow("Bạn không có quyền xóa nội dung này.");
+    expect(managedResource.delete).not.toHaveBeenCalled();
+    expect(search.deactivate).not.toHaveBeenCalled();
+  });
+
+  it("allows an active member with partner membership to delete their own program", async () => {
+    user.findUnique.mockResolvedValue({
+      id: "PARTNER-1",
+      deletedAt: null,
+      status: UserStatus.ACTIVE,
+      role: { name: RoleName.PATIENT },
+      partnerMembership: {
+        id: "MEMBERSHIP-1",
+        status: PartnerStatus.ACTIVE,
+      },
+    });
+    managedResource.findUnique.mockResolvedValue({
+      id: "RESOURCE-1",
+      type: SearchDocumentType.SUPPORT_PROGRAM,
+      payload: { ownerId: "PARTNER-1" },
+    });
+    managedResource.delete.mockResolvedValue({});
+
+    await service.remove(
+      { id: "PARTNER-1", role: RoleName.PARTNER, authVersion: 1 },
+      SearchDocumentType.SUPPORT_PROGRAM,
+      "PROGRAM-1",
+    );
+
+    expect(managedResource.delete).toHaveBeenCalledWith({
+      where: { id: "RESOURCE-1" },
+    });
+    expect(search.deactivate).toHaveBeenCalledWith(
+      SearchDocumentType.SUPPORT_PROGRAM,
+      "PROGRAM-1",
+      transaction,
+    );
   });
 
   it("returns only published resources to public clients", async () => {

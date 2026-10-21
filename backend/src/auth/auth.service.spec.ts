@@ -1,6 +1,15 @@
-import { ForbiddenException, UnauthorizedException } from "@nestjs/common";
+import {
+  ForbiddenException,
+  HttpException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { AuthTokenPurpose, RoleName, UserStatus } from "@prisma/client";
+import {
+  AuthTokenPurpose,
+  AuthTokenSource,
+  RoleName,
+  UserStatus,
+} from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthService } from "./auth.service";
@@ -19,6 +28,7 @@ const registerDto = {
 describe("AuthService", () => {
   let storedUser: Record<string, unknown> | null;
   const transaction = {
+    $queryRaw: jest.fn(),
     role: { upsert: jest.fn() },
     user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     authToken: {
@@ -31,7 +41,7 @@ describe("AuthService", () => {
     userConsent: { createMany: jest.fn() },
     outboxEvent: { create: jest.fn() },
     auditLog: { create: jest.fn() },
-    authSession: { updateMany: jest.fn() },
+    authSession: { create: jest.fn(), updateMany: jest.fn() },
   };
   const prismaMock = {
     $transaction: jest.fn(
@@ -92,6 +102,7 @@ describe("AuthService", () => {
       return storedUser;
     });
     transaction.user.update.mockResolvedValue({});
+    transaction.$queryRaw.mockResolvedValue([]);
     transaction.authToken.count.mockResolvedValue(0);
     transaction.authToken.findFirst.mockResolvedValue(null);
     transaction.authToken.create.mockResolvedValue({ id: "token-1" });
@@ -99,6 +110,7 @@ describe("AuthService", () => {
     transaction.userConsent.createMany.mockResolvedValue({ count: 2 });
     transaction.outboxEvent.create.mockResolvedValue({ id: "event-1" });
     transaction.auditLog.create.mockResolvedValue({ id: "audit-1" });
+    transaction.authSession.create.mockResolvedValue({});
     transaction.authSession.updateMany.mockResolvedValue({ count: 0 });
     prismaMock.authAttempt.count.mockResolvedValue(0);
     prismaMock.authAttempt.create.mockResolvedValue({});
@@ -137,6 +149,12 @@ describe("AuthService", () => {
         type: "AUTH_EMAIL_VERIFICATION_REQUESTED",
       }),
     });
+    expect(transaction.authToken.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        source: AuthTokenSource.SIGNUP,
+      }),
+    });
   });
 
   it("blocks a forged partner registration", async () => {
@@ -173,6 +191,56 @@ describe("AuthService", () => {
     });
   });
 
+  it("counts and creates resend tokens separately from signup tokens", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      email: "an@example.com",
+      fullName: "Nguyễn Minh An",
+      status: UserStatus.PENDING_VERIFY,
+      deletedAt: null,
+    });
+
+    await expect(
+      service.resendVerification("AN@EXAMPLE.COM"),
+    ).resolves.toEqual({ accepted: true });
+
+    expect(transaction.$queryRaw).toHaveBeenCalled();
+    expect(transaction.authToken.count).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        source: AuthTokenSource.RESEND,
+        createdAt: { gte: expect.any(Date) },
+      },
+    });
+    expect(transaction.authToken.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        source: AuthTokenSource.RESEND,
+      }),
+    });
+  });
+
+  it("limits verification resends to three per hour", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      email: "an@example.com",
+      fullName: "Nguyễn Minh An",
+      status: UserStatus.PENDING_VERIFY,
+      deletedAt: null,
+    });
+    transaction.authToken.count.mockResolvedValue(3);
+
+    const error = await service
+      .resendVerification("an@example.com")
+      .catch((reason: HttpException) => reason);
+
+    expect(error).toBeInstanceOf(HttpException);
+    expect((error as HttpException).getStatus()).toBe(429);
+    expect(transaction.authToken.create).not.toHaveBeenCalled();
+    expect(transaction.outboxEvent.create).not.toHaveBeenCalled();
+  });
+
   it("refuses login until the email is verified", async () => {
     await service.register(registerDto);
     prismaMock.user.findUnique.mockResolvedValue(storedUser);
@@ -202,6 +270,34 @@ describe("AuthService", () => {
       authVersion: 1,
     });
     expect(result.accessTokenExpiresInSeconds).toBe(900);
+  });
+
+  it("rejects access tokens after status, deletion or authVersion changes", async () => {
+    await service.register(registerDto);
+    const activeUser = {
+      ...storedUser,
+      status: UserStatus.ACTIVE,
+    } as Record<string, unknown>;
+    storedUser = activeUser;
+    prismaMock.user.findUnique.mockImplementation(() => storedUser);
+    const result = await service.login({
+      email: registerDto.email,
+      password,
+      portal: "PUBLIC",
+    });
+
+    const invalidUserStates = [
+      { ...activeUser, status: UserStatus.LOCKED },
+      { ...activeUser, status: UserStatus.DISABLED },
+      { ...activeUser, deletedAt: new Date() },
+      { ...activeUser, authVersion: 2 },
+    ];
+    for (const invalidUser of invalidUserStates) {
+      storedUser = invalidUser;
+      await expect(service.authenticate(result.accessToken)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    }
   });
 
   it("records an invalid login without revealing whether the email exists", async () => {
@@ -401,16 +497,52 @@ describe("AuthService", () => {
       },
       authVersion: 1,
     });
-    prismaMock.authSession.update.mockResolvedValue({});
-    prismaMock.authSession.create.mockResolvedValue({});
+    transaction.authSession.updateMany.mockResolvedValue({ count: 1 });
 
     const refreshed = await service.refresh("refresh-token-1");
     expect(refreshed.result.user.id).toBe("user-1");
     expect(refreshed.refreshToken).not.toBe("refresh-token-1");
-    expect(prismaMock.authSession.update).toHaveBeenCalledWith({
-      where: { id: "session-1" },
+    expect(transaction.authSession.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "session-1",
+        revokedAt: null,
+        authVersion: 1,
+      },
       data: { revokedAt: expect.any(Date) },
     });
+    expect(transaction.authSession.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: "user-1",
+        authVersion: 1,
+        tokenHash: expect.any(String),
+      }),
+    });
+  });
+
+  it("rejects a refresh token if another request already rotated it", async () => {
+    prismaMock.authSession.findUnique.mockResolvedValue({
+      id: "session-1",
+      userId: "user-1",
+      revokedAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
+      user: {
+        id: "user-1",
+        email: "an@example.com",
+        fullName: "Nguyễn Minh An",
+        status: UserStatus.ACTIVE,
+        deletedAt: null,
+        authVersion: 1,
+        role: { name: RoleName.PATIENT },
+        partnerMembership: null,
+      },
+      authVersion: 1,
+    });
+    transaction.authSession.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.refresh("refresh-token-1")).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(transaction.authSession.create).not.toHaveBeenCalled();
   });
 
   it("revokes every refresh session when logging out all devices", async () => {
