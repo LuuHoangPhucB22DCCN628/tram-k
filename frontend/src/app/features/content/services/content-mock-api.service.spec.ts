@@ -16,10 +16,10 @@ describe('ContentMockApiService', () => {
     const result = await firstValueFrom(service.list());
 
     expect(result.page).toBe(1);
-    expect(result.pageSize).toBe(6);
-    expect(result.items).toHaveLength(6);
+    expect(result.pageSize).toBe(12);
+    expect(result.items).toHaveLength(12);
     expect(result.totalItems).toBe(23);
-    expect(result.totalPages).toBe(4);
+    expect(result.totalPages).toBe(2);
     expect(result.items.some((item) => item.slug === 'noi-dung-dang-cho-kiem-duyet')).toBe(false);
     expect(result.items[0]).not.toHaveProperty('medicalDisclaimer');
     expect(result.items[0]).not.toHaveProperty('sections');

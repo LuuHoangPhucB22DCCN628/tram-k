@@ -123,6 +123,25 @@ describe("AuthOutboxWorker", () => {
     });
   });
 
+  it("retries an SMTP delivery failure through the outbox worker", async () => {
+    const smtpError = new Error("SMTP connection failed");
+    const { worker, prismaMock, emailMock } = createHarness({
+      deliveryError: smtpError,
+    });
+
+    await expect(worker.processBatch()).resolves.toBe(0);
+
+    expect(emailMock.sendVerification).toHaveBeenCalledTimes(1);
+    expect(prismaMock.outboxEvent.update).toHaveBeenCalledWith({
+      where: { id: "event-1" },
+      data: {
+        status: OutboxStatus.PENDING,
+        availableAt: expect.any(Date),
+        lastError: "SMTP connection failed",
+      },
+    });
+  });
+
   it("marks the event as failed after the fifth delivery attempt", async () => {
     const { worker, prismaMock } = createHarness({
       attempts: 4,

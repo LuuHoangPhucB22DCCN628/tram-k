@@ -14,6 +14,7 @@ import {
   Prisma,
   RoleName,
   UserStatus,
+  AuthTokenSource,
 } from "@prisma/client";
 import {
   createHash,
@@ -114,33 +115,33 @@ export class AuthService {
         });
         const user = canRestore
           ? await transaction.user.update({
-              where: { id: existing.id },
-              data: {
-                fullName: dto.displayName.trim(),
-                passwordHash,
-                roleId: role.id,
-                status: UserStatus.PENDING_VERIFY,
-                emailVerifiedAt: null,
-                deletedAt: null,
-                deletedById: null,
-                authVersion: { increment: 1 },
-                verificationCleanupAt: new Date(
-                  now.getTime() + UNVERIFIED_ACCOUNT_TTL_MS,
-                ),
-              },
-            })
+            where: { id: existing.id },
+            data: {
+              fullName: dto.displayName.trim(),
+              passwordHash,
+              roleId: role.id,
+              status: UserStatus.PENDING_VERIFY,
+              emailVerifiedAt: null,
+              deletedAt: null,
+              deletedById: null,
+              authVersion: { increment: 1 },
+              verificationCleanupAt: new Date(
+                now.getTime() + UNVERIFIED_ACCOUNT_TTL_MS,
+              ),
+            },
+          })
           : await transaction.user.create({
-              data: {
-                email,
-                fullName: dto.displayName.trim(),
-                passwordHash,
-                roleId: role.id,
-                status: UserStatus.PENDING_VERIFY,
-                verificationCleanupAt: new Date(
-                  now.getTime() + UNVERIFIED_ACCOUNT_TTL_MS,
-                ),
-              },
-            });
+            data: {
+              email,
+              fullName: dto.displayName.trim(),
+              passwordHash,
+              roleId: role.id,
+              status: UserStatus.PENDING_VERIFY,
+              verificationCleanupAt: new Date(
+                now.getTime() + UNVERIFIED_ACCOUNT_TTL_MS,
+              ),
+            },
+          });
 
         await transaction.authToken.updateMany({
           where: {
@@ -157,6 +158,7 @@ export class AuthService {
             purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
             tokenHash: this.hashOpaqueToken(rawToken),
             expiresAt: new Date(now.getTime() + EMAIL_VERIFICATION_TTL_MS),
+            source: AuthTokenSource.SIGNUP,
           },
         });
         await transaction.userConsent.createMany({
@@ -294,28 +296,35 @@ export class AuthService {
   async resendVerification(emailValue: string) {
     const email = this.normalizeEmail(emailValue);
     const user = await this.prisma.user.findUnique({ where: { email } });
+
     if (!user || user.status !== UserStatus.PENDING_VERIFY || user.deletedAt) {
       return { accepted: true };
     }
 
-    const since = new Date(Date.now() - 60 * 60 * 1000);
-    const recentCount = await this.prisma.authToken.count({
-      where: {
-        userId: user.id,
-        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
-        createdAt: { gte: since },
-      },
-    });
-    if (recentCount >= MAX_VERIFICATION_RESENDS_PER_HOUR) {
-      throw new HttpException(
-        "Bạn đã yêu cầu quá nhiều email. Vui lòng thử lại sau.",
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
     const now = new Date();
     const rawToken = randomBytes(32).toString("base64url");
+
     await this.prisma.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+      SELECT pg_advisory_xact_lock(42, hashtext(${user.id}))`;
+
+      const since = new Date(Date.now() - 60 * 60 * 1000);
+      const recentCount = await transaction.authToken.count({
+        where: {
+          userId: user.id,
+          purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+          source: AuthTokenSource.RESEND,
+          createdAt: { gte: since },
+        },
+      });
+
+      if (recentCount >= MAX_VERIFICATION_RESENDS_PER_HOUR) {
+        throw new HttpException(
+          "Bạn đã yêu cầu quá nhiều email. Vui lòng thử lại sau.",
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+
       await transaction.authToken.updateMany({
         where: {
           userId: user.id,
@@ -325,14 +334,17 @@ export class AuthService {
         },
         data: { revokedAt: now },
       });
+
       const token = await transaction.authToken.create({
         data: {
           userId: user.id,
           purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+          source: AuthTokenSource.RESEND,
           tokenHash: this.hashOpaqueToken(rawToken),
           expiresAt: new Date(now.getTime() + EMAIL_VERIFICATION_TTL_MS),
         },
       });
+
       await transaction.outboxEvent.create({
         data: {
           eventId: randomUUID(),
@@ -373,12 +385,12 @@ export class AuthService {
       }),
       eligible
         ? this.prisma.authToken.count({
-            where: {
-              userId: user.id,
-              purpose: AuthTokenPurpose.PASSWORD_RESET,
-              createdAt: { gte: since },
-            },
-          })
+          where: {
+            userId: user.id,
+            purpose: AuthTokenPurpose.PASSWORD_RESET,
+            createdAt: { gte: since },
+          },
+        })
         : Promise.resolve(0),
     ]);
     if (

@@ -34,7 +34,12 @@ describe("PartnerApplicationsService", () => {
     $transaction: jest.fn((callback: (client: typeof transaction) => unknown) =>
       callback(transaction),
     ),
-    partnerApplication: { findUnique: jest.fn(), findMany: jest.fn() },
+    user: { findUnique: jest.fn() },
+    partnerApplication: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
+    },
   } as unknown as PrismaService;
   const notifications = {
     create: jest.fn(),
@@ -43,11 +48,46 @@ describe("PartnerApplicationsService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      deletedAt: null,
+      status: UserStatus.ACTIVE,
+      role: { name: RoleName.ADMIN },
+    });
     transaction.partnerApplicationDocument.findMany.mockResolvedValue([
       { id: "document-1", storageKey: dto.documentKeys[0] },
     ]);
     transaction.partnerApplicationDocument.updateMany.mockResolvedValue({
       count: 1,
+    });
+  });
+
+  it("paginates admin applications and counts only the selected status", async () => {
+    const partnerApplication = prisma.partnerApplication as unknown as {
+      findMany: jest.Mock;
+      count: jest.Mock;
+    };
+    partnerApplication.findMany.mockResolvedValue([{ id: "application-21" }]);
+    partnerApplication.count.mockResolvedValue(45);
+
+    await expect(
+      service.listForAdmin("admin-1", PartnerApplicationStatus.PENDING, 2, 20),
+    ).resolves.toEqual({
+      items: [{ id: "application-21" }],
+      total: 45,
+      page: 2,
+      limit: 20,
+    });
+
+    expect(partnerApplication.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: PartnerApplicationStatus.PENDING },
+        orderBy: { updatedAt: "desc" },
+        skip: 20,
+        take: 20,
+      }),
+    );
+    expect(partnerApplication.count).toHaveBeenCalledWith({
+      where: { status: PartnerApplicationStatus.PENDING },
     });
   });
 

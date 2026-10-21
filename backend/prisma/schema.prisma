@@ -109,6 +109,11 @@ enum AiConversationMessageRole {
   ASSISTANT
 }
 
+enum AuthTokenSource {
+  SIGNUP
+  RESEND
+}
+
 model Role {
   id        String   @id @default(cuid())
   name      RoleName @unique
@@ -228,6 +233,7 @@ model AuthToken {
   purpose     AuthTokenPurpose
   tokenHash   String           @unique @map("token_hash")
   targetEmail String?          @unique @map("target_email")
+  source      AuthTokenSource  @default(SIGNUP)
   expiresAt   DateTime         @map("expires_at")
   usedAt      DateTime?        @map("used_at")
   revokedAt   DateTime?        @map("revoked_at")

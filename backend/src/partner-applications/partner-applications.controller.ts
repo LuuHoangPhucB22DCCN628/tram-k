@@ -88,7 +88,12 @@ export class PartnerApplicationsController {
   ): Promise<ApiSuccessResponse<unknown>> {
     return {
       success: true,
-      data: await this.applications.listForAdmin(actor.id, query.status),
+      data: await this.applications.listForAdmin(
+        actor.id,
+        query.status,
+        query.page,
+        query.limit,
+      ),
     };
   }
 

@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
   Param,
   ParseEnumPipe,
   Put,
@@ -17,6 +16,7 @@ import { AuthenticatedUser } from "../auth/auth-user.interface";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { ApiSuccessResponse } from "../common/interfaces/api-response.interface";
+import { ListAdminManagedResourcesDto } from "./dto/list-admin-managed-resources.dto";
 import { ListManagedResourcesDto } from "./dto/list-managed-resources.dto";
 import { UpsertManagedResourceDto } from "./dto/upsert-managed-resource.dto";
 import { ManagedResourcesService } from "./managed-resources.service";
@@ -24,7 +24,7 @@ import { ManagedResourcesService } from "./managed-resources.service";
 @ApiTags("managed-resources")
 @Controller("managed-resources")
 export class ManagedResourcesController {
-  constructor(private readonly resources: ManagedResourcesService) {}
+  constructor(private readonly resources: ManagedResourcesService) { }
 
   @Get("public")
   async listPublished(
@@ -32,7 +32,11 @@ export class ManagedResourcesController {
   ): Promise<ApiSuccessResponse<unknown>> {
     return {
       success: true,
-      data: await this.resources.listPublished(query.type),
+      data: await this.resources.listPublished(
+        query.type,
+        query.page,
+        query.pageSize,
+      ),
     };
   }
 
@@ -51,11 +55,16 @@ export class ManagedResourcesController {
   @UseGuards(JwtAuthGuard)
   async getAdminState(
     @CurrentUser() actor: AuthenticatedUser,
-    @Query() query: ListManagedResourcesDto,
+    @Query() query: ListAdminManagedResourcesDto,
   ): Promise<ApiSuccessResponse<unknown>> {
     return {
       success: true,
-      data: await this.resources.adminState(actor, query.type),
+      data: await this.resources.adminState(
+        actor,
+        query.type,
+        query.page,
+        query.limit,
+      ),
     };
   }
 
@@ -89,7 +98,6 @@ export class ManagedResourcesController {
   }
 
   @Delete(":type/:sourceId")
-  @HttpCode(204)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async remove(
@@ -97,7 +105,12 @@ export class ManagedResourcesController {
     @Param("type", new ParseEnumPipe(SearchDocumentType))
     type: SearchDocumentType,
     @Param("sourceId") sourceId: string,
-  ): Promise<void> {
+  ): Promise<ApiSuccessResponse<null>> {
     await this.resources.remove(actor, type, sourceId);
+
+    return {
+      success: true,
+      data: null,
+    };
   }
 }
