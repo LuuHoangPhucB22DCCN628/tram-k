@@ -7,7 +7,9 @@ import {
   Patch,
   Post,
   UseGuards,
-  Query
+  Query,
+  Res,
+  HttpException
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
@@ -21,6 +23,7 @@ import { CreateCommunityCommentBodyDto } from "./dto/create-community-comment-bo
 import { ToggleCommunityReactionBodyDto } from "./dto/toggle-community-reaction-body.dto";
 import { UpdateCommunityCommentDto } from "./dto/update-community-comment.dto";
 import { ListCommunityCommentsQueryDto } from "./dto/list-community-comments-query.dto";
+import { Response } from "express";
 
 @ApiTags("community engagement")
 @Controller("community/stories")
@@ -73,14 +76,22 @@ export class CommunityEngagementController {
     @CurrentUser() user: AuthenticatedUser,
     @Param() params: CommunitySourceKeyParamDto,
     @Body() dto: CreateCommunityCommentBodyDto,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<ApiSuccessResponse<unknown>> {
-    return {
-      success: true,
-      data: await this.engagement.createComment(user.id, {
-        ...dto,
-        sourceKey: params.sourceKey,
-      }),
-    };
+    try {
+      return {
+        success: true,
+        data: await this.engagement.createComment(user, {
+          ...dto,
+          sourceKey: params.sourceKey,
+        }),
+      };
+    } catch (error) {
+      if (error instanceof HttpException && error.getStatus() == 429) {
+        res.setHeader("Retry-After", "60");
+      }
+      throw error;
+    }
   }
 
   @Patch("comments/:commentId")

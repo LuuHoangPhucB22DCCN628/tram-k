@@ -1,9 +1,11 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   HttpException,
 } from "@nestjs/common";
 import { CommunityReactionType, RoleName, UserStatus } from "@prisma/client";
+import { AuthenticatedUser } from "../auth/auth-user.interface";
 
 import { PrismaService } from "../prisma/prisma.service";
 import { CommunityEngagementService } from "./community-engagement.service";
@@ -14,6 +16,11 @@ const commentDto = {
   sourcePath: "/goc-tam-ly#story-hope-01",
   content: "Cảm ơn bạn đã chia sẻ.",
   idempotencyKey: "request-0001",
+};
+const actor: AuthenticatedUser = {
+  id: "user-1",
+  role: RoleName.PATIENT,
+  authVersion: 1,
 };
 
 describe("CommunityEngagementService", () => {
@@ -39,14 +46,25 @@ describe("CommunityEngagementService", () => {
 
       return (arg as (client: typeof transaction) => unknown)(transaction);
     }),
+    user: { findUnique: jest.fn() },
     communityComment: {
       count: jest.fn(),
+      create: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
     },
     communityReaction: { groupBy: jest.fn() },
   } as unknown as PrismaService;
+  const communityCommentMock = (
+    prisma as unknown as {
+      communityComment: {
+        count: jest.Mock;
+        create: jest.Mock;
+        findUnique: jest.Mock;
+      };
+    }
+  ).communityComment;
   const service = new CommunityEngagementService(prisma);
 
   beforeEach(() => {
@@ -59,6 +77,27 @@ describe("CommunityEngagementService", () => {
     });
     transaction.communityComment.findUnique.mockResolvedValue(null);
     transaction.communityComment.count.mockResolvedValue(0);
+    (prisma as unknown as { user: { findUnique: jest.Mock } }).user.findUnique.mockResolvedValue({
+      id: actor.id,
+      status: UserStatus.ACTIVE,
+      deletedAt: null,
+    });
+    communityCommentMock.findUnique.mockResolvedValue(null);
+    communityCommentMock.count.mockResolvedValue(0);
+    communityCommentMock.create.mockResolvedValue({
+      id: "comment-new",
+      userId: actor.id,
+      content: commentDto.content,
+      deletedAt: null,
+      status: "PUBLISHED",
+    });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    communityCommentMock.findUnique.mockReset();
+    communityCommentMock.count.mockReset();
+    communityCommentMock.create.mockReset();
   });
 
   it("paginates root comments and returns pagination metadata", async () => {
@@ -69,7 +108,15 @@ describe("CommunityEngagementService", () => {
       };
     };
 
-    const items = [{ id: "comment-21" }];
+    const createdAt = new Date("2026-10-20T00:00:00.000Z");
+    const items = [{
+      id: "comment-21",
+      content: "Bình luận công khai.",
+      createdAt,
+      deletedAt: null,
+      status: "PUBLISHED",
+      user: { id: "user-1", fullName: "Thành viên" },
+    }];
 
     database.communityComment.findMany
       .mockResolvedValueOnce(items as any)
@@ -82,7 +129,11 @@ describe("CommunityEngagementService", () => {
     ).resolves.toEqual({
       items: [
         {
-          ...items[0],
+          id: items[0].id,
+          content: items[0].content,
+          createdAt,
+          user: items[0].user,
+          status: items[0].status,
           replies: [],
           hasMoreReplies: false,
         },
@@ -110,33 +161,133 @@ describe("CommunityEngagementService", () => {
         where: {
           sourceKey: commentDto.sourceKey,
           parentId: "comment-21",
-          deletedAt: null,
         },
         orderBy: { createdAt: "asc" },
         take: 6,
       }),
     );
   });
-  it("limits excessive comments in a five-minute window", async () => {
-    transaction.communityComment.count.mockResolvedValue(10);
+  it("enforces the five-comments-per-minute limit", async () => {
+    const now = new Date("2026-10-22T00:00:00.000Z");
+    jest.useFakeTimers().setSystemTime(now);
+    communityCommentMock.count.mockResolvedValueOnce(5);
 
-    const error = service.createComment("user-1", commentDto);
-    await expect(error).rejects.toBeInstanceOf(HttpException);
-    await expect(error).rejects.toMatchObject({ status: 429 });
+    await expect(
+      service.createComment(actor, commentDto),
+    ).rejects.toMatchObject({ status: 429 });
+    expect(communityCommentMock.count).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        createdAt: { gte: new Date(now.getTime() - 60_000) },
+      },
+    });
+  });
+
+  it("enforces the thirty-comments-per-hour limit independently of the minute limit", async () => {
+    const now = new Date("2026-10-22T00:00:00.000Z");
+    jest.useFakeTimers().setSystemTime(now);
+    communityCommentMock.count
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(30);
+
+    await expect(
+      service.createComment(actor, commentDto),
+    ).rejects.toMatchObject({ status: 429 });
+    expect(communityCommentMock.count).toHaveBeenNthCalledWith(1, {
+      where: {
+        userId: "user-1",
+        createdAt: { gte: new Date(now.getTime() - 60_000) },
+      },
+    });
+    expect(communityCommentMock.count).toHaveBeenNthCalledWith(2, {
+      where: {
+        userId: "user-1",
+        createdAt: { gte: new Date(now.getTime() - 60 * 60 * 1000) },
+      },
+    });
+  });
+
+  it("rejects reusing an idempotency key with a different comment payload", async () => {
+    communityCommentMock.findUnique.mockResolvedValue({
+      id: "comment-existing",
+      userId: "user-1",
+      idempotencyKey: commentDto.idempotencyKey,
+      content: "Nội dung ban đầu.",
+      sourceKey: commentDto.sourceKey,
+    });
+
+    await expect(
+      service.createComment(actor, {
+        ...commentDto,
+        content: "Nội dung khác.",
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(communityCommentMock.create).not.toHaveBeenCalled();
+  });
+
+  it("replays the existing comment when the idempotency key and payload match", async () => {
+    const existing = {
+      id: "comment-existing",
+      userId: actor.id,
+      ...commentDto,
+      parentId: null,
+      deletedAt: null,
+      status: "PUBLISHED",
+      createdAt: new Date("2026-10-20T00:00:00.000Z"),
+      user: { id: actor.id, fullName: "Thành viên" },
+    };
+    communityCommentMock.findUnique.mockResolvedValue(existing);
+
+    await expect(service.createComment(actor, commentDto)).resolves.toEqual({
+      id: existing.id,
+      content: existing.content,
+      createdAt: existing.createdAt,
+      user: existing.user,
+      status: existing.status,
+    });
+    expect(communityCommentMock.create).not.toHaveBeenCalled();
+    expect(communityCommentMock.count).not.toHaveBeenCalled();
+  });
+
+  it("does not expose deleted comment content or author in the public thread", async () => {
+    const database = prisma as unknown as {
+      communityComment: {
+        findMany: jest.Mock;
+        count: jest.Mock;
+      };
+    };
+    const deletedComment = {
+      id: "comment-deleted",
+      userId: "user-private",
+      content: "Nội dung riêng tư đã xóa.",
+      deletedAt: new Date("2026-10-20T00:00:00.000Z"),
+      parentId: null,
+      user: { id: "user-private", fullName: "Tên người đã xóa" },
+    };
+    database.communityComment.findMany
+      .mockResolvedValueOnce([deletedComment])
+      .mockResolvedValueOnce([{ id: "reply-visible", content: "Một phản hồi." }]);
+    database.communityComment.count.mockResolvedValue(1);
+
+    const result = await service.listComments(commentDto.sourceKey, 1, 20);
+
+    expect(JSON.stringify(result)).not.toContain("Nội dung riêng tư đã xóa.");
+    expect(JSON.stringify(result)).not.toContain("Tên người đã xóa");
   });
 
   it("rejects a second-level reply", async () => {
-    transaction.communityComment.findUnique
+    communityCommentMock.findUnique
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({
         id: "reply-1",
         sourceKey: commentDto.sourceKey,
         parentId: "comment-1",
         deletedAt: null,
+        status: "PUBLISHED",
       });
 
     await expect(
-      service.createComment("user-1", { ...commentDto, parentId: "reply-1" }),
+      service.createComment(actor, { ...commentDto, parentId: "reply-1" }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -154,7 +305,12 @@ describe("CommunityEngagementService", () => {
     await service.softDeleteComment("user-1", "comment-1");
     expect(database.communityComment.update).toHaveBeenCalledWith({
       where: { id: "comment-1" },
-      data: { content: "", deletedAt: expect.any(Date) },
+      data: {
+        content: "",
+        deletedAt: expect.any(Date),
+        deletedById: "user-1",
+        version: { increment: 1 },
+      },
     });
   });
 
@@ -233,11 +389,22 @@ describe("CommunityEngagementService", () => {
       };
     };
 
-    const rootComment = { id: "comment-21" };
+    const rootComment = {
+      id: "comment-21",
+      content: "Bình luận gốc.",
+      createdAt: new Date("2026-10-20T00:00:00.000Z"),
+      deletedAt: null,
+      status: "PUBLISHED",
+      user: { id: "user-1", fullName: "Thành viên" },
+    };
     const replies = Array.from({ length: 6 }, (_, index) => ({
       id: `reply-${index + 1}`,
       parentId: rootComment.id,
       content: `Reply ${index + 1}`,
+      createdAt: new Date(`2026-10-20T00:0${index}:00.000Z`),
+      deletedAt: null,
+      status: "PUBLISHED",
+      user: { id: `user-${index + 2}`, fullName: `Thành viên ${index + 2}` },
     }));
 
     database.communityComment.findMany
@@ -251,8 +418,18 @@ describe("CommunityEngagementService", () => {
     ).resolves.toEqual({
       items: [
         {
-          ...rootComment,
-          replies: replies.slice(0, 5),
+          id: rootComment.id,
+          content: rootComment.content,
+          createdAt: rootComment.createdAt,
+          user: rootComment.user,
+          status: rootComment.status,
+          replies: replies.slice(0, 5).map((reply) => ({
+            id: reply.id,
+            content: reply.content,
+            createdAt: reply.createdAt,
+            user: reply.user,
+            status: reply.status,
+          })),
           hasMoreReplies: true,
         },
       ],
@@ -267,7 +444,6 @@ describe("CommunityEngagementService", () => {
         where: {
           sourceKey: commentDto.sourceKey,
           parentId: rootComment.id,
-          deletedAt: null,
         },
         orderBy: { createdAt: "asc" },
         take: 6,
@@ -290,7 +466,14 @@ describe("CommunityEngagementService", () => {
       parentId: null,
       deletedAt: null,
     };
-    const replies = [{ id: "reply-21" }];
+    const replies = [{
+      id: "reply-21",
+      content: "Phản hồi công khai.",
+      createdAt: new Date("2026-10-20T00:01:00.000Z"),
+      deletedAt: null,
+      status: "PUBLISHED",
+      user: { id: "user-2", fullName: "Thành viên 2" },
+    }];
 
     database.communityComment.findUnique.mockResolvedValue(rootComment);
     database.communityComment.findMany.mockResolvedValue(replies);
@@ -299,7 +482,13 @@ describe("CommunityEngagementService", () => {
     await expect(
       service.listReplies(commentDto.sourceKey, "comment-21", 2, 20),
     ).resolves.toEqual({
-      items: replies,
+      items: [{
+        id: replies[0].id,
+        content: replies[0].content,
+        createdAt: replies[0].createdAt,
+        user: replies[0].user,
+        status: replies[0].status,
+      }],
       total: 37,
       page: 2,
       limit: 20,
@@ -314,7 +503,6 @@ describe("CommunityEngagementService", () => {
         where: {
           sourceKey: commentDto.sourceKey,
           parentId: "comment-21",
-          deletedAt: null,
         },
         orderBy: { createdAt: "asc" },
         skip: 20,
@@ -326,7 +514,6 @@ describe("CommunityEngagementService", () => {
       where: {
         sourceKey: commentDto.sourceKey,
         parentId: "comment-21",
-        deletedAt: null,
       },
     });
   });

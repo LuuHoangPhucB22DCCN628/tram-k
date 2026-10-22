@@ -16,6 +16,8 @@ describe("NotificationsService", () => {
 
   beforeEach(() => jest.clearAllMocks());
 
+  afterEach(() => jest.useRealTimers());
+
   it("only lists notifications for the authenticated recipient", async () => {
     notification.findMany.mockResolvedValue([{ id: "notification-1" }]);
     notification.count.mockResolvedValue(1);
@@ -44,6 +46,41 @@ describe("NotificationsService", () => {
     expect(notification.updateMany).toHaveBeenCalledWith({
       where: { id: "notification-1", recipientId: "user-1", readAt: null },
       data: { readAt: expect.any(Date) },
+    });
+  });
+
+  it("does not mark a notification owned by someone else as read", async () => {
+    notification.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.markRead("user-1", "another-users-notification")).resolves.toEqual({
+      updated: false,
+    });
+    expect(notification.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "another-users-notification",
+        recipientId: "user-1",
+        readAt: null,
+      },
+      data: { readAt: expect.any(Date) },
+    });
+  });
+
+  it("marks only notifications created by the start of the mark-all request", async () => {
+    const requestStartedAt = new Date("2026-10-22T00:00:00.000Z");
+    jest.useFakeTimers().setSystemTime(requestStartedAt);
+    notification.updateMany.mockResolvedValue({ count: 2 });
+
+    await expect(service.markAllRead("user-1")).resolves.toEqual({
+      updatedCount: 2,
+    });
+
+    expect(notification.updateMany).toHaveBeenCalledWith({
+      where: {
+        recipientId: "user-1",
+        readAt: null,
+        createdAt: { lte: requestStartedAt },
+      },
+      data: { readAt: requestStartedAt },
     });
   });
 
