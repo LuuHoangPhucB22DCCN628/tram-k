@@ -62,7 +62,7 @@ export class SearchService {
         AND normalized_text LIKE ${'%' + normalizedQuery + '%'}
         ${typeCondition}
       ORDER BY score DESC, published_at DESC, id DESC
-      LIMIT ${query.pageSize} OFFSET ${skip};
+      LIMIT ${query.pageSize}::int OFFSET ${skip}::int;
       `;
 
     const where = {
