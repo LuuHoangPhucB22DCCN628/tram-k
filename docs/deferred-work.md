@@ -14,22 +14,25 @@
 
 ## Outbox Pattern và Notification Retention
 
-- Trạng thái: Hoãn đến giai đoạn BE 10 (Outbox và vòng đời sự kiện).
-- Phạm vi đã hoàn thành: Bảng Notification có dedupeKey, luồng đánh dấu đã đọc (markRead, markAllRead) và phân trang cursor an toàn (chống lộ dữ liệu).
-- Việc còn lại:
-  1. Tạo bảng `OutboxEvent` trong schema.prisma.
-  2. Refactor các service nghiệp vụ (như `support-program-registrations.service.ts`) để chỉ ghi `OutboxEvent` trong transaction thay vì gọi trực tiếp `NotificationsService`.
-  3. Viết Worker chạy ngầm (Cron Job hoặc BullMQ) để xử lý OutboxEvent sau khi transaction commit, bao gồm logic retry khi lỗi.
-  4. Xây dựng cron job tự động xóa các Notification cũ hơn 90 ngày (Retention Policy) theo SRS.
-- Điều kiện hoàn thành: Không còn gọi trực tiếp NotificationsService trong transaction nghiệp vụ; worker xử lý và chống trùng sự kiện thành công; Notification cũ tự động bị dọn dẹp sau 90 ngày.
+- **Trạng thái:** Hoãn đến BE 10.
+- **Việc còn lại:**
+  1. Chuyển các service gọi trực tiếp `NotificationsService` sang ghi `OutboxEvent` trong transaction.
+  2. Viết Worker (Cron/BullMQ) xử lý OutboxEvent.
+  3. Cron job xóa Notification cũ > 90 ngày.
 
 ## Kiểm thử tích hợp và Cạnh tranh (E2E / Concurrency)
 
-- Trạng thái: Hoãn đến giai đoạn BE 12 (Cutover và kiểm thử tích hợp).
-- Phạm vi đã hoàn thành: 100% unit test (157 tests) pass, đã giả lập các case logic (Capacity, Idempotency, Tombstone, Rate limit) thông qua Prisma Mock.
-- Việc còn lại:
-  1. Cấu hình Jest/Supertest kết nối với PostgreSQL thật (qua Testcontainers hoặc DB test riêng).
-  2. Viết test giả lập 2 request đồng thời (Concurrency) cho các case: tranh slot cuối của Registration, xác minh email, refresh token, promote waitlist.
-  3. Viết test kiểm tra rollback (nếu Audit/Outbox lỗi thì nghiệp vụ chính phải rollback theo).
-  4. Viết test cho Outbox Worker (đảm bảo retry không tạo thông báo trùng).
-- Điều kiện hoàn thành: CI chạy E2E xanh trên PostgreSQL thật; không có race condition nào có thể vượt qua capacity hoặc tạo dữ liệu rác.
+- **Trạng thái:** Đã viết test E2E và thêm bước chạy vào CI; kết quả trên GitHub Actions vẫn cần xác nhận.
+- **Đã hoàn thành:**
+  1. Cấu hình thành công môi trường E2E local (DB riêng, extension `pg_trgm`).
+  2. Viết test code cho Ranking toàn cục (Search) và Magic Bytes (Media).
+- **Cần xác nhận:**
+  1. Chạy workflow `Backend CI` trên GitHub Actions và xác nhận step E2E pass.
+- **Việc còn lại (chuyển sang BE 12):**
+  1. Viết test giả lập 2 request đồng thời (Promise.all) cho: tranh slot cuối, refresh token.
+  2. Viết test kiểm tra rollback (Audit/Outbox lỗi thì nghiệp vụ chính rollback).
+
+## Blockers cần Team quyết định
+
+1. **OpenAPI Source of truth:** Chốt việc dùng Swagger sinh tự động từ NestJS làm chuẩn cho Frontend. (Hiện tại đang dùng file `content-api-contract.md` viết tay).
+2. **Migration Owner:** Cử 1 người chịu trách nhiệm review schema/migration trước khi merge vào `main`.
