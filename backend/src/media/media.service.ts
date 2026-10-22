@@ -9,12 +9,10 @@ import { RoleName } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { mkdir, readFile, stat, writeFile } from "fs/promises";
 import { extname, isAbsolute, relative, resolve, sep } from "path";
+import sharp from "sharp";
 
 import { AuthenticatedUser } from "../auth/auth-user.interface";
 import { MediaKind, StoredMedia, UploadedMediaFile } from "./media.types";
-
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
-const MAX_AUDIO_BYTES = 30 * 1024 * 1024;
 
 const MIME_CONFIG = {
   "image/jpeg": { extension: ".jpg", kind: "image" },
@@ -32,6 +30,13 @@ const MIME_CONFIG = {
 } as const;
 
 type SupportedMimeType = keyof typeof MIME_CONFIG;
+
+const LIMITS = {
+  avatar: 2 * 1024 * 1024,
+  post_image: 5 * 1024 * 1024,
+  partner_document: 10 * 1024 * 1024,
+  audio: 50 * 1024 * 1024,
+};
 
 @Injectable()
 export class MediaService {
@@ -58,26 +63,37 @@ export class MediaService {
     }
 
     const config = MIME_CONFIG[file.mimetype as SupportedMimeType];
-    if (!config || config.kind !== kind || !this.hasValidSignature(file)) {
+    const expectedKind = kind === "audio" ? "audio" : "image";
+    if (!config || config.kind !== expectedKind || !this.hasValidSignature(file)) {
       throw new BadRequestException(
-        kind === "image"
+        expectedKind === "image"
           ? "Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP hợp lệ."
           : "Chỉ hỗ trợ âm thanh MP3, M4A, OGG, WAV hoặc WebM hợp lệ.",
       );
     }
 
-    const maximumBytes = kind === "image" ? MAX_IMAGE_BYTES : MAX_AUDIO_BYTES;
+    const maximumBytes = LIMITS[kind];
     if (file.size > maximumBytes || file.buffer.length > maximumBytes) {
       throw new BadRequestException(
-        kind === "image"
-          ? "Ảnh tải lên tối đa 2 MB."
-          : "Tệp âm thanh tải lên tối đa 30 MB.",
+        `Tệp tải lên vượt quá dung lượng cho phép (${maximumBytes / 1024 / 1024} MB).`
       );
+    }
+
+    let processBuffer = file.buffer;
+    if (config.kind === "image") {
+      try {
+        processBuffer = await sharp(file.buffer)
+          .rotate()
+          .toBuffer();
+      } catch (error) {
+        throw new BadRequestException("Không thể xử lý định dạng ảnh (file hỏng hoặc không hợp lệ).")
+      }
     }
 
     await mkdir(this.storagePath, { recursive: true });
     const fileName = `${randomUUID()}${config.extension}`;
-    await writeFile(this.resolveFile(fileName), file.buffer, { flag: "wx" });
+    await writeFile(this.resolveFile(fileName), processBuffer, { flag: "wx" });
+
     return {
       fileName,
       mimeType: file.mimetype,

@@ -8,13 +8,15 @@ import { ConfigService } from "@nestjs/config";
 import { RoleName, UserStatus } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { mkdir, readFile, stat, unlink, writeFile } from "fs/promises";
-import { resolve } from "path";
+import { resolve, relative, isAbsolute, sep } from "path";
 
 import { AuthenticatedUser } from "../auth/auth-user.interface";
 import { UploadedMediaFile } from "../media/media.types";
 import { PrismaService } from "../prisma/prisma.service";
 
-const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
+const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+const MAX_TOTAL_BYTES = 30 * 1024 * 1024;
+const MAX_FILES = 5;
 const DOCUMENT_CONFIG = {
   "application/pdf": {
     extension: ".pdf",
@@ -71,10 +73,15 @@ export class PartnerApplicationDocumentsService {
         "Tài khoản không đủ điều kiện nộp hồ sơ đối tác.",
       );
     }
-    if (!files?.length || files.length > 10) {
+    if (!files?.length || files.length > MAX_FILES) {
       throw new BadRequestException(
-        "Vui lòng chọn từ 1 đến 10 tệp minh chứng.",
+        `Vui lòng chọn từ 1 đến ${MAX_FILES} tệp minh chứng.`,
       );
+    }
+
+    const totalSize = files.reduce((sum, file) => sum + (file.size || file.buffer?.length || 0), 0);
+    if (totalSize > MAX_TOTAL_BYTES) {
+      throw new BadRequestException(`Tổng dung lượng các tệp không vượt quá ${MAX_TOTAL_BYTES / 1024 / 1024} MB.`);
     }
 
     await mkdir(this.storagePath, { recursive: true });
@@ -114,7 +121,7 @@ export class PartnerApplicationDocumentsService {
       file.buffer.length > MAX_DOCUMENT_BYTES
     ) {
       throw new BadRequestException(
-        "Chỉ hỗ trợ PDF, JPG hoặc PNG hợp lệ, tối đa 5 MB mỗi tệp.",
+        `Chỉ hỗ trợ PDF, JPG hoặc PNG hợp lệ, tối đa  ${MAX_DOCUMENT_BYTES / 1024 / 1024}  MB mỗi tệp.`,
       );
     }
     const storageKey = `${randomUUID()}${config.extension}`;
@@ -141,7 +148,15 @@ export class PartnerApplicationDocumentsService {
       throw new NotFoundException("Không tìm thấy tệp minh chứng.");
     }
     const path = resolve(this.storagePath, storageKey);
-    if (!path.startsWith(`${this.storagePath}\\`)) {
+
+    const relativePath = relative(this.storagePath, path);
+
+    if (
+      !relativePath ||
+      relativePath === ".." ||
+      relativePath.startsWith(`..${sep}`) ||
+      isAbsolute(relativePath)
+    ) {
       throw new NotFoundException("Không tìm thấy tệp minh chứng.");
     }
     return path;

@@ -26,14 +26,14 @@ import { MediaKind, UploadedMediaFile } from "./media.types";
 @ApiTags("media")
 @Controller("media")
 export class MediaController {
-  constructor(private readonly media: MediaService) {}
+  constructor(private readonly media: MediaService) { }
 
   @Post("upload")
   @ApiBearerAuth()
   @ApiConsumes("multipart/form-data")
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
-    FileInterceptor("file", { limits: { fileSize: 30 * 1024 * 1024 } }),
+    FileInterceptor("file", { limits: { fileSize: 50 * 1024 * 1024 } }),
   )
   async upload(
     @CurrentUser() actor: AuthenticatedUser,
@@ -45,7 +45,7 @@ export class MediaController {
       throw new BadRequestException("Loại tệp tải lên không hợp lệ.");
     }
     const stored = await this.media.store(actor, kind as MediaKind, file);
-    const origin = `${request.protocol}://${request.get("host")}`;
+    const origin = process.env.APP_URL || `${request.protocol}://${request.get("host")}`;
     return {
       success: true,
       data: {
