@@ -271,3 +271,86 @@ một cổng.
 
 Xem README ở thư mục gốc của repository để biết cách chạy frontend
 Angular và quy trình làm việc chung của toàn dự án.
+
+## 🧪 Hướng dẫn chạy Integration Test (E2E)
+
+Dự án sử dụng **Jest + Supertest** để chạy Integration Test trên môi trường PostgreSQL thật (nhằm đảm bảo các logic phức tạp như Ranking toàn cục, Concurrency hoạt động chính xác).
+
+### 1. Chuẩn bị Database Test
+
+Mở PostgreSQL (pgAdmin/DBeaver) và tạo một database riêng cho việc test:
+
+```sql
+CREATE DATABASE tramk_test_db;
+```
+
+**BẮT BUỘC PHẢI GHI.**
+
+Với tư cách là Tech Lead, tôi khẳng định việc này không chỉ là "nên làm" mà là **yêu cầu bắt buộc (Definition of Done)** trong tài liệu hướng dẫn của nhóm bạn.
+
+### Tại sao lại bắt buộc?
+
+1. **Theo tài liệu dự án:** Mục 8.4 (Definition of Done) và phần BE 00 ghi rõ: _"README ghi đúng lệnh setup của Windows và cách dùng PostgreSQL ngoài script đi kèm"_.
+2. **Tránh "tự bắn vào chân":** Khi bạn nộp bài cho Giảng viên (hoặc thành viên khác trong nhóm) clone code về chạy, nếu họ gõ `npm run test:e2e` mà không biết phải bật `pg_trgm` hay tạo DB `tramk_test_db`, test sẽ FAIL ngay lập tức. Họ sẽ đánh giá code của bạn là "không chạy được".
+3. **Chứng minh năng lực Senior:** Một dự án chuyên nghiệp luôn có hướng dẫn setup môi trường test rõ ràng.
+
+---
+
+### Hướng dẫn viết README (Copy/Paste là xong)
+
+Mở file `README.md` ở thư mục gốc, kéo xuống dưới cùng và dán đoạn Markdown này vào:
+
+````markdown
+## 🧪 Hướng dẫn chạy Integration Test (E2E)
+
+Dự án sử dụng **Jest + Supertest** để chạy Integration Test trên môi trường PostgreSQL thật (nhằm đảm bảo các logic phức tạp như Ranking toàn cục, Concurrency hoạt động chính xác).
+
+### 1. Chuẩn bị Database Test
+
+Mở PostgreSQL (pgAdmin/DBeaver) và tạo một database riêng cho việc test:
+
+```sql
+CREATE DATABASE tramk_test_db;
+```
+````
+
+### 2. Kích hoạt Extension (Quan trọng)
+
+Logic tìm kiếm của dự án yêu cầu extension `pg_trgm` để chạy index Gin. Hãy kích hoạt nó trên database test bằng lệnh sau (sử dụng file SQL hoặc chạy trực tiếp trong Query Tool):
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+```
+
+### 3. Cấu hình biến môi trường
+
+Tạo file `.env.test` ở thư mục `backend/` (file này đã được ignore trong `.gitignore`, không push lên Git):
+
+```env
+DATABASE_URL="postgresql://postgres:password@localhost:5432/tramk_test_db?schema=public"
+JWT_ACCESS_SECRET="test_access_secret"
+JWT_REFRESH_SECRET="test_refresh_secret"
+JWT_SECRET="tram-k-e2e-only-signing-secret-change-this"
+PORT=3001
+```
+
+_(Nhớ thay `postgres:password` bằng tài khoản PostgreSQL thực tế trên máy bạn)._
+
+### 4. Đồng bộ cấu trúc bảng & Chạy Test
+
+Chạy các lệnh sau tại thư mục `backend/`:
+
+```bash
+# 1. Đồng bộ schema Prisma sang DB test
+npx dotenv -e .env.test -- npx prisma db push
+
+# 2. Chạy toàn bộ Integration Test
+npm run test:e2e
+```
+
+**Lưu ý cho Windows:** Lệnh `test:e2e` đã được cấu hình cờ `--runInBand` trong `package.json` để tránh xung đột database khi Jest chạy song song.
+
+```
+
+---
+```
