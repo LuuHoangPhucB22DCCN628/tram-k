@@ -163,10 +163,10 @@ describe("SearchService", () => {
     searchDocument.updateMany.mockResolvedValue({ count: 1 });
 
     await expect(
-      service.deactivate(SearchDocumentType.PODCAST, "PODCAST-1"),
+      service.deactivate(SearchDocumentType.GUIDE, "PODCAST-1"),
     ).resolves.toBe(true);
     expect(searchDocument.updateMany).toHaveBeenCalledWith({
-      where: { type: SearchDocumentType.PODCAST, sourceId: "PODCAST-1", active: true },
+      where: { type: SearchDocumentType.GUIDE, sourceId: "PODCAST-1", active: true },
       data: { active: false },
     });
   });
