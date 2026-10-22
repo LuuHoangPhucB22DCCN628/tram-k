@@ -24,45 +24,69 @@ type SearchDocumentWriter = Pick<PrismaService, "searchDocument">;
 
 @Injectable()
 export class SearchService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async search(query: SearchQueryDto) {
     const normalizedQuery = this.normalize(query.q);
-    const where: Prisma.SearchDocumentWhereInput = {
+    const skip = (query.page - 1) * query.pageSize;
+    const now = new Date();
+
+    const typeCondition = query.type
+      ? Prisma.sql`AND type = ${query.type}::"SearchDocumentType`
+      : Prisma.empty;
+
+    const rows = await this.prisma.$queryRaw<any[]>`
+      SELECT
+        id,
+        source_id as "sourceId",
+        type,
+        title,
+        description,
+        eyebrow,
+        metadata,
+        image_url as "imageUrl",
+        image_alt as "imageAlt",
+        link,
+        query_params as "queryParams",
+        published_at as "publishedAt",
+        CASE
+          WHEN normalized_title = ${normalizedQuery} THEN 100
+          WHEN normalized_title LIKE ${normalizedQuery + '%'} THEN 80
+          WHEN normalized_title LIKE ${'%' + normalizedQuery + '%'} THEN 60
+          WHEN normalized_text LIKE ${'%' + normalizedQuery + '%'} THEN 30
+          ELSE 0
+        END as score
+      FROM search_documents
+      WHERE active = true
+        AND published_at <= ${now}
+        AND normalized_text LIKE ${'%' + normalizedQuery + '%'}
+        ${typeCondition}
+      ORDER BY score DESC, published_at DESC, id DESC
+      LIMIT ${query.pageSize}::int OFFSET ${skip}::int;
+      `;
+
+    const where = {
       active: true,
+      publishedAt: { lte: now },
       ...(query.type ? { type: query.type } : {}),
       normalizedText: { contains: normalizedQuery },
-    };
-    const skip = (query.page - 1) * query.pageSize;
-    const [rows, totalItems] = await this.prisma.$transaction([
-      this.prisma.searchDocument.findMany({
-        where,
-        orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
-        skip,
-        take: query.pageSize,
-      }),
-      this.prisma.searchDocument.count({ where }),
-    ]);
+    }
+    const totalItems = await this.prisma.searchDocument.count({ where });
 
-    const items = rows
-      .map((row) => ({
-        id: row.sourceId,
-        type: row.type,
-        title: row.title,
-        description: row.description,
-        eyebrow: row.eyebrow,
-        metadata: row.metadata,
-        image: row.imageUrl,
-        imageAlt: row.imageAlt,
-        link: row.link,
-        queryParams: row.queryParams,
-        publishedAt: row.publishedAt.toISOString(),
-        score: this.score(row.normalizedTitle, row.normalizedText, normalizedQuery),
-      }))
-      .sort(
-        (first, second) =>
-          second.score - first.score || second.publishedAt.localeCompare(first.publishedAt),
-      );
+    const items = rows.map((row) => ({
+      id: row.sourceId,
+      type: row.type,
+      title: row.title,
+      description: row.description,
+      eyebrow: row.eyebrow,
+      metadata: row.metadata,
+      image: row.imageUrl,
+      imageAlt: row.imageAlt,
+      link: row.link,
+      queryParams: row.queryParams,
+      publishedAt: new Date(row.publishedAt).toISOString(),
+      score: Number(row.score),
+    }));
 
     return {
       items,
@@ -130,12 +154,5 @@ export class SearchService {
       .toLowerCase()
       .replace(/\s+/g, " ")
       .trim();
-  }
-
-  private score(title: string, text: string, query: string): number {
-    if (title === query) return 100;
-    if (title.startsWith(query)) return 80;
-    if (title.includes(query)) return 60;
-    return text.includes(query) ? 30 : 0;
   }
 }

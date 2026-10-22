@@ -219,55 +219,64 @@ npm run build
 Nếu một bước thất bại, hãy xử lý lỗi đó trước khi mở pull request. Không
 bỏ qua lỗi build hoặc test chỉ vì server có thể khởi động.
 
-## 9. Lỗi thường gặp
+## 9. Chạy Integration Test (E2E) trên môi trường Local
+
+Dự án sử dụng **Jest + Supertest** để chạy Integration Test trên PostgreSQL thật (đảm bảo các logic phức tạp như Ranking toàn cục hoạt động chính xác).
+
+> ⚠️ **CẢNH BÁO:** Các bài test E2E (như Search) có thao tác xóa dữ liệu (truncate) để làm sạch môi trường. **Tuyệt đối không chạy E2E trên database Dev/Production.** Luôn sử dụng database Test riêng biệt.
+
+### 9.1. Chuẩn bị Database Test
+
+Mở PostgreSQL (pgAdmin/DBeaver) và tạo một database riêng:
+
+```sql
+CREATE DATABASE tramk_test_db;
+```
+
+### 9.2. Kích hoạt Extension (Quan trọng)
+
+Logic tìm kiếm yêu cầu extension `pg_trgm` để chạy index Gin. Chạy lệnh sau trên database test:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+```
+
+### 9.3. Cấu hình biến môi trường
+
+Tạo file `.env.test` ở thư mục `backend/` (đã được ignore trong `.gitignore`):
+
+```dotenv
+DATABASE_URL="postgresql://postgres:password@localhost:5432/tramk_test_db?schema=public"
+JWT_SECRET="tram-k-e2e-only-signing-secret-change-this"
+```
+
+### 9.4. Chạy Test
+
+Chạy các lệnh sau tại thư mục `backend/`:
+
+```powershell
+# 1. Đồng bộ schema Prisma sang DB test
+npx dotenv -e .env.test -- npx prisma db push
+
+# 2. Chạy toàn bộ Integration Test
+npm run test:e2e
+```
+
+## 10. Lỗi thường gặp
 
 ### Không kết nối được PostgreSQL
 
 - Kiểm tra PostgreSQL đã chạy chưa.
-- Kiểm tra host, port, tên database, username và password trong
-  `DATABASE_URL`.
-- Xác nhận database đã được tạo và tài khoản có quyền truy cập.
-
-### Prisma báo thiếu Client hoặc schema chưa đồng bộ
-
-Chạy lại:
-
-```powershell
-npm run prisma:generate
-npx prisma validate
-npx prisma migrate status
-```
-
-Nếu migration chưa được áp dụng, kiểm tra `DATABASE_URL` rồi chạy
-`npm run db:migrate`.
-
-### Cổng 3000 đang được sử dụng
-
-Kiểm tra tiến trình đang dùng cổng 3000 hoặc điều chỉnh cấu hình cổng
-theo cấu hình backend của dự án. Không chạy nhiều bản backend cùng chiếm
-một cổng.
+- Kiểm tra `DATABASE_URL` trong `.env` hoặc `.env.test`.
 
 ### Không gửi được email xác minh
 
-- Kiểm tra `EMAIL_DELIVERY_MODE` và các biến tương ứng với chế độ đang
-  dùng.
-- Với `log`, kiểm tra log trong terminal chạy backend.
-- Với `webhook` hoặc `smtp`, xác nhận URL/thông tin kết nối và thông
-  tin xác thực.
-- Xem log backend để tìm lỗi gửi email.
-- Không chia sẻ `SMTP_PASS`, webhook token hoặc các khóa bí mật khi
-  gửi log để nhờ hỗ trợ.
+- Kiểm tra `EMAIL_DELIVERY_MODE`. Với `log`, xem log ở terminal. Với `smtp`/`webhook`, kiểm tra thông tin xác thực. Không chia sẻ mật khẩu khi nhờ hỗ trợ.
 
-## 10. Quy tắc an toàn và làm việc nhóm
+## 11. Quy tắc an toàn và làm việc nhóm
 
-- Không commit `.env`, mật khẩu database, khóa JWT, khóa mã hóa, thông
-  tin SMTP, webhook token hoặc API key.
-- Không commit `node_modules/` hoặc `dist/`.
-- Tạo nhánh riêng cho từng mục tiêu và giữ commit tập trung vào một
-  phạm vi thay đổi.
-- Trước khi mở pull request, chạy các lệnh kiểm thử ở mục 8.
-- Ghi rõ phạm vi thay đổi, cách kiểm thử, migration mới và công việc
-  còn lại trong pull request.
+- Không commit `.env`, `.env.test`, mật khẩu database, khóa JWT.
+- Tạo nhánh riêng cho từng mục tiêu.
+- Trước khi mở pull request, chạy `npm test` và `npm run build`.
 
-Xem README ở thư mục gốc của repository để biết cách chạy frontend
-Angular và quy trình làm việc chung của toàn dự án.
+---

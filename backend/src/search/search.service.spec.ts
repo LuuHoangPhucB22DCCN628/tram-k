@@ -5,40 +5,104 @@ import { SearchService } from "./search.service";
 
 describe("SearchService", () => {
   const searchDocument = {
-    findMany: jest.fn(),
     count: jest.fn(),
     upsert: jest.fn(),
     updateMany: jest.fn(),
   };
+  const queryRaw = jest.fn();
   const prisma = {
     searchDocument,
-    $transaction: jest.fn((operations: readonly Promise<unknown>[]) => Promise.all(operations)),
+    $queryRaw: queryRaw,
   } as unknown as PrismaService;
   let service: SearchService;
 
   beforeEach(() => {
     jest.clearAllMocks();
     service = new SearchService(prisma);
+    searchDocument.count.mockResolvedValue(0);
+    queryRaw.mockResolvedValue([]);
   });
 
-  it("normalizes Vietnamese text, scopes public results and returns pagination metadata", async () => {
-    searchDocument.findMany.mockResolvedValue([
-      {
-        id: "INDEX-2",
-        sourceId: "GUIDE-2",
-        type: SearchDocumentType.GUIDE,
-        title: "Điều trị ung thư an toàn",
-        description: "Thông tin tham khảo.",
-        eyebrow: "Cẩm nang",
-        metadata: "Điều trị · 5 phút đọc",
-        imageUrl: "/guide-2.png",
-        imageAlt: "Ảnh cẩm nang",
-        link: "/cam-nang/dieu-tri-an-toan",
-        queryParams: null,
-        normalizedTitle: "dieu tri ung thu an toan",
-        normalizedText: "dieu tri ung thu an toan thong tin tham khao",
-        publishedAt: new Date("2026-10-02T00:00:00.000Z"),
-      },
+  it("normalizes accented and unaccented Vietnamese queries before searching", async () => {
+    await service.search({ q: "  ĐIỀU   TRỊ  ", page: 1, pageSize: 8 });
+
+    const [, ...values] = queryRaw.mock.calls[0];
+    expect(values).toContain("dieu tri");
+  });
+
+  it("ranks matching documents globally before applying pagination", async () => {
+    const olderExactTitle = {
+      id: "index-exact",
+      sourceId: "GUIDE-EXACT",
+      type: SearchDocumentType.GUIDE,
+      title: "ung thu",
+      description: "Thông tin hướng dẫn.",
+      eyebrow: "Cẩm nang",
+      metadata: "Sức khỏe",
+      imageUrl: null,
+      imageAlt: null,
+      link: "/cam-nang/ung-thu",
+      queryParams: null,
+      publishedAt: new Date("2026-10-01T00:00:00.000Z"),
+      score: 100,
+    };
+    const newerPartialTitle = {
+      ...olderExactTitle,
+      id: "index-partial",
+      sourceId: "GUIDE-PARTIAL",
+      title: "Chăm sóc người bệnh ung thư",
+      link: "/cam-nang/cham-soc",
+      publishedAt: new Date("2026-10-20T00:00:00.000Z"),
+      score: 30,
+    };
+    queryRaw.mockResolvedValueOnce([olderExactTitle]);
+    queryRaw.mockResolvedValueOnce([newerPartialTitle]);
+    searchDocument.count.mockResolvedValue(2);
+
+    const firstPage = await service.search({ q: "ung thu", page: 1, pageSize: 1 });
+    const secondPage = await service.search({ q: "ung thu", page: 2, pageSize: 1 });
+
+    for (const [templateStrings] of queryRaw.mock.calls) {
+      const sql = (templateStrings as TemplateStringsArray).join(" ");
+      expect(sql).toContain("ORDER BY score DESC, published_at DESC, id DESC");
+      expect(sql).toContain("LIMIT");
+      expect(sql).toContain("OFFSET");
+      expect(sql).toContain("active = true");
+      expect(sql).toContain("published_at <=");
+    }
+
+    expect(firstPage.items.map((item) => item.id)).toEqual(["GUIDE-EXACT"]);
+    expect(secondPage.items.map((item) => item.id)).toEqual(["GUIDE-PARTIAL"]);
+
+    const firstPageValues = queryRaw.mock.calls[0].slice(1);
+    const secondPageValues = queryRaw.mock.calls[1].slice(1);
+    expect(firstPageValues).toContain(0);
+    expect(secondPageValues).toContain(1);
+    expect(firstPageValues).toContain(1);
+  });
+
+  it("counts only active, already-published documents matching the normalized query", async () => {
+    await service.search({
+      q: "  ung thư  ",
+      type: SearchDocumentType.GUIDE,
+      page: 1,
+      pageSize: 10,
+    });
+
+    expect(searchDocument.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          active: true,
+          type: SearchDocumentType.GUIDE,
+          publishedAt: { lte: expect.any(Date) },
+          normalizedText: { contains: "ung thu" },
+        }),
+      }),
+    );
+  });
+
+  it("maps raw search rows to the public result identifier and publishedAt field", async () => {
+    queryRaw.mockResolvedValueOnce([
       {
         id: "INDEX-1",
         sourceId: "GUIDE-1",
@@ -51,24 +115,19 @@ describe("SearchService", () => {
         imageAlt: null,
         link: "/cam-nang/ung-thu",
         queryParams: null,
-        normalizedTitle: "ung thu",
-        normalizedText: "ung thu kien thuc tong quan",
         publishedAt: new Date("2026-10-01T00:00:00.000Z"),
+        score: 100,
       },
     ]);
-    searchDocument.count.mockResolvedValue(2);
 
-    const result = await service.search({ q: "  Ung thư ", page: 1, pageSize: 8 });
-
-    expect(searchDocument.findMany).toHaveBeenCalledWith(
+    const result = await service.search({ q: "ung thu", page: 1, pageSize: 10 });
+    expect(result.items[0]).toEqual(
       expect.objectContaining({
-        where: { active: true, normalizedText: { contains: "ung thu" } },
-        skip: 0,
-        take: 8,
+        id: "GUIDE-1",
+        publishedAt: "2026-10-01T00:00:00.000Z",
+        score: 100,
       }),
     );
-    expect(result.items.map((item) => item.id)).toEqual(["GUIDE-1", "GUIDE-2"]);
-    expect(result).toEqual(expect.objectContaining({ totalItems: 2, totalPages: 1 }));
   });
 
   it("upserts a normalized document using the type and source id as the stable key", async () => {
@@ -100,7 +159,7 @@ describe("SearchService", () => {
     );
   });
 
-  it("deactivates only the requested published search document", async () => {
+  it("deactivates only the requested search document", async () => {
     searchDocument.updateMany.mockResolvedValue({ count: 1 });
 
     await expect(

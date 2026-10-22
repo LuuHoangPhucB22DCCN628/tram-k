@@ -103,10 +103,12 @@ enum ManagedResourceStatus {
 }
 
 enum SupportProgramRegistrationStatus {
-  PENDING_CONFIRMATION
   CONFIRMED
-  REJECTED
-  COMPLETED
+  WAITLISTED
+  CANCELLED
+  EXPIRED
+  ATTENDED
+  NO_SHOW
 }
 
 enum AiConversationMessageRole {
@@ -204,7 +206,7 @@ model UserProfile {
   city          String?
   birthYear     Int?              @map("birth_year")
   bio           String?           @db.VarChar(500)
-  avatarDataUrl String?           @map("avatar_data_url") @db.Text
+  avatarUrl     String?
   visibility    ProfileVisibility @default(MEMBERS)
   showEmail     Boolean           @default(false) @map("show_email")
   allowComments Boolean           @default(true) @map("allow_comments")
@@ -330,6 +332,10 @@ model CommunityComment {
   parent         CommunityComment?  @relation("CommunityCommentReplies", fields: [parentId], references: [id])
   replies        CommunityComment[] @relation("CommunityCommentReplies")
   content        String
+  status         String             @default("PUBLISHED") // PUBLISHED hoặc HIDDEN
+  contentVersion Int                @default(1) @map("content_version")
+  version        Int                @default(0)
+  deletedById    String?            @map("deleted_by_id")
   idempotencyKey String             @map("idempotency_key")
   deletedAt      DateTime?          @map("deleted_at")
   createdAt      DateTime           @default(now()) @map("created_at")
@@ -393,6 +399,7 @@ model SearchDocument {
 
   @@unique([type, sourceId])
   @@index([active, type, publishedAt])
+  @@index([normalizedText(ops: raw("gin_trgm_ops"))], type: Gin)
   @@map("search_documents")
 }
 
@@ -420,10 +427,17 @@ model SupportProgramRegistration {
   user           User                             @relation(fields: [userId], references: [id], onDelete: Cascade)
   applicantName  String                           @map("applicant_name") @db.VarChar(160)
   applicantEmail String                           @map("applicant_email") @db.VarChar(255)
-  status         SupportProgramRegistrationStatus @default(PENDING_CONFIRMATION)
+  status         SupportProgramRegistrationStatus @default(CONFIRMED)
   decisionReason String?                          @map("decision_reason") @db.VarChar(1000)
   registeredAt   DateTime                         @default(now()) @map("registered_at")
+  waitlistedAt   DateTime?                        @map("waitlisted_at")
+  confirmedAt    DateTime?                        @map("confirmed_at")
+  cancelledAt    DateTime?                        @map("cancelled_at")
+  cancelReason   String?                          @map("cancel_reason") @db.VarChar(1000)
+  attendedAt     DateTime?                        @map("attended_at")
+  version        Int                              @default(0)
   updatedAt      DateTime                         @updatedAt @map("updated_at")
+  statusHistory  RegistrationStatusHistory[]
 
   @@unique([programId, userId])
   @@index([programId, status, registeredAt])
@@ -518,4 +532,19 @@ model HairRegistration {
   @@index([mode, status])
   @@index([createdAt])
   @@map("hair_registrations")
+}
+
+model RegistrationStatusHistory {
+  id             String                     @id @default(cuid())
+  registrationId String                     @map("registration_id")
+  registration   SupportProgramRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  fromStatus SupportProgramRegistrationStatus? @map("from_status")
+  toStatus   SupportProgramRegistrationStatus  @map("to_status")
+  reason     String?                           @db.VarChar(1000)
+  actorId    String?                           @map("actor_id") // Nullable vì Scheduler (SYSTEM) không có actorId
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("registration_status_histories")
 }

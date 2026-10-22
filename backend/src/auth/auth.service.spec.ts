@@ -30,7 +30,12 @@ describe("AuthService", () => {
   const transaction = {
     $queryRaw: jest.fn(),
     role: { upsert: jest.fn() },
-    user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
+    user: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
     authToken: {
       count: jest.fn(),
       findFirst: jest.fn(),
@@ -102,6 +107,7 @@ describe("AuthService", () => {
       return storedUser;
     });
     transaction.user.update.mockResolvedValue({});
+    transaction.user.updateMany.mockResolvedValue({ count: 1 });
     transaction.$queryRaw.mockResolvedValue([]);
     transaction.authToken.count.mockResolvedValue(0);
     transaction.authToken.findFirst.mockResolvedValue(null);
@@ -157,6 +163,58 @@ describe("AuthService", () => {
     });
   });
 
+  it("restores the existing expired pending account instead of creating a duplicate", async () => {
+    const expiredAccount = {
+      id: "expired-user",
+      email: "an@example.com",
+      fullName: "Tên cũ",
+      status: UserStatus.PENDING_VERIFY,
+      deletedAt: new Date("2026-10-10T00:00:00.000Z"),
+    };
+    transaction.user.findUnique.mockResolvedValue(expiredAccount);
+    transaction.user.update.mockImplementation(({ data }) => ({
+      ...expiredAccount,
+      ...data,
+      deletedAt: null,
+    }));
+
+    const result = await service.register(registerDto);
+
+    expect(result.user).toEqual(
+      expect.objectContaining({
+        id: "expired-user",
+        email: "an@example.com",
+        status: UserStatus.PENDING_VERIFY,
+      }),
+    );
+    expect(transaction.user.update).toHaveBeenCalledWith({
+      where: { id: "expired-user" },
+      data: expect.objectContaining({
+        status: UserStatus.PENDING_VERIFY,
+        deletedAt: null,
+        deletedById: null,
+        authVersion: { increment: 1 },
+        verificationCleanupAt: expect.any(Date),
+      }),
+    });
+    expect(transaction.user.create).not.toHaveBeenCalled();
+    expect(transaction.authToken.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: "expired-user",
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        usedAt: null,
+        revokedAt: null,
+      },
+      data: { revokedAt: expect.any(Date) },
+    });
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: "RESTORE_UNVERIFIED_ACCOUNT",
+        entityId: "expired-user",
+      }),
+    });
+  });
+
   it("blocks a forged partner registration", async () => {
     await expect(
       service.register({ ...registerDto, role: RoleName.PARTNER } as never),
@@ -177,18 +235,97 @@ describe("AuthService", () => {
         deletedAt: null,
       },
     });
+    transaction.authToken.updateMany.mockResolvedValue({ count: 1 });
 
     await expect(service.verifyEmail("a".repeat(43))).resolves.toEqual({
       verified: true,
       userId: "user-1",
     });
-    expect(prismaMock.user.update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
+    expect(transaction.authToken.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: "token-1",
+        usedAt: null,
+        revokedAt: null,
+        expiresAt: { gt: expect.any(Date) },
+      }),
+      data: { usedAt: expect.any(Date) },
+    });
+    expect(transaction.user.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "user-1",
+        status: UserStatus.PENDING_VERIFY,
+        deletedAt: null,
+      },
       data: expect.objectContaining({
         status: UserStatus.ACTIVE,
         emailVerifiedAt: expect.any(Date),
       }),
     });
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: "VERIFY_EMAIL" }),
+    });
+    expect(transaction.authToken.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+        id: { not: "token-1" },
+        usedAt: null,
+        revokedAt: null,
+      },
+      data: { revokedAt: expect.any(Date) },
+    });
+  });
+
+  it("rejects a token already consumed by a concurrent verification request", async () => {
+    prismaMock.authToken.findUnique.mockResolvedValue({
+      id: "token-1",
+      userId: "user-1",
+      purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+      usedAt: null,
+      revokedAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
+      user: {
+        id: "user-1",
+        status: UserStatus.PENDING_VERIFY,
+        deletedAt: null,
+      },
+    });
+    transaction.authToken.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.verifyEmail("a".repeat(43))).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(transaction.user.updateMany).not.toHaveBeenCalled();
+    expect(transaction.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["already used", { usedAt: new Date() }],
+    ["revoked", { revokedAt: new Date() }],
+    ["expired", { expiresAt: new Date(Date.now() - 1) }],
+    ["for the wrong purpose", { purpose: AuthTokenPurpose.PASSWORD_RESET }],
+    ["for a non-pending account", { user: { status: UserStatus.ACTIVE } }],
+    ["for a deleted account", { user: { deletedAt: new Date() } }],
+  ])("rejects an email verification token that is %s", async (_description, overrides) => {
+    prismaMock.authToken.findUnique.mockResolvedValue({
+      id: "token-1",
+      userId: "user-1",
+      purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+      usedAt: null,
+      revokedAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
+      user: {
+        id: "user-1",
+        status: UserStatus.PENDING_VERIFY,
+        deletedAt: null,
+      },
+      ...overrides,
+    });
+
+    await expect(service.verifyEmail("a".repeat(43))).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it("counts and creates resend tokens separately from signup tokens", async () => {
@@ -219,6 +356,16 @@ describe("AuthService", () => {
         source: AuthTokenSource.RESEND,
       }),
     });
+  });
+
+  it("returns the same accepted response for an unknown verification email", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.resendVerification("missing@example.com"),
+    ).resolves.toEqual({ accepted: true });
+    expect(transaction.authToken.create).not.toHaveBeenCalled();
+    expect(transaction.outboxEvent.create).not.toHaveBeenCalled();
   });
 
   it("limits verification resends to three per hour", async () => {

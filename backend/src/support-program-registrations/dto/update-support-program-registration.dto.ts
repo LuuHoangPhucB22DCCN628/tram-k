@@ -5,9 +5,8 @@ import { IsEnum, IsOptional, IsString, MaxLength, MinLength } from "class-valida
 export class UpdateSupportProgramRegistrationDto {
   @ApiProperty({
     enum: [
-      SupportProgramRegistrationStatus.CONFIRMED,
-      SupportProgramRegistrationStatus.REJECTED,
-      SupportProgramRegistrationStatus.COMPLETED,
+      SupportProgramRegistrationStatus.ATTENDED,
+      SupportProgramRegistrationStatus.NO_SHOW,
     ],
   })
   @IsEnum(SupportProgramRegistrationStatus)

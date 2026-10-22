@@ -75,5 +75,13 @@ jobs:
       - name: Run unit tests
         run: npm test
 
+      - name: Run E2E tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tram_k?schema=public
+        run: |
+          echo "DATABASE_URL=$DATABASE_URL" > .env.test
+          echo "JWT_SECRET=$JWT_SECRET" >> .env.test
+          npm run test:e2e
+
       - name: Build application
         run: npm run build

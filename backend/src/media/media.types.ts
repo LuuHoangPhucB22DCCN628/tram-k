@@ -1,4 +1,4 @@
-export type MediaKind = "image" | "audio";
+export type MediaKind = "avatar" | "post_image" | "partner_document" | "audio";
 
 export interface UploadedMediaFile {
   readonly buffer: Buffer;

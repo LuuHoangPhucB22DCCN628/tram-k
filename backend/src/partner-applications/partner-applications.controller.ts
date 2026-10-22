@@ -48,10 +48,11 @@ export class PartnerApplicationsController {
   @Post("documents")
   @ApiConsumes("multipart/form-data")
   @UseInterceptors(
-    FilesInterceptor("documents", 10, {
-      limits: { fileSize: 5 * 1024 * 1024 },
+    FilesInterceptor("documents", 5, {
+      limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
+
   async uploadDocuments(
     @CurrentUser() actor: AuthenticatedUser,
     @UploadedFiles() files: UploadedMediaFile[] | undefined,
