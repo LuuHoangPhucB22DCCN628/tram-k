@@ -1,4 +1,3 @@
-import { IsIn } from 'class-validator';
 import {
   BadRequestException,
   ConflictException,
@@ -16,6 +15,7 @@ import {
   UserStatus,
   PartnerStatus,
 } from "@prisma/client";
+import { randomUUID } from 'node:crypto';
 
 import { AuthenticatedUser } from "../auth/auth-user.interface";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -120,21 +120,21 @@ export class SupportProgramRegistrationsService {
         },
       });
 
-      const isConfirmed = newStatus === SupportProgramRegistrationStatus.CONFIRMED;
-
-      await this.notifications.create({
-        recipientId: actor.id,
-        kind: NotificationKind.PROGRAM_REGISTRATION_SENT,
-        title: isConfirmed ? "Đăng ký thành công" : "Đã vào danh sách chờ",
-        message: isConfirmed
-          ? `Bạn đã đăng ký thành công chương trình “${program.title}”.`
-          : `Chương trình “${program.title}” đã đủ người. Bạn đã được thêm vào danh sách chờ.`,
-        link: `/doi-tac/quan-ly-chuong-trinh?program=${encodeURIComponent(programId)}&registration=${encodeURIComponent(actor.id)}`,
-        dedupeKey: `program-registration:${programId}:${actor.id}:received:${now.toISOString()}`,
-      },
-        transaction,
-      );
-
+      await transaction.outboxEvent.create({
+        data: {
+          eventId: randomUUID(),
+          type: "PROGRAM_REGISTRATION_SENT",
+          aggregateType: "SupportProgramRegistration",
+          aggregateId: registration.id,
+          payload: {
+            recipientId: actor.id,
+            programId: programId,
+            programTitle: program.title,
+            status: newStatus,
+            registrationVersion: registration.version,
+          },
+        },
+      });
 
       return registration;
     });
@@ -195,7 +195,7 @@ export class SupportProgramRegistrationsService {
         });
 
         if (waitlisted) {
-          await transaction.supportProgramRegistration.update({
+          const updatedWaitlisted = await transaction.supportProgramRegistration.update({
             where: { id: waitlisted.id },
             data: {
               status: SupportProgramRegistrationStatus.CONFIRMED,
@@ -215,15 +215,20 @@ export class SupportProgramRegistrationsService {
             },
           });
 
-          await this.notifications.create({
-            recipientId: waitlisted.userId,
-            kind: NotificationKind.PROGRAM_REGISTRATION_CONFIRMED,
-            title: "Đăng ký được xác nhận",
-            message: `Chúc mừng! Bạn đã được chuyển từ danh sách chờ sang danh sách chính thức tham gia chương trình “${program.title}” do có người hủy.`,
-            link: `/thanh-vien/chuong-trinh-da-dang-ky?program=${encodeURIComponent(programId)}`,
-            dedupeKey: `program-registration:${programId}:${waitlisted.userId}:promoted`,
-          },
-            transaction,);
+          await transaction.outboxEvent.create({
+            data: {
+              eventId: randomUUID(),
+              type: "PROGRAM_REGISTRATION_CONFIRMED",
+              aggregateType: "SupportProgramRegistration",
+              aggregateId: waitlisted.id,
+              payload: {
+                recipientId: waitlisted.userId,
+                programId: programId,
+                programTitle: program.title,
+                registrationVersion: updatedWaitlisted.version,
+              },
+            },
+          });
         }
       }
 
@@ -301,7 +306,7 @@ export class SupportProgramRegistrationsService {
           before: { status: registration.status },
           after: { status: dto.status },
           reason: dto.decisionReason || "Điểm danh",
-          correlationId: crypto.randomUUID(),
+          correlationId: randomUUID(),
         },
       });
       return updated;

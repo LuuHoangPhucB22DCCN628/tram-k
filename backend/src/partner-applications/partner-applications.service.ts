@@ -227,29 +227,22 @@ export class PartnerApplicationsService {
           },
         });
       }
-      await this.notifications.create(
-        {
-          recipientId: application.applicantId,
-          kind:
-            status === PartnerApplicationStatus.APPROVED
-              ? NotificationKind.PARTNER_APPLICATION_APPROVED
-              : NotificationKind.PARTNER_APPLICATION_REJECTED,
-          title:
-            status === PartnerApplicationStatus.APPROVED
-              ? "Hồ sơ đối tác đã được duyệt"
-              : "Hồ sơ đối tác cần chỉnh sửa",
-          message:
-            status === PartnerApplicationStatus.APPROVED
-              ? "Bạn đã được cấp quyền nhà hảo tâm và có thể đăng ký chương trình hỗ trợ."
-              : `Hồ sơ chưa được duyệt. Lý do: ${dto.reason!.trim()}`,
-          link:
-            status === PartnerApplicationStatus.APPROVED
-              ? "/doi-tac/ho-so"
-              : "/thanh-vien/dang-ky-doi-tac",
-          dedupeKey: `partner-application:${application.id}:${status}:${now.toISOString()}`,
+
+      await transaction.outboxEvent.create({
+        data: {
+          eventId: randomUUID(),
+          type: "PARTNER_APPLICATION_REVIEWED",
+          aggregateType: "PartnerApplication",
+          aggregateId: application.id,
+          payload: {
+            applicantId: application.applicantId,
+            status: status,
+            reason: dto.reason?.trim() || null,
+            applicationId: application.id,
+          },
         },
-        transaction,
-      );
+      });
+
       return reviewed;
     });
   }

@@ -4,7 +4,6 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import {
-  NotificationKind,
   PartnerStatus,
   RoleName,
   SearchDocumentType,
@@ -49,6 +48,7 @@ describe("SupportProgramRegistrationsService", () => {
     },
     registrationStatusHistory: { create: jest.fn() },
     auditLog: { create: jest.fn() },
+    outboxEvent: { create: jest.fn() },
   };
   const prisma = {
     supportProgramRegistration: registration,
@@ -82,6 +82,7 @@ describe("SupportProgramRegistrationsService", () => {
     transaction.supportProgramRegistration.findFirst.mockResolvedValue(null);
     transaction.registrationStatusHistory.create.mockResolvedValue({});
     transaction.auditLog.create.mockResolvedValue({});
+    transaction.outboxEvent.create.mockResolvedValue({ id: "event-1" });
     transaction.$queryRaw.mockResolvedValue([]);
     notificationCreate.mockResolvedValue({});
     user.findUnique.mockResolvedValue({
@@ -194,6 +195,19 @@ describe("SupportProgramRegistrationsService", () => {
         actorId: "MEMBER-1",
       }),
     });
+    expect(transaction.outboxEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: "PROGRAM_REGISTRATION_SENT",
+        aggregateType: "SupportProgramRegistration",
+        aggregateId: "registration-new",
+        payload: expect.objectContaining({
+          recipientId: "MEMBER-1",
+          programId: "PROGRAM-1",
+          status: SupportProgramRegistrationStatus.CONFIRMED,
+        }),
+      }),
+    });
+    expect(notificationCreate).not.toHaveBeenCalled();
   });
 
   it("puts a new registration on the waitlist when all confirmed slots are full", async () => {
@@ -213,6 +227,14 @@ describe("SupportProgramRegistrationsService", () => {
         status: SupportProgramRegistrationStatus.WAITLISTED,
         confirmedAt: null,
         waitlistedAt: expect.any(Date),
+      }),
+    });
+    expect(transaction.outboxEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: "PROGRAM_REGISTRATION_SENT",
+        payload: expect.objectContaining({
+          status: SupportProgramRegistrationStatus.WAITLISTED,
+        }),
       }),
     });
   });
@@ -264,7 +286,7 @@ describe("SupportProgramRegistrationsService", () => {
     });
     transaction.supportProgramRegistration.update
       .mockResolvedValueOnce({ id: "registration-cancelled" })
-      .mockResolvedValueOnce({ id: "registration-waitlisted" });
+      .mockResolvedValueOnce({ id: "registration-waitlisted", version: 3 });
 
     await service.cancel(
       { id: "MEMBER-1", role: RoleName.PATIENT, authVersion: 1 },
@@ -296,13 +318,19 @@ describe("SupportProgramRegistrationsService", () => {
       }),
     });
     expect(transaction.registrationStatusHistory.create).toHaveBeenCalledTimes(2);
-    expect(notificationCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        recipientId: "WAITLISTED-1",
-        kind: NotificationKind.PROGRAM_REGISTRATION_CONFIRMED,
+    expect(transaction.outboxEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: "PROGRAM_REGISTRATION_CONFIRMED",
+        aggregateType: "SupportProgramRegistration",
+        aggregateId: "registration-waitlisted",
+        payload: expect.objectContaining({
+          recipientId: "WAITLISTED-1",
+          programId: "PROGRAM-1",
+          registrationVersion: 3,
+        }),
       }),
-      transaction,
-    );
+    });
+    expect(notificationCreate).not.toHaveBeenCalled();
   });
 
   it("requires attendance reason and writes an audit record for attendance changes", async () => {

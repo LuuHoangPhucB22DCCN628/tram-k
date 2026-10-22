@@ -45,6 +45,7 @@ describe("PartnerApplicationsService", () => {
       findMany: jest.fn(),
       updateMany: jest.fn(),
     },
+    outboxEvent: { create: jest.fn() },
   };
   const prisma = {
     $transaction: jest.fn((callback: (client: typeof transaction) => unknown) =>
@@ -187,9 +188,7 @@ describe("PartnerApplicationsService", () => {
     transaction.partnerMembership.create.mockResolvedValue({
       id: "membership-1",
     });
-    (notifications.create as jest.Mock).mockResolvedValue({
-      id: "notification-1",
-    });
+    transaction.outboxEvent.create.mockResolvedValue({ id: "event-1" });
 
     const result = await service.review("admin-1", "application-1", {
       decision: "APPROVED",
@@ -202,13 +201,19 @@ describe("PartnerApplicationsService", () => {
         grantedById: "admin-1",
       }),
     });
-    expect(notifications.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        recipientId: "user-1",
-        kind: "PARTNER_APPLICATION_APPROVED",
+    expect(transaction.outboxEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: "PARTNER_APPLICATION_REVIEWED",
+        aggregateType: "PartnerApplication",
+        aggregateId: "application-1",
+        payload: expect.objectContaining({
+          applicantId: "user-1",
+          applicationId: "application-1",
+          status: PartnerApplicationStatus.APPROVED,
+        }),
       }),
-      transaction,
-    );
+    });
+    expect(notifications.create).not.toHaveBeenCalled();
   });
 
   it("does not approve an application if its applicant is not active", async () => {
@@ -257,6 +262,7 @@ describe("PartnerApplicationsService", () => {
       ).rejects.toBeInstanceOf(ConflictException);
       expect(transaction.partnerApplication.update).not.toHaveBeenCalled();
       expect(transaction.partnerMembership.create).not.toHaveBeenCalled();
+      expect(transaction.outboxEvent.create).not.toHaveBeenCalled();
       expect(notifications.create).not.toHaveBeenCalled();
     }
   });

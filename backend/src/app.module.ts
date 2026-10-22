@@ -16,6 +16,8 @@ import { ProfilesModule } from "./profiles/profiles.module";
 import { PartnerApplicationsModule } from "./partner-applications/partner-applications.module";
 import { SearchModule } from "./search/search.module";
 import { SupportProgramRegistrationsModule } from "./support-program-registrations/support-program-registrations.module";
+import { ScheduleModule } from '@nestjs/schedule';
+import { OutboxWorker } from "./outbox/outbox.worker";
 
 @Module({
   imports: [
@@ -38,6 +40,10 @@ import { SupportProgramRegistrationsModule } from "./support-program-registratio
     NotificationsModule,
     SearchModule,
     SupportProgramRegistrationsModule,
+    ScheduleModule.forRoot(),
+  ],
+  providers: [
+    OutboxWorker,
   ],
 })
-export class AppModule {}
+export class AppModule { }
