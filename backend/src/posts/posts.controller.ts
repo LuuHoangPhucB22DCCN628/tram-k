@@ -8,6 +8,7 @@ import { ApiSuccessResponse } from "../common/interfaces/api-response.interface"
 import { PostsService } from "./posts.service";
 import { CreatePostDto } from "./dto/create-post.dto";
 import { ReviewPostDto } from "./dto/review-post.dto";
+import { Idempotent } from "../common/idempotency.interceptor";
 
 @ApiTags("posts")
 @Controller("posts")
@@ -17,6 +18,7 @@ export class PostsController {
     @Post()
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
+    @Idempotent("CREATE_POST")
     async create(
         @CurrentUser() user: AuthenticatedUser,
         @Body() dto: CreatePostDto,
@@ -27,6 +29,7 @@ export class PostsController {
     @Post(":id/submit")
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
+    @Idempotent("SUBMIT_POST")
     async submit(
         @CurrentUser() user: AuthenticatedUser,
         @Param("id") id: string,
@@ -37,6 +40,7 @@ export class PostsController {
     @Post(":id/review")
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
+    @Idempotent("REVIEW_POST")
     async review(
         @CurrentUser() admin: AuthenticatedUser,
         @Param("id") id: string,

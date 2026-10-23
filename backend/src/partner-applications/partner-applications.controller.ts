@@ -29,6 +29,7 @@ import { SavePartnerDraftDto } from "./dto/save-partner-draft.dto";
 import { PartnerApplicationDocumentsService } from "./partner-application-documents.service";
 import { PartnerApplicationsService } from "./partner-applications.service";
 import { ChangePartnerStatusDto } from "./dto/change-partner-status.dto";
+import { Idempotent } from "../common/idempotency.interceptor";
 
 @ApiTags("partner applications")
 @ApiBearerAuth()
@@ -86,6 +87,7 @@ export class PartnerApplicationsController {
   }
 
   @Post("mine/submit")
+  @Idempotent("SUBMIT_PARTNER_APPLICATION")
   async submit(
     @CurrentUser() actor: AuthenticatedUser,
     @Body() dto: SubmitPartnerApplicationDto,
@@ -114,6 +116,7 @@ export class PartnerApplicationsController {
   }
 
   @Patch("admin/:applicationId/review")
+  @Idempotent("REVIEW_PARTNER_APPLICATION")
   async review(
     @CurrentUser() actor: AuthenticatedUser,
     @Param("applicationId") applicationId: string,
@@ -126,6 +129,7 @@ export class PartnerApplicationsController {
   }
 
   @Patch("admin/users/:userId/status")
+  @Idempotent("CHANGE_PARTNER_STATUS")
   async changePartnerStatus(
     @CurrentUser() actor: AuthenticatedUser,
     @Param("userId") userId: string,

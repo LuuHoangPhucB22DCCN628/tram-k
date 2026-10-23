@@ -8,6 +8,7 @@ import { ApiSuccessResponse } from "../common/interfaces/api-response.interface"
 import { ContentsService } from "./contents.service";
 import { CreateContentDto } from "./dto/create-content.dto";
 import { PublishContentDto } from "./dto/publish-content.dto";
+import { Idempotent } from "../common/idempotency.interceptor";
 
 @ApiTags("contents")
 @Controller("contents")
@@ -26,6 +27,7 @@ export class ContentsController {
     @Post()
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
+    @Idempotent("CREATE_CONTENT")
     async create(
         @CurrentUser() user: AuthenticatedUser,
         @Body() dto: CreateContentDto,
@@ -36,6 +38,7 @@ export class ContentsController {
     @Post(":id/publish")
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
+    @Idempotent("PUBLISH_CONTENT")
     async publish(
         @CurrentUser() user: AuthenticatedUser,
         @Param("id") id: string,

@@ -25,6 +25,9 @@ import { SupportPointsModule } from "./support-points/support-points.module";
 import { AuditLogsModule } from "./audit-logs/audit-logs.module";
 import { ExportsModule } from "./exports/exports.module";
 import { ContentsModule } from "./contents/contents.module";
+import { IdempotencyService } from "./common/idempotency.service";
+import { APP_INTERCEPTOR } from "@nestjs/core";
+import { IdempotencyInterceptor } from "./common/idempotency.interceptor";
 
 @Module({
   imports: [
@@ -58,6 +61,11 @@ import { ContentsModule } from "./contents/contents.module";
   ],
   providers: [
     OutboxWorker,
+    IdempotencyService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
+    },
   ],
 })
 export class AppModule { }

@@ -7,6 +7,7 @@ import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { ApiSuccessResponse } from "../common/interfaces/api-response.interface";
 import { UpdateSupportProgramRegistrationDto } from "./dto/update-support-program-registration.dto";
 import { SupportProgramRegistrationsService } from "./support-program-registrations.service";
+import { Idempotent } from "../common/idempotency.interceptor";
 
 @ApiTags("program registrations")
 @ApiBearerAuth()
@@ -29,6 +30,8 @@ export class SupportProgramRegistrationsController {
   }
 
   @Post(":id/registrations")
+  @UseGuards(JwtAuthGuard)
+  @Idempotent("REGISTER_PROGRAM")
   async register(
     @CurrentUser() actor: AuthenticatedUser,
     @Param("id") programId: string,
@@ -37,6 +40,7 @@ export class SupportProgramRegistrationsController {
   }
 
   @Patch(":id/registrations/:registrationId/attendance")
+  @Idempotent("UPDATE_ATTENDANCE")
   async update(
     @CurrentUser() actor: AuthenticatedUser,
     @Param("id") programId: string,
@@ -47,6 +51,7 @@ export class SupportProgramRegistrationsController {
   }
 
   @Post("me/registrations/:id/cancel")
+  @Idempotent("CANCEL_REGISTRATION")
   async cancel(
     @CurrentUser() actor: AuthenticatedUser,
     @Param("id") programId: string,

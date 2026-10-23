@@ -880,3 +880,19 @@ model ContentRevision {
   @@unique([contentId, revisionNumber])
   @@map("content_revisions")
 }
+
+model IdempotencyRecord {
+  id             String   @id @default(cuid())
+  actorScope     String   @map("actor_scope")  
+  operation      String                        
+  key            String                          
+  payloadHash    String   @map("payload_hash")  
+  responseStatus Int      @map("response_status")
+  responseBody   Json     @map("response_body")
+  expiresAt      DateTime @map("expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@unique([actorScope, operation, key])
+  @@index([expiresAt])
+  @@map("idempotency_records")
+}
