@@ -170,6 +170,16 @@ npx prisma validate
 liệu cần giữ. Lệnh này xóa dữ liệu trong database mục tiêu rồi tạo lại
 schema.
 
+### 5.1. Tạo tài khoản Admin ban đầu (Bắt buộc)
+
+Để truy cập vào trang quản trị (Dashboard, CMS, Duyệt bài), bạn cần có ít nhất một tài khoản Admin. Dự án không mở API đăng ký Admin công khai vì lý do bảo mật.
+
+Hãy chạy script seed có sẵn của dự án để tạo tài khoản Admin mặc định:
+
+```powershell
+npm run seed:admin
+```
+
 ## 6. Khởi động backend
 
 ```powershell
@@ -178,8 +188,11 @@ npm run start:dev
 
 Mặc định, API chạy tại:
 
-- API: http://localhost:3000
-- Health check: http://localhost:3000/health
+API: http://localhost:3000
+
+Health check (Liveness): http://localhost:3000/health/live
+
+Health check (Readiness - kiểm tra cả DB): http://localhost:3000/health/ready
 
 Mở đường dẫn health check trên trình duyệt hoặc dùng công cụ HTTP để
 kiểm tra ứng dụng đã khởi động.
@@ -248,6 +261,8 @@ Tạo file `.env.test` ở thư mục `backend/` (đã được ignore trong `.g
 ```dotenv
 DATABASE_URL="postgresql://postgres:password@localhost:5432/tramk_test_db?schema=public"
 JWT_SECRET="tram-k-e2e-only-signing-secret-change-this"
+JOBS_ENABLED=false
+AUTH_JOBS_ENABLED=false
 ```
 
 ### 9.4. Chạy Test

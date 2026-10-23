@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "seed:admin": "ts-node prisma/seed.ts",
     "test:e2e": "dotenv -e .env.test -- jest --config ./test/jest-e2e.json --runInBand"
   },
   "dependencies": {
@@ -50,6 +51,9 @@
     "ts-jest": "^29.4.12",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+    "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
   "jest": {
     "moduleFileExtensions": [
