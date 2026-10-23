@@ -24,6 +24,7 @@ const dto = {
   introduction:
     "Chúng tôi hỗ trợ suất ăn và phương tiện cho bệnh nhân khó khăn.",
   documentKeys: ["private/partner/user-1/xac-minh.pdf"],
+  expectedVersion: 0,
 };
 
 describe("PartnerApplicationsService", () => {
@@ -166,10 +167,10 @@ describe("PartnerApplicationsService", () => {
   it("approves the application and grants additive partner membership atomically", async () => {
     transaction.user.findUnique
       .mockResolvedValueOnce({
-      id: "admin-1",
-      status: UserStatus.ACTIVE,
-      deletedAt: null,
-      role: { name: RoleName.ADMIN },
+        id: "admin-1",
+        status: UserStatus.ACTIVE,
+        deletedAt: null,
+        role: { name: RoleName.ADMIN },
       })
       .mockResolvedValueOnce({
         id: "user-1",

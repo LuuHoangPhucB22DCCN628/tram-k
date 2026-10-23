@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { AuthenticatedUser } from "../auth/auth-user.interface";
@@ -8,48 +8,48 @@ import { ApiSuccessResponse } from "../common/interfaces/api-response.interface"
 import { UpdateSupportProgramRegistrationDto } from "./dto/update-support-program-registration.dto";
 import { SupportProgramRegistrationsService } from "./support-program-registrations.service";
 
-@ApiTags("support program registrations")
+@ApiTags("program registrations")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller("support-program-registrations")
+@Controller("programs")
 export class SupportProgramRegistrationsController {
-  constructor(private readonly registrations: SupportProgramRegistrationsService) {}
+  constructor(private readonly registrations: SupportProgramRegistrationsService) { }
 
-  @Get("mine")
+  @Get("me/registrations")
   async mine(@CurrentUser() actor: AuthenticatedUser): Promise<ApiSuccessResponse<unknown>> {
     return { success: true, data: await this.registrations.mine(actor) };
   }
 
-  @Get("program/:programId")
+  @Get(":id/registrations")
   async forProgram(
     @CurrentUser() actor: AuthenticatedUser,
-    @Param("programId") programId: string,
+    @Param("id") programId: string,
   ): Promise<ApiSuccessResponse<unknown>> {
     return { success: true, data: await this.registrations.forProgram(actor, programId) };
   }
 
-  @Post("program/:programId")
+  @Post(":id/registrations")
   async register(
     @CurrentUser() actor: AuthenticatedUser,
-    @Param("programId") programId: string,
+    @Param("id") programId: string,
   ): Promise<ApiSuccessResponse<unknown>> {
     return { success: true, data: await this.registrations.register(actor, programId) };
   }
 
-  @Patch("program/:programId/member/:userId")
+  @Patch(":id/registrations/:registrationId/attendance")
   async update(
     @CurrentUser() actor: AuthenticatedUser,
-    @Param("programId") programId: string,
-    @Param("userId") userId: string,
+    @Param("id") programId: string,
+    @Param("registrationId") registrationId: string,
     @Body() dto: UpdateSupportProgramRegistrationDto,
   ): Promise<ApiSuccessResponse<unknown>> {
-    return { success: true, data: await this.registrations.update(actor, programId, userId, dto) };
+    return { success: true, data: await this.registrations.update(actor, programId, registrationId, dto) };
   }
 
-  @Delete("program/:programId")
+  @Post("me/registrations/:id/cancel")
   async cancel(
     @CurrentUser() actor: AuthenticatedUser,
-    @Param("programId") programId: string,
+    @Param("id") programId: string,
   ): Promise<ApiSuccessResponse<unknown>> {
     return { success: true, data: await this.registrations.cancel(actor, programId) };
   }

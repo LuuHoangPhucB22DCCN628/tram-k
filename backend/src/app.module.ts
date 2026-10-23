@@ -18,6 +18,9 @@ import { SearchModule } from "./search/search.module";
 import { SupportProgramRegistrationsModule } from "./support-program-registrations/support-program-registrations.module";
 import { ScheduleModule } from '@nestjs/schedule';
 import { OutboxWorker } from "./outbox/outbox.worker";
+import { PostsModule } from "./posts/posts.module";
+import { ReportsModule } from "./reports/reports.module";
+import { ProgramsModule } from "./programs/programs.module";
 
 @Module({
   imports: [
@@ -41,6 +44,9 @@ import { OutboxWorker } from "./outbox/outbox.worker";
     SearchModule,
     SupportProgramRegistrationsModule,
     ScheduleModule.forRoot(),
+    PostsModule,
+    ReportsModule,
+    ProgramsModule,
   ],
   providers: [
     OutboxWorker,

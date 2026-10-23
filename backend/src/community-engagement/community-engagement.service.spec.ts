@@ -43,8 +43,7 @@ describe("CommunityEngagementService", () => {
       if (Array.isArray(arg)) {
         return Promise.all(arg);
       }
-
-      return (arg as (client: typeof transaction) => unknown)(transaction);
+      return (arg as (client: typeof prisma) => unknown)(prisma);
     }),
     user: { findUnique: jest.fn() },
     communityComment: {
@@ -54,8 +53,17 @@ describe("CommunityEngagementService", () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
-    communityReaction: { groupBy: jest.fn() },
+    communityReaction: {
+      create: jest.fn(),
+      delete: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      groupBy: jest.fn(),
+    },
+    auditLog: { create: jest.fn() },
+    outboxEvent: { create: jest.fn() },
   } as unknown as PrismaService;
+
   const communityCommentMock = (
     prisma as unknown as {
       communityComment: {
@@ -81,6 +89,7 @@ describe("CommunityEngagementService", () => {
       id: actor.id,
       status: UserStatus.ACTIVE,
       deletedAt: null,
+      role: { name: RoleName.PATIENT },
     });
     communityCommentMock.findUnique.mockResolvedValue(null);
     communityCommentMock.count.mockResolvedValue(0);
@@ -330,8 +339,8 @@ describe("CommunityEngagementService", () => {
   });
 
   it("creates, changes, then removes the single reaction for a story", async () => {
-    transaction.communityReaction.findUnique.mockResolvedValueOnce(null);
-    transaction.communityReaction.create.mockResolvedValue({
+    (prisma as any).communityReaction.findUnique.mockResolvedValueOnce(null);
+    (prisma as any).communityReaction.create.mockResolvedValue({
       id: "reaction-1",
       type: CommunityReactionType.LIKE,
     });
@@ -340,11 +349,11 @@ describe("CommunityEngagementService", () => {
       type: CommunityReactionType.LIKE,
     });
 
-    transaction.communityReaction.findUnique.mockResolvedValueOnce({
+    (prisma as any).communityReaction.findUnique.mockResolvedValueOnce({
       id: "reaction-1",
       type: CommunityReactionType.LIKE,
     });
-    transaction.communityReaction.update.mockResolvedValue({
+    (prisma as any).communityReaction.update.mockResolvedValue({
       id: "reaction-1",
       type: CommunityReactionType.LOVE,
     });
@@ -353,7 +362,7 @@ describe("CommunityEngagementService", () => {
       type: CommunityReactionType.LOVE,
     });
 
-    transaction.communityReaction.findUnique.mockResolvedValueOnce({
+    (prisma as any).communityReaction.findUnique.mockResolvedValueOnce({
       id: "reaction-1",
       type: CommunityReactionType.LOVE,
     });
@@ -362,9 +371,9 @@ describe("CommunityEngagementService", () => {
       type: CommunityReactionType.LOVE,
     });
 
-    expect(transaction.communityReaction.create).toHaveBeenCalledTimes(1);
-    expect(transaction.communityReaction.update).toHaveBeenCalledTimes(1);
-    expect(transaction.communityReaction.delete).toHaveBeenCalledTimes(1);
+    expect((prisma as any).communityReaction.create).toHaveBeenCalledTimes(1);
+    expect((prisma as any).communityReaction.update).toHaveBeenCalledTimes(1);
+    expect((prisma as any).communityReaction.delete).toHaveBeenCalledTimes(1);
   });
 
   it("returns zero counts for reactions that have not been used", async () => {

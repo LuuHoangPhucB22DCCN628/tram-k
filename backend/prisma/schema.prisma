@@ -63,6 +63,7 @@ enum HairRegistrationStatus {
 }
 
 enum PartnerApplicationStatus {
+  DRAFT
   PENDING
   APPROVED
   REJECTED
@@ -120,6 +121,54 @@ enum PartnerStatus {
   SUSPENDED
 }
 
+enum PostStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  REJECTED
+  HIDDEN
+  ARCHIVED
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ModerationActionType {
+  HIDE
+  RESTORE
+  SOFT_DELETE
+  DISMISS
+}
+
+enum ModerationTargetType {
+  POST
+  COMMENT
+}
+
+enum SupportPointStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  REJECTED
+  HIDDEN
+  ARCHIVED
+}
+
+enum ProgramStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  REJECTED
+  HIDDEN
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
 model Role {
   id        String   @id @default(cuid())
   name      RoleName @unique
@@ -160,6 +209,8 @@ model User {
   consents                    UserConsent[]
   authAttempts                AuthAttempt[]
   aiConversations             AiConversation[]
+  posts                       Post[]
+  reports                     Report[]
   profile                     UserProfile?
   createdAt                   DateTime                     @default(now()) @map("created_at")
   updatedAt                   DateTime                     @updatedAt @map("updated_at")
@@ -424,6 +475,7 @@ model ManagedResource {
 model SupportProgramRegistration {
   id             String                           @id @default(cuid())
   programId      String                           @map("program_id")
+  program        Program                          @relation(fields: [programId], references: [id], onDelete: Cascade)
   userId         String                           @map("user_id")
   user           User                             @relation(fields: [userId], references: [id], onDelete: Cascade)
   applicantName  String                           @map("applicant_name") @db.VarChar(160)
@@ -450,14 +502,20 @@ model PartnerApplication {
   id                 String                       @id @default(cuid())
   applicantId        String                       @unique @map("applicant_id")
   applicant          User                         @relation("PartnerApplicant", fields: [applicantId], references: [id])
-  organizationName   String                       @map("organization_name")
-  representativeName String                       @map("representative_name")
-  phone              String
-  email              String
-  address            String
-  introduction       String
+  
+  organizationName   String?                      @map("organization_name") 
+  representativeName String?                      @map("representative_name")
+  phone              String?
+  email              String?
+  address            String?
+  introduction       String?
+  
+  trackingCode       String?                      @unique @map("tracking_code")
+  
   documentKeys       String[]                     @default([]) @map("document_keys")
-  status             PartnerApplicationStatus     @default(PENDING)
+  status             PartnerApplicationStatus     @default(DRAFT)
+  version            Int                          @default(0)
+  
   reviewReason       String?                      @map("review_reason")
   reviewedById       String?                      @map("reviewed_by_id")
   reviewedBy         User?                        @relation("PartnerReviewer", fields: [reviewedById], references: [id])
@@ -499,6 +557,8 @@ model PartnerMembership {
   grantedById   String             @map("granted_by_id")
   grantedBy     User               @relation("PartnerGranter", fields: [grantedById], references: [id])
   grantedAt     DateTime           @default(now()) @map("granted_at")
+  supportPoints SupportPoint[]
+  programs      Program[]
 
   @@index([grantedById])
   @@map("partner_memberships")
@@ -548,4 +608,199 @@ model RegistrationStatusHistory {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("registration_status_histories")
+}
+
+model Post {
+  id                String       @id @default(cuid())
+  authorId          String       @map("author_id")
+  author            User         @relation(fields: [authorId], references: [id])
+  status            PostStatus   @default(DRAFT)
+  currentRevisionId String?      @unique @map("current_revision_id")
+  currentRevision   PostRevision? @relation("CurrentRevision", fields: [currentRevisionId], references: [id])
+  revisions         PostRevision[] @relation("PostRevisions")
+  
+  publishedAt       DateTime?    @map("published_at")
+  version           Int          @default(0)
+  
+  deletedAt         DateTime?    @map("deleted_at")
+  deletedById       String?      @map("deleted_by_id")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  @@index([status, publishedAt])
+  @@index([authorId])
+  @@map("posts")
+}
+
+model PostRevision {
+  id                String       @id @default(cuid())
+  postId            String       @map("post_id")
+  post              Post         @relation("PostRevisions", fields: [postId], references: [id], onDelete: Cascade)
+  
+  currentForPost    Post?        @relation("CurrentRevision")
+  
+  revisionNumber    Int          @map("revision_number")
+  title             String       @db.VarChar(160)
+  summary           String?      @db.VarChar(500)
+  sanitizedBody     String       @map("sanitized_body") @db.Text
+  contentHash       String       @map("content_hash")
+  
+  createdById       String       @map("created_by_id")
+  createdAt         DateTime     @default(now()) @map("created_at")
+
+  @@unique([postId, revisionNumber])
+  @@map("post_revisions")
+}
+
+model Report {
+  id                String               @id @default(cuid())
+  reporterId        String               @map("reporter_id")
+  reporter          User                 @relation(fields: [reporterId], references: [id])
+  
+  targetType        ModerationTargetType @map("target_type")
+  targetId          String               @map("target_id")
+  targetRevisionId  String?              @map("target_revision_id") 
+  targetContentVersion Int?              @map("target_content_version") 
+  
+  reasonCode        String               @map("reason_code") @db.VarChar(50)
+  details           String?              @db.Text
+  snapshot          Json?               
+  
+  status            ReportStatus         @default(OPEN)
+  version           Int                  @default(0)
+  
+  reviewedById      String?              @map("reviewed_by_id")
+  reviewedAt        DateTime?            @map("reviewed_at")
+  resolutionCode    String?              @map("resolution_code")
+  
+  createdAt         DateTime             @default(now()) @map("created_at")
+  updatedAt         DateTime             @updatedAt @map("updated_at")
+
+  holds             ModerationHold[]
+  actions           ModerationAction[]
+
+  @@index([targetType, targetId, status])
+  @@index([reporterId, status])
+  @@map("reports")
+}
+
+model ModerationHold {
+  id                String               @id @default(cuid())
+  reportId          String               @map("report_id")
+  report            Report               @relation(fields: [reportId], references: [id])
+  
+  targetType        ModerationTargetType @map("target_type")
+  targetId          String               @map("target_id")
+  targetRevisionId  String?              @map("target_revision_id")
+  targetContentVersion Int?              @map("target_content_version")
+  
+  status            String               @default("ACTIVE")
+  releasedAt        DateTime?            @map("released_at")
+  releasedById      String?              @map("released_by_id")
+  
+  createdAt         DateTime             @default(now()) @map("created_at")
+  createdById       String               @map("created_by_id")
+
+  @@index([targetType, targetId, status])
+  @@map("moderation_holds")
+}
+
+model ModerationAction {
+  id                String               @id @default(cuid())
+  reportId          String?              @map("report_id")
+  report            Report?              @relation(fields: [reportId], references: [id])
+  
+  actionType        ModerationActionType @map("action_type")
+  targetType        ModerationTargetType @map("target_type")
+  targetId          String               @map("target_id")
+  targetRevisionId  String?              @map("target_revision_id")
+  targetContentVersion Int?              @map("target_content_version")
+  
+  reason            String               @db.Text
+  supersedesActionId String?             @map("supersedes_action_id")
+  
+  createdAt         DateTime             @default(now()) @map("created_at")
+  createdById       String               @map("created_by_id")
+
+  @@index([targetType, targetId])
+  @@map("moderation_actions")
+}
+
+model SupportPoint {
+  id              String             @id @default(cuid())
+  ownerPartnerId  String             @map("owner_partner_id")
+  owner           PartnerMembership  @relation(fields: [ownerPartnerId], references: [id])
+  
+  name            String             @db.VarChar(160)
+  description     String             @db.VarChar(1000)
+  address         String             @db.VarChar(255)
+  latitude        Float
+  longitude       Float
+  contactPhone    String?            @map("contact_phone")
+  contactEmail    String?            @map("contact_email")
+  operatingHours  String?            @map("operating_hours")
+  supportType     String             @map("support_type") @db.VarChar(50)
+  
+  status          SupportPointStatus @default(DRAFT)
+  version         Int                @default(0)
+  publishedAt     DateTime?          @map("published_at")
+  deletedAt       DateTime?          @map("deleted_at")
+  deletedById     String?            @map("deleted_by_id")
+  
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  @@index([status, publishedAt])
+  @@index([ownerPartnerId, status])
+  @@map("support_points")
+}
+
+model Program {
+  id                   String              @id @default(cuid())
+  ownerPartnerId       String              @map("owner_partner_id")
+  owner                PartnerMembership   @relation(fields: [ownerPartnerId], references: [id])
+  
+  title                String              @db.VarChar(160)
+  description          String              @db.VarChar(10000)
+  address              String              @db.VarChar(255)
+  latitude             Float
+  longitude            Float
+  conditions           String?             @db.Text
+  registrationOpenAt   DateTime            @map("registration_open_at")
+  registrationCloseAt  DateTime            @map("registration_close_at")
+  startAt              DateTime            @map("start_at")
+  endAt                DateTime            @map("end_at")
+  capacity             Int
+  
+  status               ProgramStatus       @default(DRAFT)
+  version              Int                 @default(0)
+  publishedAt          DateTime?           @map("published_at")
+  hiddenReason         String?             @map("hidden_reason")
+  cancelReason         String?             @map("cancel_reason")
+  
+  deletedAt            DateTime?           @map("deleted_at")
+  deletedById          String?             @map("deleted_by_id")
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+
+  registrations        SupportProgramRegistration[]
+  statusHistory        ProgramStatusHistory[]
+
+  @@index([status, registrationOpenAt])
+  @@index([ownerPartnerId, status])
+  @@map("programs")
+}
+
+model ProgramStatusHistory {
+  id           String        @id @default(cuid())
+  programId    String        @map("program_id")
+  program      Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
+  fromStatus   ProgramStatus? @map("from_status") // <-- Thêm dấu ? ở đây
+  toStatus     ProgramStatus @map("to_status")
+  reason       String?
+  actorId      String?       @map("actor_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  @@index([programId, createdAt])
+  @@map("program_status_histories")
 }

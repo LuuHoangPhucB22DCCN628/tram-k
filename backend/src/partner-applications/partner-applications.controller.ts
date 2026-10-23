@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   StreamableFile,
@@ -24,6 +25,7 @@ import { UploadedMediaFile } from "../media/media.types";
 import { ListPartnerApplicationsDto } from "./dto/list-partner-applications.dto";
 import { ReviewPartnerApplicationDto } from "./dto/review-partner-application.dto";
 import { SubmitPartnerApplicationDto } from "./dto/submit-partner-application.dto";
+import { SavePartnerDraftDto } from "./dto/save-partner-draft.dto";
 import { PartnerApplicationDocumentsService } from "./partner-application-documents.service";
 import { PartnerApplicationsService } from "./partner-applications.service";
 import { ChangePartnerStatusDto } from "./dto/change-partner-status.dto";
@@ -45,6 +47,17 @@ export class PartnerApplicationsController {
     return { success: true, data: await this.applications.findMine(actor.id) };
   }
 
+  @Put("mine/draft")
+  async saveDraft(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Body() dto: SavePartnerDraftDto,
+  ): Promise<ApiSuccessResponse<unknown>> {
+    return {
+      success: true,
+      data: await this.applications.saveDraft(actor.id, dto),
+    };
+  }
+
   @Post("documents")
   @ApiConsumes("multipart/form-data")
   @UseInterceptors(
@@ -52,7 +65,6 @@ export class PartnerApplicationsController {
       limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
-
   async uploadDocuments(
     @CurrentUser() actor: AuthenticatedUser,
     @UploadedFiles() files: UploadedMediaFile[] | undefined,
@@ -73,7 +85,7 @@ export class PartnerApplicationsController {
     });
   }
 
-  @Post("mine")
+  @Post("mine/submit")
   async submit(
     @CurrentUser() actor: AuthenticatedUser,
     @Body() dto: SubmitPartnerApplicationDto,

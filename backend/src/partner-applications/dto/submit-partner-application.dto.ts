@@ -4,9 +4,11 @@ import {
   ArrayMinSize,
   IsArray,
   IsEmail,
+  IsInt,
   IsString,
   Matches,
   MaxLength,
+  Min,
   MinLength,
 } from "class-validator";
 
@@ -49,4 +51,9 @@ export class SubmitPartnerApplicationDto {
   @ArrayMaxSize(10)
   @IsString({ each: true })
   documentKeys!: string[];
+
+  @ApiProperty({ description: "Version hiện tại của hồ sơ" })
+  @IsInt()
+  @Min(0)
+  expectedVersion!: number;
 }

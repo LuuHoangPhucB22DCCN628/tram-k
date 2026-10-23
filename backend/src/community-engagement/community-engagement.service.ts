@@ -9,16 +9,13 @@ import {
 } from "@nestjs/common";
 import { CommunityReactionType, RoleName, UserStatus } from "@prisma/client";
 import * as crypto from 'crypto';
+import { randomUUID } from 'crypto';
 
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateCommunityCommentDto } from "./dto/create-community-comment.dto";
 import { ToggleCommunityReactionDto } from "./dto/toggle-community-reaction.dto";
 import { UpdateCommunityCommentDto } from "./dto/update-community-comment.dto";
 import { AuthenticatedUser } from "../auth/auth-user.interface";
-import { error } from "console";
-
-const COMMENT_LIMIT = 10;
-const COMMENT_WINDOW_MS = 5 * 60 * 1000;
 
 @Injectable()
 export class CommunityEngagementService {
@@ -41,6 +38,7 @@ export class CommunityEngagementService {
         where: { sourceKey, parentId: null }
       })
     ]);
+
     const itemsWithReplies = await Promise.all(
       items.map(async (comment) => {
         const replies = await this.prisma.communityComment.findMany({
@@ -62,6 +60,7 @@ export class CommunityEngagementService {
         };
       })
     );
+
     return {
       items: itemsWithReplies,
       total,
@@ -71,14 +70,14 @@ export class CommunityEngagementService {
   }
 
   private mapComment(comment: any) {
-    const isDeleted = comment.deletedAt !== null || comment.status === "HIDDEN";
+    const isHidden = comment.deletedAt !== null || comment.status === "HIDDEN";
 
     return {
       id: comment.id,
-      content: isDeleted ? "[Bình luận đã bị xóa]" : comment.content,
+      content: isHidden ? "[Bình luận đã bị ẩn hoặc xóa]" : comment.content,
       createdAt: comment.createdAt,
-      user: isDeleted ? null : comment.user,
-      status: comment.status,
+      user: isHidden ? null : comment.user,
+      status: isHidden ? "HIDDEN" : comment.status,
     };
   }
 
@@ -141,7 +140,7 @@ export class CommunityEngagementService {
 
     if (existing) {
       const newHash = this.getHashPayload(dto);
-      const oldHash = this.getHashPayload(existing);
+      const oldHash = this.getHashPayload(existing as any);
 
       if (newHash != oldHash) {
         throw new ConflictException("Idempotency-Key đã được sử dụng với nội dung khác.");
@@ -160,39 +159,78 @@ export class CommunityEngagementService {
     });
 
     if (countLastMin >= 5 || countLastHour >= 30) {
-      const error = new HttpException("Bạn đã bình luận quá nhiều. Vui lòng thử lại sau.", HttpStatus.TOO_MANY_REQUESTS);
-      throw error;
+      throw new HttpException("Bạn đã bình luận quá nhiều. Vui lòng thử lại sau.", HttpStatus.TOO_MANY_REQUESTS);
     }
 
+    let parentComment: any = null;
     if (dto.parentId) {
-      const parent = await this.prisma.communityComment.findUnique({
+      parentComment = await this.prisma.communityComment.findUnique({
         where: { id: dto.parentId },
+        include: { user: { select: { id: true, fullName: true } } }
       });
 
-      if (!parent || parent.deletedAt !== null || parent.status !== "PUBLISHED") {
+      if (!parentComment || parentComment.deletedAt !== null || parentComment.status !== "PUBLISHED") {
         throw new NotFoundException("Bình luận gốc không tồn tại hoặc đã bị ẩn/xóa.");
       }
 
-      if (parent.sourceKey !== dto.sourceKey) {
+      if (parentComment.sourceKey !== dto.sourceKey) {
         throw new BadRequestException("Bình luận gốc phải thuộc cùng một bài viết.");
       }
 
-      if (parent.parentId !== null) {
+      if (parentComment.parentId !== null) {
         throw new BadRequestException("Chỉ hỗ trợ trả lời bình luận cấp 1.");
       }
     }
 
-    const comment = await this.prisma.communityComment.create({
-      data: {
-        userId: actor.id,
-        sourceKey: dto.sourceKey,
-        sourceTitle: dto.sourceTitle,
-        sourcePath: dto.sourcePath,
-        parentId: dto.parentId,
-        content: dto.content,
-        idempotencyKey: dto.idempotencyKey,
-        status: "PUBLISHED",
+    const correlationId = randomUUID();
+
+    const comment = await this.prisma.$transaction(async (transaction) => {
+      const created = await transaction.communityComment.create({
+        data: {
+          userId: actor.id,
+          sourceKey: dto.sourceKey,
+          sourceTitle: dto.sourceTitle,
+          sourcePath: dto.sourcePath,
+          parentId: dto.parentId,
+          content: dto.content,
+          idempotencyKey: dto.idempotencyKey,
+          status: "PUBLISHED",
+        }
+      });
+
+      await transaction.auditLog.create({
+        data: {
+          actorType: "USER",
+          actorId: actor.id,
+          action: "CREATE_COMMENT",
+          entityType: "COMMUNITY_COMMENT",
+          entityId: created.id,
+          after: { content: created.content, sourceKey: created.sourceKey },
+          correlationId,
+        }
+      });
+
+      if (parentComment && parentComment.userId !== actor.id) {
+        await transaction.outboxEvent.create({
+          data: {
+            eventId: randomUUID(),
+            type: "COMMENT_REPLIED",
+            aggregateType: "COMMUNITY_COMMENT",
+            aggregateId: created.id,
+            payload: {
+              recipientId: parentComment.userId,
+              replierName: user.fullName,
+              commentId: created.id,
+              parentId: parentComment.id,
+              sourceKey: dto.sourceKey,
+              sourceTitle: dto.sourceTitle,
+              contentPreview: dto.content.substring(0, 100),
+            }
+          }
+        })
       }
+
+      return created;
     });
 
     return this.mapComment(comment);
@@ -206,12 +244,33 @@ export class CommunityEngagementService {
       throw new BadRequestException("Không thể sửa bình luận đã bị ẩn hoặc xóa.");
     }
 
-    const updated = await this.prisma.communityComment.update({
-      where: { id: commentId },
-      data: {
-        version: { increment: 1 },
-        contentVersion: { increment: 1 },
-      },
+
+    const correlationId = randomUUID();
+
+    const updated = await this.prisma.$transaction(async (transaction) => {
+      const result = await transaction.communityComment.update({
+        where: { id: commentId },
+        data: {
+          content: dto.content,
+          version: { increment: 1 },
+          contentVersion: { increment: 1 },
+        },
+      });
+
+      await transaction.auditLog.create({
+        data: {
+          actorType: "USER",
+          actorId: userId,
+          action: "UPDATE_COMMENT",
+          entityType: "COMMUNITY_COMMENT",
+          entityId: commentId,
+          before: { content: comment.content },
+          after: { content: result.content },
+          correlationId,
+        }
+      });
+
+      return result;
     });
 
     return this.mapComment(updated);
@@ -221,14 +280,32 @@ export class CommunityEngagementService {
     const comment = await this.prisma.communityComment.findUnique({ where: { id: commentId } });
     this.assertOwnership(comment, userId);
 
-    const deleted = await this.prisma.communityComment.update({
-      where: { id: commentId },
-      data: {
-        content: "",
-        deletedAt: new Date(),
-        deletedById: userId,
-        version: { increment: 1 },
-      },
+    const correlationId = randomUUID();
+
+    const deleted = await this.prisma.$transaction(async (transaction) => {
+      const result = await transaction.communityComment.update({
+        where: { id: commentId },
+        data: {
+          content: "",
+          deletedAt: new Date(),
+          deletedById: userId,
+          version: { increment: 1 },
+        },
+      });
+
+      await transaction.auditLog.create({
+        data: {
+          actorType: "USER",
+          actorId: userId,
+          action: "SOFT_DELETE_COMMENT",
+          entityType: "COMMUNITY_COMMENT",
+          entityId: commentId,
+          after: { deletedAt: result.deletedAt },
+          correlationId,
+        }
+      });
+
+      return result;
     });
 
     return this.mapComment(deleted);
