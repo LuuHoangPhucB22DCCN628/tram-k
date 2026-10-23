@@ -169,6 +169,14 @@ enum ProgramStatus {
   ARCHIVED
 }
 
+enum ContentStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  HIDDEN
+  ARCHIVED
+}
+
 model Role {
   id        String   @id @default(cuid())
   name      RoleName @unique
@@ -211,10 +219,11 @@ model User {
   aiConversations             AiConversation[]
   posts                       Post[]
   reports                     Report[]
+  contents                    Content[]                    @relation("ContentReviewer")
   profile                     UserProfile?
   createdAt                   DateTime                     @default(now()) @map("created_at")
   updatedAt                   DateTime                     @updatedAt @map("updated_at")
-
+  
   @@index([roleId])
   @@index([status, deletedAt])
   @@index([verificationCleanupAt])
@@ -360,7 +369,7 @@ model AuthSession {
   userId      String    @map("user_id")
   user        User      @relation(fields: [userId], references: [id])
   tokenHash   String    @unique @map("token_hash")
-  familyId    String    @map("family_id") // <-- Dòng quan trọng bị thiếu
+  familyId    String    @map("family_id")
   authVersion Int       @default(1) @map("auth_version")
   expiresAt   DateTime  @map("expires_at")
   revokedAt   DateTime? @map("revoked_at")
@@ -384,7 +393,7 @@ model CommunityComment {
   parent         CommunityComment?  @relation("CommunityCommentReplies", fields: [parentId], references: [id])
   replies        CommunityComment[] @relation("CommunityCommentReplies")
   content        String
-  status         String             @default("PUBLISHED") // PUBLISHED hoặc HIDDEN
+  status         String             @default("PUBLISHED")
   contentVersion Int                @default(1) @map("content_version")
   version        Int                @default(0)
   deletedById    String?            @map("deleted_by_id")
@@ -603,7 +612,7 @@ model RegistrationStatusHistory {
   fromStatus SupportProgramRegistrationStatus? @map("from_status")
   toStatus   SupportProgramRegistrationStatus  @map("to_status")
   reason     String?                           @db.VarChar(1000)
-  actorId    String?                           @map("actor_id") // Nullable vì Scheduler (SYSTEM) không có actorId
+  actorId    String?                           @map("actor_id")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -795,7 +804,7 @@ model ProgramStatusHistory {
   id           String        @id @default(cuid())
   programId    String        @map("program_id")
   program      Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
-  fromStatus   ProgramStatus? @map("from_status") // <-- Thêm dấu ? ở đây
+  fromStatus   ProgramStatus? @map("from_status")
   toStatus     ProgramStatus @map("to_status")
   reason       String?
   actorId      String?       @map("actor_id")
@@ -803,4 +812,71 @@ model ProgramStatusHistory {
 
   @@index([programId, createdAt])
   @@map("program_status_histories")
+}
+
+model Source {
+  id        String    @id @default(cuid())
+  name      String    @db.VarChar(255)
+  url       String?   @db.VarChar(500)
+  contents  Content[]
+  
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("sources")
+}
+
+model Content {
+  id                    String              @id @default(cuid())
+  slug                  String              @unique
+  type                  SearchDocumentType  
+  status                ContentStatus       @default(DRAFT)
+  
+  title                 String              @db.VarChar(160)
+  summary               String?             @db.VarChar(500)
+  
+  currentRevisionId     String?             @unique @map("current_revision_id")
+  currentRevision       ContentRevision?    @relation("CurrentRevision", fields: [currentRevisionId], references: [id])
+  revisions             ContentRevision[]   @relation("ContentRevisions")
+  
+  sourceId              String?             @map("source_id")
+  source                Source?             @relation(fields: [sourceId], references: [id])
+  reviewedById          String?             @map("reviewed_by_id")
+  reviewedBy            User?               @relation("ContentReviewer", fields: [reviewedById], references: [id])
+  reviewedAt            DateTime?           @map("reviewed_at")
+  nextReviewAt          DateTime?           @map("next_review_at")
+  
+  publishAt             DateTime?           @map("publish_at")
+  publishedAt           DateTime?           @map("published_at")
+  publishFailureReason  String?             @map("publish_failure_reason") @db.Text
+  
+  version               Int                 @default(0)
+  deletedAt             DateTime?           @map("deleted_at")
+  deletedById           String?             @map("deleted_by_id")
+  
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+
+  @@index([status, publishedAt])
+  @@index([type, status])
+  @@map("contents")
+}
+
+model ContentRevision {
+  id            String    @id @default(cuid())
+  contentId     String    @map("content_id")
+  content       Content   @relation("ContentRevisions", fields: [contentId], references: [id], onDelete: Cascade)
+  currentFor    Content?  @relation("CurrentRevision")
+  
+  revisionNumber Int      @map("revision_number")
+  title          String   @db.VarChar(160)
+  summary        String?  @db.VarChar(500)
+  sanitizedBody  String   @map("sanitized_body") @db.Text
+  contentHash    String   @map("content_hash")
+  
+  createdById    String   @map("created_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@unique([contentId, revisionNumber])
+  @@map("content_revisions")
 }

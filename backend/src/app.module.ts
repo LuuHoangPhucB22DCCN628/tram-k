@@ -21,6 +21,10 @@ import { OutboxWorker } from "./outbox/outbox.worker";
 import { PostsModule } from "./posts/posts.module";
 import { ReportsModule } from "./reports/reports.module";
 import { ProgramsModule } from "./programs/programs.module";
+import { SupportPointsModule } from "./support-points/support-points.module";
+import { AuditLogsModule } from "./audit-logs/audit-logs.module";
+import { ExportsModule } from "./exports/exports.module";
+import { ContentsModule } from "./contents/contents.module";
 
 @Module({
   imports: [
@@ -47,6 +51,10 @@ import { ProgramsModule } from "./programs/programs.module";
     PostsModule,
     ReportsModule,
     ProgramsModule,
+    SupportPointsModule,
+    AuditLogsModule,
+    ExportsModule,
+    ContentsModule,
   ],
   providers: [
     OutboxWorker,
