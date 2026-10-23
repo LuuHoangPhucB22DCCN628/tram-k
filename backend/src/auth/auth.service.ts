@@ -925,6 +925,7 @@ export class AuthService {
       data: {
         userId,
         tokenHash: this.hashOpaqueToken(token),
+        familyId: randomUUID(),
         authVersion: user.authVersion,
         expiresAt: new Date(Date.now() + this.refreshTtlMs(role)),
       },
@@ -937,17 +938,29 @@ export class AuthService {
       where: { tokenHash: this.hashOpaqueToken(refreshToken) },
       include: { user: { include: { role: true, partnerMembership: true } } },
     });
+
+    if (!session) {
+      throw new UnauthorizedException("Phiên đăng nhập không hợp lệ hoặc đã hết hạn.");
+    }
+
+    if (session.revokedAt !== null) {
+      await this.prisma.authSession.updateMany({
+        where: { familyId: session.familyId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      })
+
+      throw new UnauthorizedException(
+        "Phát hiện tái sử dụng token. Tất cả phiên đăng nhập đã bị thu hồi vì lý do bảo mật.",
+      );
+    }
+
     if (
-      !session ||
-      session.revokedAt ||
       session.expiresAt <= new Date() ||
       session.user.deletedAt ||
       session.user.status !== UserStatus.ACTIVE ||
       session.authVersion !== session.user.authVersion
     ) {
-      throw new UnauthorizedException(
-        "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
-      );
+      throw new UnauthorizedException("Phiên đăng nhập không hợp lệ hoặc đã hết hạn.");
     }
 
     const role = session.user.partnerMembership
@@ -955,6 +968,7 @@ export class AuthService {
       : session.user.role.name;
     const nextToken = randomBytes(32).toString("base64url");
     const now = new Date();
+
     await this.prisma.$transaction(async (transaction) => {
       const revoked = await transaction.authSession.updateMany({
         where: {
@@ -973,6 +987,7 @@ export class AuthService {
         data: {
           userId: session.userId,
           tokenHash: this.hashOpaqueToken(nextToken),
+          familyId: session.familyId,
           authVersion: session.user.authVersion,
           expiresAt: new Date(now.getTime() + this.refreshTtlMs(role)),
         },

@@ -24,6 +24,7 @@ import { ToggleCommunityReactionBodyDto } from "./dto/toggle-community-reaction-
 import { UpdateCommunityCommentDto } from "./dto/update-community-comment.dto";
 import { ListCommunityCommentsQueryDto } from "./dto/list-community-comments-query.dto";
 import { Response } from "express";
+import { Idempotent } from "../common/idempotency.interceptor";
 
 @ApiTags("community engagement")
 @Controller("community/stories")
@@ -72,6 +73,7 @@ export class CommunityEngagementController {
   @Post(":sourceKey/comments")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Idempotent("CREATE_COMMENT")
   async createComment(
     @CurrentUser() user: AuthenticatedUser,
     @Param() params: CommunitySourceKeyParamDto,
@@ -97,6 +99,7 @@ export class CommunityEngagementController {
   @Patch("comments/:commentId")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Idempotent("UPDATE_COMMENT")
   async updateComment(
     @CurrentUser() user: AuthenticatedUser,
     @Param("commentId") commentId: string,
@@ -111,6 +114,7 @@ export class CommunityEngagementController {
   @Delete("comments/:commentId")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Idempotent("DELETE_COMMENT")
   async deleteComment(
     @CurrentUser() user: AuthenticatedUser,
     @Param("commentId") commentId: string,
@@ -124,6 +128,7 @@ export class CommunityEngagementController {
   @Post(":sourceKey/reactions/toggle")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Idempotent("TOGGLE_REACTION")
   async toggleReaction(
     @CurrentUser() user: AuthenticatedUser,
     @Param() params: CommunitySourceKeyParamDto,

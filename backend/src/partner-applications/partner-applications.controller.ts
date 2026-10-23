@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   StreamableFile,
@@ -24,9 +25,11 @@ import { UploadedMediaFile } from "../media/media.types";
 import { ListPartnerApplicationsDto } from "./dto/list-partner-applications.dto";
 import { ReviewPartnerApplicationDto } from "./dto/review-partner-application.dto";
 import { SubmitPartnerApplicationDto } from "./dto/submit-partner-application.dto";
+import { SavePartnerDraftDto } from "./dto/save-partner-draft.dto";
 import { PartnerApplicationDocumentsService } from "./partner-application-documents.service";
 import { PartnerApplicationsService } from "./partner-applications.service";
 import { ChangePartnerStatusDto } from "./dto/change-partner-status.dto";
+import { Idempotent } from "../common/idempotency.interceptor";
 
 @ApiTags("partner applications")
 @ApiBearerAuth()
@@ -45,6 +48,17 @@ export class PartnerApplicationsController {
     return { success: true, data: await this.applications.findMine(actor.id) };
   }
 
+  @Put("mine/draft")
+  async saveDraft(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Body() dto: SavePartnerDraftDto,
+  ): Promise<ApiSuccessResponse<unknown>> {
+    return {
+      success: true,
+      data: await this.applications.saveDraft(actor.id, dto),
+    };
+  }
+
   @Post("documents")
   @ApiConsumes("multipart/form-data")
   @UseInterceptors(
@@ -52,7 +66,6 @@ export class PartnerApplicationsController {
       limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
-
   async uploadDocuments(
     @CurrentUser() actor: AuthenticatedUser,
     @UploadedFiles() files: UploadedMediaFile[] | undefined,
@@ -73,7 +86,8 @@ export class PartnerApplicationsController {
     });
   }
 
-  @Post("mine")
+  @Post("mine/submit")
+  @Idempotent("SUBMIT_PARTNER_APPLICATION")
   async submit(
     @CurrentUser() actor: AuthenticatedUser,
     @Body() dto: SubmitPartnerApplicationDto,
@@ -102,6 +116,7 @@ export class PartnerApplicationsController {
   }
 
   @Patch("admin/:applicationId/review")
+  @Idempotent("REVIEW_PARTNER_APPLICATION")
   async review(
     @CurrentUser() actor: AuthenticatedUser,
     @Param("applicationId") applicationId: string,
@@ -114,6 +129,7 @@ export class PartnerApplicationsController {
   }
 
   @Patch("admin/users/:userId/status")
+  @Idempotent("CHANGE_PARTNER_STATUS")
   async changePartnerStatus(
     @CurrentUser() actor: AuthenticatedUser,
     @Param("userId") userId: string,

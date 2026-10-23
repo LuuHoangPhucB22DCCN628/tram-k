@@ -7,13 +7,15 @@ import {
   HairRegistrationsService,
   type HairRegistrationReceipt,
 } from "./hair-registrations.service";
+import { Idempotent } from "../common/idempotency.interceptor";
 
 @ApiTags("Community")
 @Controller("community/hair-registrations")
 export class HairRegistrationsController {
-  constructor(private readonly registrations: HairRegistrationsService) {}
+  constructor(private readonly registrations: HairRegistrationsService) { }
 
   @Post()
+  @Idempotent("CREATE_HAIR_REGISTRATION")
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Tiếp nhận đăng ký nhận tóc hoặc hiến tóc" })
   @ApiCreatedResponse({ description: "Đăng ký đã được tiếp nhận và chờ xử lý" })

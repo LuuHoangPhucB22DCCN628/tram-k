@@ -285,7 +285,7 @@ describe("ManagedResourcesService", () => {
     managedResource.findMany.mockResolvedValue([
       {
         sourceId: "PODCAST-1",
-        type: SearchDocumentType.PODCAST,
+        type: SearchDocumentType.GUIDE,
         status: ManagedResourceStatus.PUBLISHED,
         title: "Một ngày bình an",
         description: "Podcast đồng hành.",
@@ -296,13 +296,13 @@ describe("ManagedResourcesService", () => {
     ]);
     managedResource.count.mockResolvedValue(1);
 
-    const result = await service.listPublished(SearchDocumentType.PODCAST);
+    const result = await service.listPublished(SearchDocumentType.GUIDE);
 
     expect(managedResource.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           status: ManagedResourceStatus.PUBLISHED,
-          type: SearchDocumentType.PODCAST,
+          type: SearchDocumentType.GUIDE,
         },
         skip: 0,
         take: 12,
@@ -311,7 +311,7 @@ describe("ManagedResourcesService", () => {
     expect(managedResource.count).toHaveBeenCalledWith({
       where: {
         status: ManagedResourceStatus.PUBLISHED,
-        type: SearchDocumentType.PODCAST,
+        type: SearchDocumentType.GUIDE,
       },
     });
     expect(result).toMatchObject({

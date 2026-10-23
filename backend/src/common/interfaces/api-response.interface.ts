@@ -8,7 +8,9 @@ export interface ApiErrorResponse {
   readonly error: {
     readonly code: string;
     readonly message: string | readonly string[];
+    readonly details?: any;
   };
   readonly timestamp: string;
   readonly path: string;
+  readonly correlationId?: string;
 }
