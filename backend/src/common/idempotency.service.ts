@@ -42,14 +42,34 @@ export class IdempotencyService {
         });
     }
 
+
     async validateOrThrow(
         actorScope: string,
         operation: string,
         key: string,
         payloadHash: string,
     ) {
-        const existing = await this.findRecord(actorScope, operation, key);
+        const existing = await this.findRecord(
+            actorScope,
+            operation,
+            key,
+        );
+
         if (!existing) return null;
+
+        if (existing.expiresAt <= new Date()) {
+            await this.prisma.idempotencyRecord.delete({
+                where: {
+                    actorScope_operation_key: {
+                        actorScope,
+                        operation,
+                        key,
+                    },
+                },
+            });
+
+            return null;
+        }
 
         if (existing.payloadHash !== payloadHash) {
             throw new ConflictException(
@@ -58,5 +78,7 @@ export class IdempotencyService {
         }
 
         return existing;
+
+
     }
 }

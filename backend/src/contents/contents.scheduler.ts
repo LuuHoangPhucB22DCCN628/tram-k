@@ -12,6 +12,7 @@ export class ContentsScheduler {
 
     @Cron(CronExpression.EVERY_MINUTE)
     async handleScheduledPublish() {
+        if (process.env.JOBS_ENABLED === 'false') return;
         const now = new Date();
 
         const dueContents = await this.prisma.content.findMany({

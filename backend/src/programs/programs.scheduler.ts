@@ -12,6 +12,7 @@ export class ProgramsScheduler {
 
     @Cron(CronExpression.EVERY_MINUTE)
     async handleProgramCompletion() {
+        if (process.env.JOBS_ENABLED === 'false') return;
         const now = new Date();
 
         const expiredPrograms = await this.prisma.program.findMany({
