@@ -122,6 +122,51 @@ describe("PartnerApplicationsService", () => {
     });
   });
 
+  it("saves a new partner application as DRAFT", async () => {
+    transaction.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      status: UserStatus.ACTIVE,
+      deletedAt: null,
+      role: { name: RoleName.PATIENT },
+      partnerApplication: null,
+      partnerMembership: null,
+    });
+    transaction.partnerApplication.create.mockImplementation(({ data }) => ({
+      id: "application-1",
+      ...data,
+    }));
+
+    const result = await service.saveDraft("user-1", {
+      organizationName: "Nhóm thiện nguyện An Tâm",
+    });
+
+    expect(result.status).toBe(PartnerApplicationStatus.DRAFT);
+    expect(transaction.partnerApplication.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        applicantId: "user-1",
+        status: PartnerApplicationStatus.DRAFT,
+      }),
+    });
+  });
+
+  it("rejects saving a draft while the application is already pending", async () => {
+    transaction.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      status: UserStatus.ACTIVE,
+      deletedAt: null,
+      role: { name: RoleName.PATIENT },
+      partnerApplication: {
+        id: "application-1",
+        status: PartnerApplicationStatus.PENDING,
+      },
+      partnerMembership: null,
+    });
+
+    await expect(
+      service.saveDraft("user-1", { organizationName: "Nhóm thiện nguyện An Tâm" }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
   it("creates one pending application for an active member", async () => {
     transaction.user.findUnique.mockResolvedValue({
       id: "user-1",
@@ -139,10 +184,12 @@ describe("PartnerApplicationsService", () => {
 
     const result = await service.submit("user-1", dto);
     expect(result.status).toBe(PartnerApplicationStatus.PENDING);
+    expect(result.trackingCode).toMatch(/^TK-\d{8}-[A-F0-9]{6}$/);
     expect(transaction.partnerApplication.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         applicantId: "user-1",
         email: "an@example.com",
+        trackingCode: result.trackingCode,
       }),
     });
   });

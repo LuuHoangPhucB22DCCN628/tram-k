@@ -1,6 +1,7 @@
 import { Cache } from 'cache-manager';
 
 import {
+    BadRequestException,
     CallHandler,
     ExecutionContext,
     Injectable,
@@ -51,7 +52,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
         const key = request.headers["x-idempotency-key"];
 
         if (!key || typeof key !== "string") {
-            return next.handle();
+            throw new BadRequestException("Yêu cầu bắt buộc phải có header x-idempotency-key");
         }
 
         const actorScope = request.user?.id

@@ -96,6 +96,25 @@ describe("AiAssistantService", () => {
     });
   });
 
+  it("uses STORY instead of PODCAST for mental-health fallback sources", async () => {
+    const service = new AiAssistantService(
+      new ConfigService({ AI_PROVIDER: "local" }),
+      searchService,
+    );
+
+    const response = await service.ask({
+      message: "Tôi đang rất lo lắng, làm sao để bình tĩnh hơn?",
+      history: [],
+    });
+
+    expect(response.sources.every((source) => source.type !== "PODCAST")).toBe(
+      true,
+    );
+    expect(response.sources).toContainEqual(
+      expect.objectContaining({ type: "STORY", link: "/goc-tam-ly" }),
+    );
+  });
+
   it("keeps food questions during chemotherapy in the nutrition flow", async () => {
     const service = new AiAssistantService(
       new ConfigService({ AI_PROVIDER: "local" }),

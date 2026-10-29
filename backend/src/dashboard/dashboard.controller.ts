@@ -19,6 +19,6 @@ export class DashboardController {
         @CurrentUser() user: AuthenticatedUser,
         @Query() query: DashboardQueryDto,
     ): Promise<ApiSuccessResponse<unknown>> {
-        return { success: true, data: await this.dashboard.getOverview(query) };
+        return { success: true, data: await this.dashboard.getOverview(user, query) };
     }
 }

@@ -323,6 +323,62 @@ describe("CommunityEngagementService", () => {
     });
   });
 
+  it("updates an owned published comment and writes audit in the same transaction", async () => {
+    const database = prisma as unknown as {
+      communityComment: { findUnique: jest.Mock; update: jest.Mock };
+      auditLog: { create: jest.Mock };
+    };
+    database.communityComment.findUnique.mockResolvedValue({
+      id: "comment-1",
+      userId: "user-1",
+      content: "Nội dung cũ",
+      status: "PUBLISHED",
+      deletedAt: null,
+      createdAt: new Date("2026-10-20T00:00:00.000Z"),
+      user: { id: "user-1" },
+    });
+    database.communityComment.update.mockResolvedValue({
+      id: "comment-1",
+      userId: "user-1",
+      content: "Nội dung mới",
+      status: "PUBLISHED",
+      deletedAt: null,
+      createdAt: new Date("2026-10-20T00:00:00.000Z"),
+      user: { id: "user-1" },
+    });
+
+    const result = await service.updateComment("user-1", "comment-1", {
+      content: "Nội dung mới",
+    });
+
+    expect(result.content).toBe("Nội dung mới");
+    expect(prisma.$transaction).toHaveBeenCalled();
+    expect(database.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: "UPDATE_COMMENT",
+        entityType: "COMMUNITY_COMMENT",
+        before: { content: "Nội dung cũ" },
+        after: { content: "Nội dung mới" },
+      }),
+    });
+  });
+
+  it("rejects editing a hidden comment", async () => {
+    const database = prisma as unknown as {
+      communityComment: { findUnique: jest.Mock };
+    };
+    database.communityComment.findUnique.mockResolvedValue({
+      id: "comment-1",
+      userId: "user-1",
+      status: "HIDDEN",
+      deletedAt: null,
+    });
+
+    await expect(
+      service.updateComment("user-1", "comment-1", { content: "Nội dung mới" }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it("prevents another member from editing a comment", async () => {
     const database = prisma as unknown as {
       communityComment: { findUnique: jest.Mock; update: jest.Mock };

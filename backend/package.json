@@ -67,7 +67,7 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!(@nestjs/schedule|cron)/)"
+      "node_modules/(?!(@nestjs/schedule|@nestjs/cache-manager|cron)/)"
     ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"

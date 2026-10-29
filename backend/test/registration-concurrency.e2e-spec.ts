@@ -173,19 +173,21 @@ describe("Registration E2E (Concurrency & Idempotency)", () => {
         // Xóa đăng ký cũ để test tranh chấp
         await prisma.supportProgramRegistration.deleteMany({ where: { programId } });
 
-        // 2 user gửi request cùng lúc, không dùng idempotency key
+        // 2 user gửi request cùng lúc, DÙNG 2 idempotency key KHÁC NHAU
         const [res1, res2] = await Promise.all([
             request(app.getHttpServer())
                 .post(`/programs/${programId}/registrations`)
                 .set("x-test-user-id", userId1)
+                .set("x-idempotency-key", `concurrency-user1-${Date.now()}`) // <-- THÊM DÒNG NÀY
                 .send({}),
             request(app.getHttpServer())
                 .post(`/programs/${programId}/registrations`)
                 .set("x-test-user-id", userId2)
+                .set("x-idempotency-key", `concurrency-user2-${Date.now()}`) // <-- THÊM DÒNG NÀY
                 .send({}),
         ]);
 
-        // Cả 2 request đều phải thành công (không bị lỗi 500)
+        // Cả 2 request đều phải thành công (không bị lỗi 400/500)
         expect(res1.status).toBe(201);
         expect(res2.status).toBe(201);
 
