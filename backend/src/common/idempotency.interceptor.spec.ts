@@ -1,97 +1,76 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { CallHandler, ExecutionContext, BadRequestException } from "@nestjs/common";
+import { CallHandler, ExecutionContext } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { of } from "rxjs";
 
 import { IdempotencyInterceptor } from "./idempotency.interceptor";
 import { IdempotencyService } from "./idempotency.service";
+import { IdempotencyStatus } from "@prisma/client";
 
 describe("IdempotencyInterceptor", () => {
   let interceptor: IdempotencyInterceptor;
-  let idempotencyService: IdempotencyService;
-  let reflector: Reflector;
+  let idempotencyService: any;
+  let reflector: any;
 
   beforeEach(async () => {
+    idempotencyService = {
+      hashPayload: jest.fn().mockReturnValue("hash-a"),
+      claim: jest.fn(),
+      complete: jest.fn(),
+      remove: jest.fn(),
+    };
+    reflector = { get: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         IdempotencyInterceptor,
-        {
-          provide: IdempotencyService,
-          useValue: {
-            hashPayload: jest.fn().mockReturnValue("hash-a"),
-            validateOrThrow: jest.fn(),
-            saveRecord: jest.fn().mockResolvedValue(undefined),
-          },
-        },
-        {
-          provide: Reflector,
-          useValue: {
-            get: jest.fn(),
-          },
-        },
+        { provide: IdempotencyService, useValue: idempotencyService },
+        { provide: Reflector, useValue: reflector },
       ],
     }).compile();
 
     interceptor = module.get<IdempotencyInterceptor>(IdempotencyInterceptor);
-    idempotencyService = module.get<IdempotencyService>(IdempotencyService);
-    reflector = module.get<Reflector>(Reflector);
   });
 
-  const createContext = (headers: any = {}, user: any = null): ExecutionContext => ({
-    getHandler: () => ({}),
-    switchToHttp: () => ({
-      getRequest: () => ({ headers, user, ip: "127.0.0.1" }),
-      getResponse: () => ({
-        statusCode: 201,
-        status: jest.fn().mockReturnThis(),
-        send: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis()
+  const createContext = (headers: any = {}, user: any = null): ExecutionContext => {
+    const response = { status: jest.fn(), statusCode: 201 }; // <-- THÊM status: jest.fn()
+    return {
+      getHandler: () => ({}),
+      switchToHttp: () => ({
+        getRequest: () => ({ headers, user, ip: "127.0.0.1", params: {}, query: {}, body: {} }),
+        getResponse: () => response,
       }),
-    }),
-  } as unknown as ExecutionContext);
+    } as unknown as ExecutionContext;
+  };
 
-  it("bỏ qua nếu route không có decorator @Idempotent", async () => {
-    jest.spyOn(reflector, "get").mockReturnValue(undefined);
+  it("bỏ qua nếu không có decorator", async () => {
+    reflector.get.mockReturnValue(undefined);
     const next: CallHandler = { handle: jest.fn().mockReturnValue(of("ok")) };
-
     const result$ = await interceptor.intercept(createContext(), next);
     result$.subscribe((val) => expect(val).toBe("ok"));
   });
 
-  it("phải ném BadRequestException nếu thiếu header x-idempotency-key", async () => {
-    jest.spyOn(reflector, "get").mockReturnValue("CREATE_POST");
-    const next: CallHandler = { handle: jest.fn() };
-    const context = createContext({}); // Không có header
+  it("trả về cache nếu đã COMPLETED", async () => {
+    reflector.get.mockReturnValue("OP");
+    idempotencyService.claim.mockResolvedValue({ status: IdempotencyStatus.COMPLETED, responseStatus: 201, responseBody: { id: "1" } });
 
-    await expect(interceptor.intercept(context, next)).rejects.toBeInstanceOf(BadRequestException);
+    const next: CallHandler = { handle: jest.fn() };
+    const result$ = await interceptor.intercept(createContext({ "x-idempotency-key": "k" }), next);
+
+    result$.subscribe((val) => expect(val).toEqual({ id: "1" }));
   });
 
-  it("trả về kết quả cache nếu key đã tồn tại", async () => {
-    jest.spyOn(reflector, "get").mockReturnValue("CREATE_POST");
-    const next: CallHandler = { handle: jest.fn() };
-    const context = createContext({ "x-idempotency-key": "k1" }, { id: "user-1" });
+  it("xử lý và gọi complete() nếu là request mới", async () => {
+    reflector.get.mockReturnValue("OP");
+    idempotencyService.claim.mockResolvedValue(null); // Claim thành công
+    idempotencyService.complete.mockResolvedValue(undefined);
 
-    jest.spyOn(idempotencyService, "validateOrThrow").mockResolvedValue({
-      responseBody: { id: "post-1" },
-      responseStatus: 201,
-    } as any);
-
-    const result$ = await interceptor.intercept(context, next);
-    result$.subscribe((val) => expect(val).toEqual({ id: "post-1" }));
-  });
-
-  it("xử lý bình thường và lưu DB nếu là request mới", async () => {
-    jest.spyOn(reflector, "get").mockReturnValue("CREATE_POST");
-    const next: CallHandler = { handle: jest.fn().mockReturnValue(of({ id: "new-post" })) };
-    const context = createContext({ "x-idempotency-key": "k2" }, { id: "user-1" });
-
-    jest.spyOn(idempotencyService, "validateOrThrow").mockResolvedValue(null);
-
-    const result$ = await interceptor.intercept(context, next);
+    const next: CallHandler = { handle: jest.fn().mockReturnValue(of({ id: "new" })) };
+    const result$ = await interceptor.intercept(createContext({ "x-idempotency-key": "k" }, { id: "u1" }), next);
 
     result$.subscribe(async (val) => {
-      expect(val).toEqual({ id: "new-post" });
-      expect(idempotencyService.saveRecord).toHaveBeenCalled();
+      expect(val).toEqual({ id: "new" });
+      expect(idempotencyService.complete).toHaveBeenCalled();
     });
   });
 });

@@ -20,8 +20,11 @@ describe("SupportPointsService", () => {
       findUnique: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(), // <-- THÊM DÒNG NÀY (Chống Race Condition)
     },
+    partnerMembership: { findUnique: jest.fn() }, // <-- THÊM DÒNG NÀY (Lấy UserID cho Outbox)
     auditLog: { create: jest.fn() },
+    outboxEvent: { create: jest.fn() }, // <-- THÊM DÒNG NÀY (Gửi thông báo)
   } as unknown as PrismaService;
 
   const service = new SupportPointsService(prisma);
@@ -58,6 +61,8 @@ describe("SupportPointsService", () => {
       status: SupportPointStatus.DRAFT,
     });
     (prisma.auditLog.create as jest.Mock).mockResolvedValue({});
+    (prisma.outboxEvent.create as jest.Mock).mockResolvedValue({});
+    (prisma.partnerMembership.findUnique as jest.Mock).mockResolvedValue({ userId: "partner-user-id" });
   });
 
   it("creates a draft support point with ownership and audit", async () => {
@@ -123,21 +128,52 @@ describe("SupportPointsService", () => {
     );
   });
 
+  it("submits a draft and logs audit", async () => {
+    (prisma.supportPoint.findUnique as jest.Mock)
+      .mockResolvedValueOnce({
+        id: "point-1",
+        ownerPartnerId: "partner-1",
+        status: SupportPointStatus.DRAFT,
+      })
+      .mockResolvedValueOnce({
+        id: "point-1",
+        ownerPartnerId: "partner-1",
+        status: SupportPointStatus.PENDING,
+      });
+
+    (prisma.supportPoint.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+
+    const updated = await service.submit(partner, "point-1");
+    expect(updated!.status).toBe(SupportPointStatus.PENDING);
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: "SUBMIT_SUPPORT_POINT" }),
+    });
+  });
+
   it("approves a pending point as admin", async () => {
     (prisma.user.findUnique as jest.Mock).mockResolvedValue({
       id: "admin-1",
       role: { name: RoleName.ADMIN },
     });
-    (prisma.supportPoint.findUnique as jest.Mock).mockResolvedValue({
-      id: "point-1",
-      status: SupportPointStatus.PENDING,
-    });
-    (prisma.supportPoint.update as jest.Mock).mockResolvedValue({
-      id: "point-1",
-      status: SupportPointStatus.PUBLISHED,
-    });
+
+    // Mock findUnique 2 lần: Lần 1 check trạng thái, Lần 2 lấy kết quả trả về
+    (prisma.supportPoint.findUnique as jest.Mock)
+      .mockResolvedValueOnce({
+        id: "point-1",
+        status: SupportPointStatus.PENDING,
+        ownerPartnerId: "partner-1",
+        name: "Nhà thuốc",
+      })
+      .mockResolvedValueOnce({
+        id: "point-1",
+        status: SupportPointStatus.PUBLISHED,
+      });
+
+    (prisma.supportPoint.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
 
     const updated = await service.review(admin, "point-1", "APPROVE");
-    expect(updated.status).toBe(SupportPointStatus.PUBLISHED);
+
+    expect(updated!.status).toBe(SupportPointStatus.PUBLISHED);
+    expect(prisma.outboxEvent.create).toHaveBeenCalled();
   });
 });

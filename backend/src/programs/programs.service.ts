@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PartnerStatus, ProgramStatus, RoleName, UserStatus } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { AuthenticatedUser } from "../auth/auth-user.interface";
@@ -12,7 +12,6 @@ export class ProgramsService {
 
     async create(actor: AuthenticatedUser, dto: CreateProgramDto) {
         const user = await this.activePartner(actor);
-
         this.validateTimeline(dto);
 
         return this.prisma.$transaction(async (transaction) => {
@@ -58,13 +57,37 @@ export class ProgramsService {
         }
 
         return this.prisma.$transaction(async (transaction) => {
-            const updated = await transaction.program.update({
-                where: { id: programId },
+            // Chống Race Condition bằng updateMany
+            const claim = await transaction.program.updateMany({
+                where: { id: programId, status: program.status },
                 data: { status: ProgramStatus.PENDING, version: { increment: 1 } },
             });
 
+            if (claim.count === 0) {
+                throw new BadRequestException("Trạng thái đã thay đổi bởi giao dịch khác. Vui lòng tải lại trang.");
+            }
+
+            const updated = await transaction.program.findUnique({ where: { id: programId } });
+
             await transaction.programStatusHistory.create({
                 data: { programId, fromStatus: program.status, toStatus: ProgramStatus.PENDING, reason: "Gửi duyệt", actorId: actor.id },
+            });
+
+            await transaction.auditLog.create({
+                data: { actorType: "USER", actorId: actor.id, action: "SUBMIT_PROGRAM", entityType: "PROGRAM", entityId: programId, before: { status: program.status }, after: { status: ProgramStatus.PENDING }, correlationId: randomUUID() },
+            });
+
+            await transaction.outboxEvent.create({
+                data: {
+                    eventId: randomUUID(),
+                    type: "PROGRAM_SUBMITTED",
+                    aggregateType: "Program",
+                    aggregateId: programId,
+                    payload: {
+                        programTitle: program.title,
+                        ownerPartnerId: program.ownerPartnerId,
+                    },
+                },
             });
 
             return updated;
@@ -85,8 +108,8 @@ export class ProgramsService {
         }
 
         return this.prisma.$transaction(async (transaction) => {
-            const updated = await transaction.program.update({
-                where: { id: programId },
+            const claim = await transaction.program.updateMany({
+                where: { id: programId, status: ProgramStatus.PENDING },
                 data: {
                     status: isApproved ? ProgramStatus.PUBLISHED : ProgramStatus.REJECTED,
                     publishedAt: isApproved ? new Date() : null,
@@ -94,11 +117,17 @@ export class ProgramsService {
                 },
             });
 
+            if (claim.count === 0) {
+                throw new BadRequestException("Trạng thái đã thay đổi bởi giao dịch khác. Vui lòng tải lại trang.");
+            }
+
+            const updated = await transaction.program.findUnique({ where: { id: programId } });
+
             await transaction.programStatusHistory.create({
                 data: {
                     programId,
                     fromStatus: ProgramStatus.PENDING,
-                    toStatus: updated.status,
+                    toStatus: updated!.status,
                     reason: isApproved ? "Phê duyệt" : dto.reason!,
                     actorId: actor.id,
                 },
@@ -106,15 +135,24 @@ export class ProgramsService {
 
             await transaction.auditLog.create({
                 data: {
-                    actorType: "USER",
-                    actorId: actor.id,
-                    action: isApproved ? "APPROVE_PROGRAM" : "REJECT_PROGRAM",
-                    entityType: "PROGRAM",
-                    entityId: programId,
-                    before: { status: program.status },
-                    after: { status: updated.status },
-                    reason: dto.reason,
-                    correlationId: randomUUID(),
+                    actorType: "USER", actorId: actor.id, action: isApproved ? "APPROVE_PROGRAM" : "REJECT_PROGRAM",
+                    entityType: "PROGRAM", entityId: programId, before: { status: program.status }, after: { status: updated!.status },
+                    reason: dto.reason, correlationId: randomUUID(),
+                },
+            });
+
+            await transaction.outboxEvent.create({
+                data: {
+                    eventId: randomUUID(),
+                    type: isApproved ? "PROGRAM_PUBLISHED" : "PROGRAM_REJECTED",
+                    aggregateType: "Program",
+                    aggregateId: programId,
+                    payload: {
+                        recipientId: program.ownerPartnerId,
+                        programTitle: program.title,
+                        status: updated!.status,
+                        reason: dto.reason,
+                    },
                 },
             });
 

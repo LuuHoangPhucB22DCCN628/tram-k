@@ -12,36 +12,30 @@ export class ProgramsScheduler {
 
     @Cron(CronExpression.EVERY_MINUTE)
     async handleProgramCompletion() {
-        if (process.env.JOBS_ENABLED === 'false') return;
+        if (process.env.JOBS_ENABLED === "false") return;
         const now = new Date();
 
         const expiredPrograms = await this.prisma.program.findMany({
-            where: {
-                status: { in: [ProgramStatus.PUBLISHED, ProgramStatus.HIDDEN] },
-                endAt: { lte: now },
-                deletedAt: null,
-            },
-            select: { id: true },
+            where: { status: { in: [ProgramStatus.PUBLISHED, ProgramStatus.HIDDEN] }, endAt: { lte: now }, deletedAt: null },
+            select: { id: true, status: true },
         });
-
-        if (expiredPrograms.length === 0) return;
 
         for (const p of expiredPrograms) {
             try {
                 await this.prisma.$transaction(async (transaction) => {
-                    const program = await transaction.program.update({
-                        where: { id: p.id },
+                    const claim = await transaction.program.updateMany({
+                        where: {
+                            id: p.id,
+                            status: p.status,
+                            endAt: { lte: now }
+                        },
                         data: { status: ProgramStatus.COMPLETED },
                     });
 
+                    if (claim.count === 0) return;
+
                     await transaction.programStatusHistory.create({
-                        data: {
-                            programId: p.id,
-                            fromStatus: ProgramStatus.PUBLISHED,
-                            toStatus: ProgramStatus.COMPLETED,
-                            reason: "Scheduler tự động hoàn thành",
-                            actorId: null,
-                        },
+                        data: { programId: p.id, fromStatus: p.status, toStatus: ProgramStatus.COMPLETED, reason: "Scheduler tự động hoàn thành", actorId: null },
                     });
 
                     const registrations = await transaction.supportProgramRegistration.findMany({
@@ -53,7 +47,6 @@ export class ProgramsScheduler {
                             where: { programId: p.id, status: SupportProgramRegistrationStatus.CONFIRMED },
                             data: { status: SupportProgramRegistrationStatus.NO_SHOW, version: { increment: 1 } },
                         });
-
                         await transaction.registrationStatusHistory.createMany({
                             data: registrations.map((reg) => ({
                                 registrationId: reg.id,
@@ -66,18 +59,9 @@ export class ProgramsScheduler {
                     }
 
                     await transaction.auditLog.create({
-                        data: {
-                            actorType: "SYSTEM",
-                            action: "COMPLETE_PROGRAM",
-                            entityType: "PROGRAM",
-                            entityId: p.id,
-                            after: { status: ProgramStatus.COMPLETED, noShows: registrations.length },
-                            reason: "Scheduler auto-complete",
-                            correlationId: randomUUID(),
-                        },
+                        data: { actorType: "SYSTEM", action: "COMPLETE_PROGRAM", entityType: "PROGRAM", entityId: p.id, after: { status: ProgramStatus.COMPLETED, noShows: registrations.length }, reason: "Scheduler auto-complete", correlationId: randomUUID() },
                     });
                 });
-                this.logger.log(`Đã hoàn thành tự động chương trình ${p.id}`);
             } catch (error) {
                 this.logger.error(`Lỗi khi hoàn thành chương trình ${p.id}`, error);
             }

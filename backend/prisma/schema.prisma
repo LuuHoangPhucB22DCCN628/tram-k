@@ -83,8 +83,11 @@ enum NotificationKind {
   PROGRAM_REGISTRATION_COMPLETED
   PROGRAM_PUBLISHED
   PROGRAM_REJECTED
+  PROGRAM_SUBMITTED 
   PARTNER_APPLICATION_APPROVED
   PARTNER_APPLICATION_REJECTED
+  SUPPORT_POINT_APPROVED
+  SUPPORT_POINT_REJECTED
 }
 
 enum SearchDocumentType {
@@ -175,6 +178,11 @@ enum ContentStatus {
   PUBLISHED
   HIDDEN
   ARCHIVED
+}
+
+enum IdempotencyStatus {
+  PROCESSING
+  COMPLETED
 }
 
 model Role {
@@ -888,6 +896,7 @@ model IdempotencyRecord {
   key            String                          
   payloadHash    String   @map("payload_hash")  
   responseStatus Int      @map("response_status")
+  status         IdempotencyStatus @default(PROCESSING)
   responseBody   Json     @map("response_body")
   expiresAt      DateTime @map("expires_at")
   createdAt      DateTime @default(now()) @map("created_at")

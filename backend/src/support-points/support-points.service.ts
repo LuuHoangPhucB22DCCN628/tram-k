@@ -56,10 +56,36 @@ export class SupportPointsService {
         }
 
         return this.prisma.$transaction(async (transaction) => {
-            return transaction.supportPoint.update({
-                where: { id: pointId },
+            // Dùng updateMany (CAS) để chống Race Condition
+            const claim = await transaction.supportPoint.updateMany({
+                where: {
+                    id: pointId,
+                    status: { in: [SupportPointStatus.DRAFT, SupportPointStatus.REJECTED] } // Chỉ update nếu vẫn ở trạng thái cũ
+                },
                 data: { status: SupportPointStatus.PENDING, version: { increment: 1 } },
             });
+
+            if (claim.count === 0) {
+                throw new BadRequestException("Trạng thái đã thay đổi bởi giao dịch khác. Vui lòng tải lại trang.");
+            }
+
+            const updatedPoint = await transaction.supportPoint.findUnique({ where: { id: pointId } });
+
+            // Ghi Audit Log
+            await transaction.auditLog.create({
+                data: {
+                    actorType: "USER",
+                    actorId: actor.id,
+                    action: "SUBMIT_SUPPORT_POINT",
+                    entityType: "SUPPORT_POINT",
+                    entityId: pointId,
+                    before: { status: point.status },
+                    after: { status: SupportPointStatus.PENDING },
+                    correlationId: randomUUID(),
+                },
+            });
+
+            return updatedPoint;
         });
     }
 
@@ -74,14 +100,61 @@ export class SupportPointsService {
         const isApproved = decision === "APPROVE";
 
         return this.prisma.$transaction(async (transaction) => {
-            return transaction.supportPoint.update({
-                where: { id: pointId },
+            // Dùng updateMany (CAS) để chống Race Condition
+            const claim = await transaction.supportPoint.updateMany({
+                where: { id: pointId, status: SupportPointStatus.PENDING },
                 data: {
                     status: isApproved ? SupportPointStatus.PUBLISHED : SupportPointStatus.REJECTED,
                     publishedAt: isApproved ? new Date() : null,
                     version: { increment: 1 },
                 },
             });
+
+            if (claim.count === 0) {
+                throw new BadRequestException("Trạng thái đã thay đổi bởi giao dịch khác. Vui lòng tải lại trang.");
+            }
+
+            const updatedPoint = await transaction.supportPoint.findUnique({ where: { id: pointId } });
+
+            // Ghi Audit Log
+            await transaction.auditLog.create({
+                data: {
+                    actorType: "USER",
+                    actorId: actor.id,
+                    action: isApproved ? "APPROVE_SUPPORT_POINT" : "REJECT_SUPPORT_POINT",
+                    entityType: "SUPPORT_POINT",
+                    entityId: pointId,
+                    before: { status: point.status },
+                    after: { status: updatedPoint!.status },
+                    reason: reason,
+                    correlationId: randomUUID(),
+                },
+            });
+
+            // Ghi Outbox Event để gửi thông báo cho Đối tác
+            const partner = await transaction.partnerMembership.findUnique({
+                where: { id: point.ownerPartnerId },
+                select: { userId: true }
+            });
+
+            if (partner) {
+                await transaction.outboxEvent.create({
+                    data: {
+                        eventId: randomUUID(),
+                        type: "SUPPORT_POINT_REVIEWED",
+                        aggregateType: "SupportPoint",
+                        aggregateId: pointId,
+                        payload: {
+                            recipientId: partner.userId,
+                            supportPointName: point.name,
+                            status: updatedPoint!.status,
+                            reason: reason,
+                        },
+                    },
+                });
+            }
+
+            return updatedPoint;
         });
     }
 

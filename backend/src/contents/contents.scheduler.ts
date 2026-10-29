@@ -12,48 +12,27 @@ export class ContentsScheduler {
 
     @Cron(CronExpression.EVERY_MINUTE)
     async handleScheduledPublish() {
-        if (process.env.JOBS_ENABLED === 'false') return;
+        if (process.env.JOBS_ENABLED === "false") return;
         const now = new Date();
 
         const dueContents = await this.prisma.content.findMany({
-            where: {
-                status: ContentStatus.SCHEDULED,
-                publishAt: { lte: now },
-                deletedAt: null,
-            },
+            where: { status: ContentStatus.SCHEDULED, publishAt: { lte: now }, deletedAt: null },
         });
-
-        if (dueContents.length === 0) return;
 
         for (const content of dueContents) {
             try {
                 await this.prisma.$transaction(async (transaction) => {
-                    if (!content.sourceId || !content.reviewedAt || !content.nextReviewAt || new Date(content.nextReviewAt) <= now) {
-                        await transaction.content.update({
-                            where: { id: content.id },
-                            data: {
-                                status: ContentStatus.DRAFT,
-                                publishAt: null,
-                                publishFailureReason: "Thất bại: Hết hạn rà soát hoặc thiếu nguồn y tế."
-                            },
-                        });
-                        await transaction.auditLog.create({
-                            data: {
-                                actorType: "SYSTEM",
-                                action: "FAILED_SCHEDULED_PUBLISH",
-                                entityType: "CONTENT",
-                                entityId: content.id,
-                                after: { status: ContentStatus.DRAFT },
-                                reason: "Hết hạn rà soát",
-                                correlationId: randomUUID(),
-                            },
-                        });
-                        this.logger.warn(`Hủy lịch xuất bản ${content.id} do hết hạn rà soát.`);
-                        return;
-                    }
-
-                    await transaction.content.update({
-                        where: { id: content.id },
+                    // CAS: Chỉ update nếu trạng thái vẫn là SCHEDULED
+                    const claim = await transaction.content.updateMany({
+                        where: {
+                            id: content.id,
+                            status: ContentStatus.SCHEDULED,
+                            publishAt: { lte: now },
+                            sourceId: { not: null },
+                            reviewedById: { not: null },
+                            reviewedAt: { not: null, lte: now },
+                            nextReviewAt: { gt: now },
+                        },
                         data: {
                             status: ContentStatus.PUBLISHED,
                             publishedAt: now,
@@ -61,20 +40,38 @@ export class ContentsScheduler {
                         },
                     });
 
+                    if (claim.count === 0) {
+                        await transaction.content.updateMany({
+                            where: {
+                                id: content.id,
+                                status: ContentStatus.SCHEDULED,
+                                publishAt: { lte: now }
+                            },
+                            data: {
+                                status: ContentStatus.DRAFT,
+                                publishAt: null,
+                                publishFailureReason: "Thất bại: Hết hạn rà soát hoặc thiếu nguồn y tế.",
+                                version: { increment: 1 }
+                            }
+                        });
+                        return;
+                    }
+
+                    const isSuccess = content.nextReviewAt && new Date(content.nextReviewAt) > now;
                     await transaction.auditLog.create({
                         data: {
                             actorType: "SYSTEM",
-                            action: "SCHEDULED_PUBLISH_SUCCESS",
+                            action: isSuccess ? "SCHEDULED_PUBLISH_SUCCESS" : "FAILED_SCHEDULED_PUBLISH",
                             entityType: "CONTENT",
                             entityId: content.id,
-                            after: { status: ContentStatus.PUBLISHED },
+                            after: { status: isSuccess ? ContentStatus.PUBLISHED : ContentStatus.DRAFT },
+                            reason: isSuccess ? null : "Hết hạn rà soát",
                             correlationId: randomUUID(),
                         },
                     });
-                    this.logger.log(`Tự động xuất bản thành công nội dung ${content.id}`);
                 });
             } catch (error) {
-                this.logger.error(`Lỗi kỹ thuật khi xuất bản ${content.id}, sẽ thử lại sau.`, error);
+                this.logger.error(`Lỗi kỹ thuật khi xuất bản ${content.id}`, error);
             }
         }
     }

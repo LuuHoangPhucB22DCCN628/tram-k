@@ -49,6 +49,7 @@ export class PartnerApplicationsController {
   }
 
   @Put("mine/draft")
+  @Idempotent("SAVE_PARTNER_DRAFT")
   async saveDraft(
     @CurrentUser() actor: AuthenticatedUser,
     @Body() dto: SavePartnerDraftDto,

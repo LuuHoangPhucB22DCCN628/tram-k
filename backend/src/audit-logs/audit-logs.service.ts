@@ -45,11 +45,36 @@ export class AuditLogsService {
         ]);
 
         return {
-            items,
-            total,
-            page,
-            limit,
-            totalPages: Math.ceil(total / limit),
+            items: items.map(item => ({
+                ...item,
+                before: this.redact(item.before),
+                after: this.redact(item.after),
+            })),
+            total, page, limit, totalPages: Math.ceil(total / limit),
         };
+    }
+
+    private redact(data: any): any {
+        if (data === null || data === undefined) return data;
+        if (typeof data === "string") {
+            return data
+                .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[EMAIL_REDACTED]")
+                .replace(/(0|\+84)[0-9]{9,10}/g, "[PHONE_REDACTED]");
+        }
+        if (!data || typeof data !== "object") return data;
+        const sensitiveKeys = ["password", "passwordHash", "token", "tokenHash", "secret", "email", "phone", "displayName", "city", "birthYear", "bio"];
+        const redacted = Array.isArray(data) ? [...data] : { ...data };
+
+        for (const key of Object.keys(redacted)) {
+            if (sensitiveKeys.includes(key)) {
+                redacted[key] = "[REDACTED]";
+            } else if (typeof redacted[key] === "object") {
+                redacted[key] = this.redact(redacted[key]);
+            } else if (typeof redacted[key] === "string") {
+                // Đệ quy để áp dụng Regex cho các chuỗi con
+                redacted[key] = this.redact(redacted[key]);
+            }
+        }
+        return redacted;
     }
 }

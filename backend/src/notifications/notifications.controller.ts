@@ -7,6 +7,7 @@ import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { ApiSuccessResponse } from "../common/interfaces/api-response.interface";
 import { ListNotificationsQueryDto } from "./dto/list-notifications-query.dto";
 import { NotificationsService } from "./notifications.service";
+import { Idempotent } from "../common/idempotency.interceptor";
 
 @ApiTags("notifications")
 @ApiBearerAuth()
@@ -24,6 +25,7 @@ export class NotificationsController {
   }
 
   @Patch("read-all")
+  @Idempotent("MARK_ALL_READ")
   async markAllRead(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ApiSuccessResponse<unknown>> {

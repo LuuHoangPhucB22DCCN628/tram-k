@@ -8,7 +8,6 @@ import { CommunityEngagementModule } from "./community-engagement/community-enga
 import { validateEnvironment } from "./config/env.validation";
 import { HairRegistrationsModule } from "./hair-registrations/hair-registrations.module";
 import { HealthModule } from "./health/health.module";
-import { ManagedResourcesModule } from "./managed-resources/managed-resources.module";
 import { MediaModule } from "./media/media.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -43,7 +42,6 @@ import { IdempotencyInterceptor } from "./common/idempotency.interceptor";
     AuthModule,
     HealthModule,
     HairRegistrationsModule,
-    ManagedResourcesModule,
     MediaModule,
     PartnerApplicationsModule,
     CommunityEngagementModule,
