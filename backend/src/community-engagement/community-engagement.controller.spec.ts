@@ -7,11 +7,13 @@ describe("CommunityEngagementController", () => {
     let controller: CommunityEngagementController;
     let engagement: {
         listReplies: jest.Mock;
+        updateComment: jest.Mock;
     };
 
     beforeEach(async () => {
         engagement = {
             listReplies: jest.fn(),
+            updateComment: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -55,6 +57,27 @@ describe("CommunityEngagementController", () => {
             commentId,
             query.page,
             query.limit,
+        );
+    });
+
+    it("updates a comment inside the success envelope", async () => {
+        const updated = { id: "comment-1", content: "Nội dung mới" };
+        engagement.updateComment.mockResolvedValue(updated);
+
+        await expect(
+            controller.updateComment(
+                { id: "user-1" } as never,
+                "comment-1",
+                { content: "Nội dung mới" },
+            ),
+        ).resolves.toEqual({
+            success: true,
+            data: updated,
+        });
+        expect(engagement.updateComment).toHaveBeenCalledWith(
+            "user-1",
+            "comment-1",
+            { content: "Nội dung mới" },
         );
     });
 

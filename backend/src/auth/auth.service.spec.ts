@@ -626,10 +626,11 @@ describe("AuthService", () => {
     });
   });
 
-  it("rotates a valid refresh token and revokes the old session", async () => {
+  it("rotates a valid refresh token in the same family", async () => {
     prismaMock.authSession.findUnique.mockResolvedValue({
       id: "session-1",
       userId: "user-1",
+      familyId: "family-1",
       revokedAt: null,
       expiresAt: new Date(Date.now() + 60_000),
       user: {
@@ -660,10 +661,42 @@ describe("AuthService", () => {
     expect(transaction.authSession.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         userId: "user-1",
+        familyId: "family-1",
         authVersion: 1,
         tokenHash: expect.any(String),
       }),
     });
+  });
+
+  it("revokes the whole refresh family when a revoked token is reused", async () => {
+    prismaMock.authSession.findUnique.mockResolvedValue({
+      id: "session-old",
+      userId: "user-1",
+      familyId: "family-1",
+      revokedAt: new Date("2026-10-20T00:00:00.000Z"),
+      expiresAt: new Date(Date.now() + 60_000),
+      user: {
+        id: "user-1",
+        email: "an@example.com",
+        fullName: "Nguyễn Minh An",
+        status: UserStatus.ACTIVE,
+        deletedAt: null,
+        authVersion: 1,
+        role: { name: RoleName.PATIENT },
+        partnerMembership: null,
+      },
+      authVersion: 1,
+    });
+    prismaMock.authSession.updateMany.mockResolvedValue({ count: 2 });
+
+    await expect(service.refresh("stolen-old-token")).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+    expect(prismaMock.authSession.updateMany).toHaveBeenCalledWith({
+      where: { familyId: "family-1", revokedAt: null },
+      data: { revokedAt: expect.any(Date) },
+    });
+    expect(transaction.authSession.create).not.toHaveBeenCalled();
   });
 
   it("rejects a refresh token if another request already rotated it", async () => {

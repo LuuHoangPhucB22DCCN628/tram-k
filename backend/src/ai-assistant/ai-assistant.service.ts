@@ -295,7 +295,7 @@ export class AiAssistantService {
         {
           title: "Góc tâm lý và tinh thần",
           link: "/goc-tam-ly",
-          type: "PODCAST",
+          type: "STORY",
         },
       ];
     }

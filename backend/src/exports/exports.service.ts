@@ -43,12 +43,12 @@ export class ExportsService {
 
         const dataForCsv = registrations.map((reg, index) => ({
             "STT": index + 1,
-            "Họ và tên": reg.applicantName,
-            "Email": reg.applicantEmail,
-            "Trạng thái": reg.status,
+            "Họ và tên": this.sanitizeCsvCell(reg.applicantName),
+            "Email": this.sanitizeCsvCell(reg.applicantEmail),
+            "Trạng thái": this.sanitizeCsvCell(String(reg.status)),
             "Ngày đăng ký": reg.registeredAt.toISOString(),
             "Ngày xác nhận": reg.confirmedAt?.toISOString() || "",
-            "Ghi chú": reg.decisionReason || "",
+            "Ghi chú": this.sanitizeCsvCell(reg.decisionReason || ""),
         }));
 
         const csvString = await json2csv(dataForCsv);
@@ -69,5 +69,12 @@ export class ExportsService {
             buffer: Buffer.from("\uFEFF" + csvString, "utf-8"),
             fileName: `danh-sach-dang-ky-${program.title.replace(/\s+/g, "-")}.csv`,
         };
+    }
+
+    private sanitizeCsvCell(value: string): string {
+        if (/^[=+\-@\t\r]/.test(value)) {
+            return `'${value}`;
+        }
+        return value;
     }
 }

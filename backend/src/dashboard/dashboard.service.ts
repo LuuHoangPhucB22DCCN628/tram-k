@@ -1,10 +1,11 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { ForbiddenException, Inject, Injectable } from "@nestjs/common";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Cache } from "cache-manager";
-import { PartnerApplicationStatus, PostStatus, ProgramStatus, ReportStatus, SupportProgramRegistrationStatus } from "@prisma/client";
+import { PartnerApplicationStatus, PostStatus, ProgramStatus, ReportStatus, RoleName, SupportProgramRegistrationStatus, UserStatus } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
 import { DashboardQueryDto } from "./dto/dashboard-query.dto";
+import { AuthenticatedUser } from "../auth/auth-user.interface";
 
 @Injectable()
 export class DashboardService {
@@ -13,7 +14,16 @@ export class DashboardService {
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) { }
 
-    async getOverview(query: DashboardQueryDto) {
+    async getOverview(user: AuthenticatedUser, query: DashboardQueryDto) {
+        const admin = await this.prisma.user.findUnique({
+            where: { id: user.id },
+            include: { role: true },
+        });
+
+        if (!admin || admin.deletedAt || admin.status !== UserStatus.ACTIVE || admin.role.name !== RoleName.ADMIN) {
+            throw new ForbiddenException("Chỉ admin mới được xem Dashboard.");
+        }
+
         const cacheKey = `dashboard_overview:${JSON.stringify(query)}`;
         const cached = await this.cacheManager.get(cacheKey);
         if (cached) return cached;
