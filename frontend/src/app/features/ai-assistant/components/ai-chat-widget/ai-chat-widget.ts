@@ -63,7 +63,7 @@ export class AiChatWidget {
   }
 
   protected isInternalLink(link: string): boolean {
-    return link.startsWith('/');
+    return link.startsWith('/') && !link.startsWith('//');
   }
 
   @HostListener('document:keydown.escape')

@@ -27,8 +27,14 @@ export class AdminCommunityModerationPage {
   protected readonly rejectingPost = signal<MemberPost | null>(null);
   protected readonly rejectionReason = signal('');
   protected readonly feedback = signal('');
+  protected readonly reviewBusy = signal(false);
   protected readonly posts = computed(() => this.postStorage.all());
   protected readonly comments = computed(() => this.commentStorage.all());
+
+  constructor() {
+    this.postStorage.initializeAdmin();
+    this.commentStorage.initializeAdmin();
+  }
 
   protected selectTab(tab: ModerationTab): void {
     this.activeTab.set(tab);
@@ -64,10 +70,16 @@ export class AdminCommunityModerationPage {
     this.selectedPost.set(null);
   }
 
-  protected publish(post: MemberPost): void {
-    const reviewed = this.postStorage.review(post.id, 'PUBLISHED');
-    this.feedback.set(reviewed ? 'Đã xuất bản bài viết.' : 'Bài viết không còn chờ duyệt.');
-    if (this.selectedPost()?.id === post.id) this.closePost();
+  protected async publish(post: MemberPost): Promise<void> {
+    if (this.reviewBusy()) return;
+    this.reviewBusy.set(true);
+    try {
+      const reviewed = await this.postStorage.reviewConfirmed(post.id, 'PUBLISHED');
+      this.feedback.set(reviewed ? 'Đã xuất bản bài viết.' : 'Chưa duyệt được trên máy chủ. Vui lòng thử lại.');
+      if (reviewed && this.selectedPost()?.id === post.id) this.closePost();
+    } finally {
+      this.reviewBusy.set(false);
+    }
   }
 
   protected openReject(post: MemberPost): void {
@@ -84,18 +96,21 @@ export class AdminCommunityModerationPage {
     this.rejectionReason.set((event.target as HTMLTextAreaElement).value);
   }
 
-  protected reject(): void {
+  protected async reject(): Promise<void> {
     const post = this.rejectingPost();
-    if (!post || this.rejectionReason().trim().length < 10) return;
-    const reviewed = this.postStorage.review(post.id, 'REJECTED', this.rejectionReason());
-    this.feedback.set(
-      reviewed ? 'Đã gửi yêu cầu chỉnh sửa bài viết.' : 'Không thể từ chối bài viết.',
-    );
-    if (reviewed) this.closeReject();
+    if (!post || this.reviewBusy() || this.rejectionReason().trim().length < 10) return;
+    this.reviewBusy.set(true);
+    try {
+      const reviewed = await this.postStorage.reviewConfirmed(post.id, 'REJECTED', this.rejectionReason());
+      this.feedback.set(reviewed ? 'Đã gửi yêu cầu chỉnh sửa bài viết.' : 'Chưa lưu được quyết định trên máy chủ.');
+      if (reviewed) this.closeReject();
+    } finally {
+      this.reviewBusy.set(false);
+    }
   }
 
-  protected removeComment(comment: MemberComment): void {
-    const removed = this.commentStorage.moderateRemove(comment.id);
+  protected async removeComment(comment: MemberComment): Promise<void> {
+    const removed = await this.commentStorage.moderateRemoveConfirmed(comment.id);
     this.feedback.set(removed ? 'Đã gỡ bình luận vi phạm.' : 'Bình luận không còn tồn tại.');
   }
 

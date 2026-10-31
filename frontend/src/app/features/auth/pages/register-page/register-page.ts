@@ -82,7 +82,7 @@ export class RegisterPage {
         next: () =>
           this.feedback.set({
             type: 'success',
-            message: 'Tạo tài khoản thành công. Vui lòng kiểm tra email để xác minh tài khoản.',
+            message: 'Tạo tài khoản thành công. Bạn có thể đăng nhập ngay.',
           }),
         error: (error: unknown) =>
           this.feedback.set({

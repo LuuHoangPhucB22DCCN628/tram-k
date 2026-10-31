@@ -16,6 +16,8 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
     request.url === normalizedApiBaseUrl || request.url.startsWith(`${normalizedApiBaseUrl}/`);
   if (!isApiRequest) return next(request);
 
+  const isRefreshRequest = request.url === `${normalizedApiBaseUrl}/auth/refresh`;
+
   const requestWithToken = auth.accessToken()
     ? request.clone({ setHeaders: { Authorization: `Bearer ${auth.accessToken()}` } })
     : request;
@@ -25,6 +27,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
       if (
         !(error instanceof HttpErrorResponse) ||
         error.status !== 401 ||
+        isRefreshRequest ||
         !auth.isAuthenticated()
       ) {
         return throwError(() => error);

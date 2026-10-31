@@ -37,7 +37,7 @@ describe('StoriesPage', () => {
     const element = fixture.nativeElement as HTMLElement;
     const titleImages = [
       ...element.querySelectorAll<HTMLImageElement>(
-        '.destiny-hero__title-art, .story-feature__title-art',
+        '.destiny-hero__title-art, .kitchen-hero__title-art',
       ),
     ].map((image) => image.getAttribute('src'));
 
@@ -46,6 +46,7 @@ describe('StoriesPage', () => {
       '/assets/images/stories/kitchen-title.svg',
     ]);
     expect(element.querySelector('a[href="/cau-chuyen/la-bai-dinh-menh"]')).not.toBeNull();
+    expect(element.querySelector('a[href="/cau-chuyen/bep-an-yen"]')).not.toBeNull();
     expect(
       element.querySelectorAll('img[src="/assets/images/stories/arrow-light.svg"]'),
     ).toHaveLength(2);
@@ -104,8 +105,8 @@ describe('StoriesPage', () => {
     expect(element.querySelector('app-destiny-story-hero')?.classList).toContain(
       'ui-reveal--scale',
     );
-    expect(element.querySelector('.story-feature__art')?.classList).toContain('ui-reveal--left');
-    expect(element.querySelector('.story-feature__content')?.classList).toContain(
+    expect(element.querySelector('.kitchen-hero__art')?.classList).toContain('ui-reveal--left');
+    expect(element.querySelector('.kitchen-hero__content')?.classList).toContain(
       'ui-reveal--right',
     );
     expect(

@@ -63,6 +63,23 @@ describe('CancerTypeDetailPage', () => {
     expect(decor.every((image) => image.alt === '')).toBe(true);
   });
 
+  it('keeps the lung treatment heading as readable text from Figma', () => {
+    routeParams.next(convertToParamMap({ slug: 'ung-thu-phoi' }));
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const heading = element.querySelector<HTMLElement>('#lung-treatment-title');
+
+    expect(heading?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Không chỉ là Kéo dài sự sống');
+    expect(heading?.classList.contains('visually-hidden')).toBe(false);
+    expect(
+      element.querySelector('.lung-page__treatment .breast-section__heading p')?.textContent,
+    ).toContain('Kỷ nguyên mới trong điều trị:');
+    expect(
+      element.querySelector('.lung-page__treatment img[src$="lung-treatment-title.svg"]'),
+    ).toBeNull();
+  });
+
   it('keeps every article detail on the shared four-section Figma layout', () => {
     const articleDetails = Object.values(CANCER_DETAILS).filter(
       (detail) => detail.layout === 'article',

@@ -1,0 +1,22 @@
+<main class="statement-page">
+  <a routerLink="/cong-dong" class="back">← Về trang cộng đồng</a>
+  <p class="eyebrow">Minh bạch quyên góp</p>
+  <h1>Chi tiết sao kê quyên góp</h1>
+  <p>Chỉ hiển thị các khoản tiền vào đã được quản trị viên đối soát và xác nhận. Thông tin cá nhân của người chuyển tiền được giữ riêng tư.</p>
+  @if (loading()) { <p role="status">Đang tải sao kê...</p> }
+  @if (error()) { <p role="alert">Chưa tải được sao kê. Vui lòng thử lại sau.</p> }
+  @if (summary(); as data) {
+    <div class="totals"><strong>{{ formatVnd(data.totalAmountVnd) }} đ</strong><span>{{ data.totalCount }} lượt quyên góp đã xác nhận</span></div>
+    <div class="table-scroll"><table><thead><tr><th scope="col">Mã</th><th scope="col">Người quyên góp</th><th scope="col">Thời gian</th><th scope="col">Số tiền</th></tr></thead>
+      <tbody>@for (entry of data.items; track entry.id) { <tr>
+        <td>QG-{{ entry.id.slice(-8).toUpperCase() }}</td><td>{{ entry.name }}</td>
+        <td>{{ entry.occurredAt | date:'HH:mm dd/MM/yyyy':'+0700' }}</td><td>{{ formatVnd(entry.amountVnd) }} đ</td>
+      </tr> } @empty { <tr><td colspan="4">Chưa có giao dịch được xác nhận.</td></tr> }</tbody>
+    </table></div>
+    @if (data.totalCount > 20) { <nav class="pages" aria-label="Trang sao kê">
+      <button type="button" [disabled]="page() === 1 || loading()" (click)="changePage(-1)">Trang trước</button>
+      <span>Trang {{ page() }} / {{ Math.ceil(data.totalCount / 20) }}</span>
+      <button type="button" [disabled]="page() * 20 >= data.totalCount || loading()" (click)="changePage(1)">Trang sau</button>
+    </nav> }
+  }
+</main>

@@ -1,6 +1,6 @@
 <header class="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
   <!-- Dùng token màu chung thay vì ghi mã màu trực tiếp -->
-  <div class="flex items-center justify-between gap-6 px-5 py-4 sm:px-8 xl:px-20 xl:py-6">
+  <div class="public-header-bar flex items-center justify-between gap-6 px-5 py-4 sm:px-8 xl:px-20 xl:py-6">
     <!-- Figma desktop dùng padding ngang 80px, dọc 24px -->
     <a
       routerLink="/"
@@ -18,7 +18,10 @@
       <!-- Logo SVG xuất trực tiếp từ Figma -->
     </a>
 
-    <nav class="hidden items-center xl:flex" aria-label="Điều hướng chính">
+    <nav
+      class="public-desktop-nav hidden min-w-0 flex-1 items-center justify-between xl:flex"
+      aria-label="Điều hướng chính"
+    >
       <!-- Menu desktop đúng thứ tự trong Figma -->
       @for (item of menuItems; track item.path) {
         <a

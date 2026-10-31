@@ -26,6 +26,11 @@
           <app-community-location-pin />
         </button>
       }
+      @if (markers().length === 0) {
+        <p class="hanoi-map-hero__empty">
+          Trạm K chưa có điểm tiếp nhận được xác minh tại {{ region.name }}. Vui lòng quay lại sau.
+        </p>
+      }
     </div>
   </section>
 
@@ -42,7 +47,7 @@
         <img
           class="location-dialog__photo"
           [src]="location.image"
-          [alt]="'Hoạt động phát cơm tại ' + location.title"
+          [alt]="'Điểm tiếp nhận tại ' + location.title"
           width="304"
           height="380"
         />
@@ -85,20 +90,19 @@
             </p>
           </div>
 
-          <button
-            class="location-dialog__register"
-            type="button"
-            [disabled]="isRegistered()"
-            (click)="registerForMeal()"
+          <p class="location-dialog__schedule-note">
+            Điểm tiếp nhận theo lịch cố định, không cần đăng ký trước. Vui lòng liên hệ đơn vị để
+            xác nhận lịch trước khi đến.
+          </p>
+          <a
+            class="location-dialog__directions"
+            [href]="directionsUrl(location)"
+            target="_blank"
+            rel="noopener noreferrer"
+            [attr.aria-label]="'Mở Google Maps chỉ đường đến ' + location.title"
           >
-            {{ registrationButtonLabel() }}
-          </button>
-
-          @if (registrationFeedback()) {
-            <p class="location-dialog__feedback" aria-live="polite">
-              {{ registrationFeedback() }}
-            </p>
-          }
+            Chỉ đường đến đây ↗
+          </a>
         </div>
 
         <button

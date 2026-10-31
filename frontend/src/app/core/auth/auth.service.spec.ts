@@ -81,6 +81,20 @@ describe('AuthService', () => {
     expect(after.sessionExpiresAt).toBe(before.sessionExpiresAt);
   });
 
+  it('updates the account avatar after a profile is saved', () => {
+    const auth = TestBed.inject(AuthService);
+    auth.login({ email: 'phuc@tramk.vn', password: 'Matkhau123', rememberMe: false }).subscribe();
+
+    auth.updateProfileSummary('Phúc Trạm K', 'data:image/png;base64,AA==');
+
+    expect(auth.currentUser()).toEqual(
+      expect.objectContaining({
+        displayName: 'Phúc Trạm K',
+        avatarUrl: 'data:image/png;base64,AA==',
+      }),
+    );
+  });
+
   it.each([
     { email: 'phuc@tramk.vn', route: '/thanh-vien' },
     { email: 'doitac@tramk.vn', route: '/doi-tac' },

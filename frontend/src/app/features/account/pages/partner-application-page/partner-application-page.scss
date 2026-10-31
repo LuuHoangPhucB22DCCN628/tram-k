@@ -16,7 +16,8 @@ h1 {
   font-size: clamp(1.7rem, 4vw, 2.4rem);
 }
 form,
-.partner-application__status {
+.partner-application__status,
+.partner-application__verification {
   background: #fff;
   border: 1px solid #dedafa;
   border-radius: 18px;
@@ -25,6 +26,23 @@ form,
 }
 .partner-application__status {
   margin-bottom: 22px;
+}
+.partner-application__verification {
+  margin-bottom: 22px;
+  border-color: #c7bdf5;
+  background: #f7f5ff;
+}
+.partner-application__verification h2 {
+  margin: 0 0 8px;
+  color: #4733ac;
+  font-size: 1.25rem;
+}
+.partner-application__verification p {
+  line-height: 1.6;
+}
+.partner-application__verification button:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 .partner-application__status div {
   display: flex;

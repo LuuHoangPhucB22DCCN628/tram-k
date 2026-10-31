@@ -11,7 +11,8 @@ describe("NotificationsService", () => {
     create: jest.fn(),
     upsert: jest.fn(),
   };
-  const prisma = { notification } as unknown as PrismaService;
+  const user = { findUniqueOrThrow: jest.fn(), update: jest.fn() };
+  const prisma = { notification, user } as unknown as PrismaService;
   const service = new NotificationsService(prisma);
 
   beforeEach(() => jest.clearAllMocks());
@@ -69,5 +70,21 @@ describe("NotificationsService", () => {
         },
       }),
     );
+  });
+
+  it("reads and updates only the caller's notification preferences", async () => {
+    user.findUniqueOrThrow.mockResolvedValue({
+      notifyStoryComments: true, notifyStoryReplies: true, notifyStoryReactions: false,
+    });
+    await expect(service.preferencesFor("user-1")).resolves.toEqual({
+      storyComments: true, storyReplies: true, storyReactions: false,
+    });
+    user.update.mockResolvedValue({
+      notifyStoryComments: false, notifyStoryReplies: true, notifyStoryReactions: false,
+    });
+    await service.updatePreferences("user-1", { storyComments: false });
+    expect(user.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "user-1" }, data: { notifyStoryComments: false },
+    }));
   });
 });

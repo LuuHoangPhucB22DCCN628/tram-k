@@ -89,7 +89,7 @@ export class ManagedResourcesController {
   }
 
   @Delete(":type/:sourceId")
-  @HttpCode(204)
+  @HttpCode(200)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async remove(
@@ -97,7 +97,7 @@ export class ManagedResourcesController {
     @Param("type", new ParseEnumPipe(SearchDocumentType))
     type: SearchDocumentType,
     @Param("sourceId") sourceId: string,
-  ): Promise<void> {
-    await this.resources.remove(actor, type, sourceId);
+  ): Promise<ApiSuccessResponse<{ deletedRegistrations: number }>> {
+    return { success: true, data: await this.resources.remove(actor, type, sourceId) };
   }
 }

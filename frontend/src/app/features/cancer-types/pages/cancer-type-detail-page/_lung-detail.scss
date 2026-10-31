@@ -77,12 +77,11 @@
         margin-bottom: 4px;
       }
 
-      img {
-        display: block;
-        width: 479px;
-        max-width: 100%;
-        height: 148px;
+      h2 {
+        width: min(479px, 100%);
         margin: 0 auto;
+        font-size: clamp(42px, 4.45vw, 64px);
+        line-height: 1.15625;
       }
     }
 
@@ -256,8 +255,8 @@
       padding-bottom: 24px;
       .breast-section__heading {
         height: auto;
-        img {
-          height: auto;
+        h2 {
+          line-height: 1.16;
         }
       }
       .breast-section__copy {

@@ -1,4 +1,8 @@
-import { ForbiddenException, UnauthorizedException } from "@nestjs/common";
+import {
+  ForbiddenException,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AuthTokenPurpose, RoleName, UserStatus } from "@prisma/client";
 
@@ -173,17 +177,55 @@ describe("AuthService", () => {
     });
   });
 
-  it("refuses login until the email is verified", async () => {
+  it("does not claim a verification email was sent when delivery is not configured", async () => {
+    await expect(
+      service.resendVerification("an@example.com"),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    expect(transaction.outboxEvent.create).not.toHaveBeenCalled();
+  });
+
+  it("queues a new verification email when the webhook is configured", async () => {
+    await service.register(registerDto);
+    transaction.outboxEvent.create.mockClear();
+    prismaMock.user.findUnique.mockResolvedValue(storedUser);
+    const webhookConfig = {
+      getOrThrow: config.getOrThrow,
+      get: jest.fn((key: string) => {
+        if (key === "EMAIL_DELIVERY_MODE") return "webhook";
+        if (key === "EMAIL_WEBHOOK_URL") return "https://email.example.test/send";
+        if (key === "EMAIL_WEBHOOK_TOKEN") return "test-webhook-token-1234";
+        return "2026-10-03";
+      }),
+    } as unknown as ConfigService;
+    const webhookService = new AuthService(prisma, webhookConfig, outboxCrypto);
+
+    await expect(webhookService.resendVerification("an@example.com")).resolves.toEqual({
+      accepted: true,
+    });
+    expect(transaction.outboxEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ type: "AUTH_EMAIL_VERIFICATION_REQUESTED" }),
+    });
+  });
+
+  it("allows a pending-verification account to log in with the correct password", async () => {
     await service.register(registerDto);
     prismaMock.user.findUnique.mockResolvedValue(storedUser);
 
-    await expect(
-      service.login({
-        email: registerDto.email,
-        password,
-        portal: "PUBLIC",
-      }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    const result = await service.login({
+      email: registerDto.email,
+      password,
+      portal: "PUBLIC",
+    });
+
+    expect(result).toMatchObject({
+      user: { id: "user-1", role: RoleName.PATIENT, status: UserStatus.PENDING_VERIFY },
+      accessTokenExpiresInSeconds: 900,
+    });
+    await expect(service.authenticate(result.accessToken)).resolves.toEqual({
+      id: "user-1",
+      role: RoleName.PATIENT,
+      authVersion: 1,
+    });
   });
 
   it("issues a signed 15-minute token only for an active account", async () => {
@@ -202,6 +244,40 @@ describe("AuthService", () => {
       authVersion: 1,
     });
     expect(result.accessTokenExpiresInSeconds).toBe(900);
+  });
+
+  it("returns the saved avatar when the member logs in", async () => {
+    await service.register(registerDto);
+    const avatarDataUrl = "data:image/png;base64,AA==";
+    prismaMock.user.findUnique.mockResolvedValue({
+      ...storedUser,
+      status: UserStatus.ACTIVE,
+      profile: { avatarDataUrl },
+    });
+
+    const result = await service.login({
+      email: registerDto.email,
+      password,
+      portal: "PUBLIC",
+    });
+
+    expect(result.user.avatarUrl).toBe(avatarDataUrl);
+  });
+
+  it("still rejects a disabled account even with the correct password", async () => {
+    await service.register(registerDto);
+    prismaMock.user.findUnique.mockResolvedValue({
+      ...storedUser,
+      status: UserStatus.DISABLED,
+    });
+
+    await expect(
+      service.login({
+        email: registerDto.email,
+        password,
+        portal: "PUBLIC",
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it("records an invalid login without revealing whether the email exists", async () => {
@@ -410,6 +486,32 @@ describe("AuthService", () => {
     expect(prismaMock.authSession.update).toHaveBeenCalledWith({
       where: { id: "session-1" },
       data: { revokedAt: expect.any(Date) },
+    });
+  });
+
+  it("keeps a pending-verification account signed in after refresh", async () => {
+    prismaMock.authSession.findUnique.mockResolvedValue({
+      id: "session-pending",
+      userId: "user-1",
+      revokedAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
+      user: {
+        id: "user-1",
+        email: "an@example.com",
+        fullName: "Nguyễn Minh An",
+        status: UserStatus.PENDING_VERIFY,
+        deletedAt: null,
+        authVersion: 1,
+        role: { name: RoleName.PATIENT },
+        partnerMembership: null,
+      },
+      authVersion: 1,
+    });
+    prismaMock.authSession.update.mockResolvedValue({});
+    prismaMock.authSession.create.mockResolvedValue({});
+
+    await expect(service.refresh("refresh-token-pending")).resolves.toMatchObject({
+      result: { user: { id: "user-1" } },
     });
   });
 

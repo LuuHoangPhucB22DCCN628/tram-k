@@ -57,6 +57,47 @@ enum HairRegistrationStatus {
   COMPLETED
 }
 
+enum DonationEntryStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+model DonationStatementImport {
+  id          String          @id @default(cuid())
+  fileName    String          @map("file_name") @db.VarChar(255)
+  fileHash    String          @map("file_hash") @db.VarChar(64)
+  accountKey  String          @map("account_key") @db.VarChar(100)
+  importedBy  String          @map("imported_by")
+  rowCount    Int             @default(0) @map("row_count")
+  addedCount  Int             @default(0) @map("added_count")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  entries     DonationEntry[]
+
+  @@index([createdAt])
+  @@map("donation_statement_imports")
+}
+
+model DonationEntry {
+  id             String                  @id @default(cuid())
+  importId       String                  @map("import_id")
+  statementImport DonationStatementImport @relation(fields: [importId], references: [id])
+  sourceKey      String                  @unique @map("source_key") @db.VarChar(64)
+  sourceReference String?                @map("source_reference") @db.VarChar(255)
+  occurredAt     DateTime                @map("occurred_at")
+  amountVnd      BigInt                  @map("amount_vnd")
+  description    String?                 @db.VarChar(1000)
+  status         DonationEntryStatus     @default(PENDING)
+  reviewedBy     String?                 @map("reviewed_by")
+  reviewedAt     DateTime?               @map("reviewed_at")
+  reviewNote     String?                 @map("review_note") @db.VarChar(500)
+  createdAt      DateTime                @default(now()) @map("created_at")
+
+  @@index([status, occurredAt])
+  @@index([importId])
+  @@map("donation_entries")
+}
+
 enum PartnerApplicationStatus {
   PENDING
   APPROVED
@@ -69,7 +110,20 @@ enum CommunityReactionType {
   SUPPORT
 }
 
+enum MemberPostStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  REJECTED
+}
+
 enum NotificationKind {
+  STORY_SUBMITTED
+  STORY_PUBLISHED
+  STORY_REJECTED
+  STORY_COMMENT
+  STORY_REPLY
+  STORY_REACTION
   PROGRAM_REGISTRATION_SENT
   PROGRAM_REGISTRATION_RECEIVED
   PROGRAM_REGISTRATION_CONFIRMED
@@ -77,8 +131,13 @@ enum NotificationKind {
   PROGRAM_REGISTRATION_COMPLETED
   PROGRAM_PUBLISHED
   PROGRAM_REJECTED
+  PROGRAM_DELETED
   PARTNER_APPLICATION_APPROVED
   PARTNER_APPLICATION_REJECTED
+  HAIR_REGISTRATION_SENT
+  HAIR_REGISTRATION_APPROVED
+  HAIR_REGISTRATION_REJECTED
+  HAIR_REGISTRATION_COMPLETED
 }
 
 enum SearchDocumentType {
@@ -87,6 +146,7 @@ enum SearchDocumentType {
   STORY
   PODCAST
   SUPPORT_PROGRAM
+  DONATION_LOCATION
 }
 
 enum ManagedResourceStatus {
@@ -141,7 +201,12 @@ model User {
   grantedPartnerMemberships   PartnerMembership[]          @relation("PartnerGranter")
   communityComments           CommunityComment[]
   communityReactions          CommunityReaction[]
+  memberPosts                 MemberPost[]
   notifications               Notification[]
+  notifyStoryComments         Boolean                      @default(true) @map("notify_story_comments")
+  notifyStoryReplies          Boolean                      @default(true) @map("notify_story_replies")
+  notifyStoryReactions        Boolean                      @default(true) @map("notify_story_reactions")
+  hairRegistrations           HairRegistration[]
   supportProgramRegistrations SupportProgramRegistration[]
   partnerApplicationDocuments PartnerApplicationDocument[]
   authSessions                AuthSession[]
@@ -306,6 +371,24 @@ model AuthSession {
   @@index([userId, revokedAt])
   @@index([expiresAt])
   @@map("auth_sessions")
+}
+
+model MemberPost {
+  id              String           @id @default(cuid())
+  userId          String           @map("user_id")
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authorName      String           @map("author_name") @db.VarChar(100)
+  title           String           @db.VarChar(120)
+  content         String           @db.Text
+  status          MemberPostStatus @default(DRAFT)
+  rejectionReason String?          @map("rejection_reason") @db.VarChar(1000)
+  reviewedAt      DateTime?        @map("reviewed_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  @@index([userId, updatedAt])
+  @@index([status, reviewedAt])
+  @@map("member_posts")
 }
 
 model CommunityComment {
@@ -479,6 +562,8 @@ model PartnerMembership {
 
 model HairRegistration {
   id                  String                 @id @default(cuid())
+  userId              String?                @map("user_id")
+  user                User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
   reference           String                 @unique
   mode                HairRegistrationMode
   status              HairRegistrationStatus @default(PENDING)
@@ -504,6 +589,7 @@ model HairRegistration {
   updatedAt           DateTime               @updatedAt @map("updated_at")
 
   @@index([mode, status])
+  @@index([userId, createdAt])
   @@index([createdAt])
   @@map("hair_registrations")
 }

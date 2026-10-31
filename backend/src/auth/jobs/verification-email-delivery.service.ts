@@ -20,7 +20,7 @@ export class VerificationEmailDeliveryService {
     this.mode = config.get<"log" | "webhook">("EMAIL_DELIVERY_MODE", "log");
     this.publicWebUrl = config.get<string>(
       "PUBLIC_WEB_URL",
-      "http://localhost:4201",
+      "http://localhost:4200",
     );
     this.webhookUrl = config.get<string>("EMAIL_WEBHOOK_URL");
     this.webhookToken = config.get<string>("EMAIL_WEBHOOK_TOKEN");

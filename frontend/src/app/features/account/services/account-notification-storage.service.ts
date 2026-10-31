@@ -7,6 +7,12 @@ import { AuthService } from '@core/auth/auth.service';
 import { AccountNotificationApiService } from './account-notification-api.service';
 
 export type AccountNotificationKind =
+  | 'STORY_SUBMITTED'
+  | 'STORY_PUBLISHED'
+  | 'STORY_REJECTED'
+  | 'STORY_COMMENT'
+  | 'STORY_REPLY'
+  | 'STORY_REACTION'
   | 'PROGRAM_REGISTRATION_SENT'
   | 'PROGRAM_REGISTRATION_RECEIVED'
   | 'PROGRAM_REGISTRATION_CONFIRMED'
@@ -14,8 +20,13 @@ export type AccountNotificationKind =
   | 'PROGRAM_REGISTRATION_COMPLETED'
   | 'PROGRAM_PUBLISHED'
   | 'PROGRAM_REJECTED'
+  | 'PROGRAM_DELETED'
   | 'PARTNER_APPLICATION_APPROVED'
-  | 'PARTNER_APPLICATION_REJECTED';
+  | 'PARTNER_APPLICATION_REJECTED'
+  | 'HAIR_REGISTRATION_SENT'
+  | 'HAIR_REGISTRATION_APPROVED'
+  | 'HAIR_REGISTRATION_REJECTED'
+  | 'HAIR_REGISTRATION_COMPLETED';
 
 export interface AccountNotification {
   readonly id: string;

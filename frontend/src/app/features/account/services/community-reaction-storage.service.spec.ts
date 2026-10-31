@@ -1,4 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
+import { AuthService } from '@core/auth/auth.service';
+import { CommunityEngagementApiService } from './community-engagement-api.service';
 import { CommunityReactionStorageService } from './community-reaction-storage.service';
 
 describe('CommunityReactionStorageService', () => {
@@ -30,5 +33,17 @@ describe('CommunityReactionStorageService', () => {
     service.toggle('USER-1', '/story/2', 'LIKE');
     expect(service.countsFor('/story/1').LOVE).toBe(2);
     expect(service.countsFor('/story/2').LOVE).toBe(0);
+  });
+
+  it('retains a legacy reaction if the server rejects the import', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [
+      { provide: AuthService, useValue: { currentUser: () => ({ id: 'USER-1' }), authMode: () => 'REMOTE' } },
+      { provide: CommunityEngagementApiService, useValue: { available: true, importReaction: () => of(null) } },
+    ] });
+    const service = TestBed.inject(CommunityReactionStorageService);
+    service.toggle('USER-1', '/goc-tam-ly?story=POST-1#cau-chuyen-POST-1', 'LOVE');
+    await expect(service.migrateLegacyFor('USER-1')).resolves.toEqual({ migrated: 0, remaining: 1 });
+    expect(service.legacyCountFor('USER-1')).toBe(1);
   });
 });

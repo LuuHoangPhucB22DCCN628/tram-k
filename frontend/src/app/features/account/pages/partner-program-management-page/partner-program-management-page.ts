@@ -14,16 +14,21 @@ import type { ParamMap } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { EscapeCloseDirective } from '@shared/directives/escape-close.directive';
 
-import type {
+import { charityEligibilityLabel, type
   CharityProgramProposal,
-  CharityProgramStatus,
   CharitySupportType,
 } from '../../models/charity-program.models';
+import {
+  programDisplayStatus,
+  programDisplayStatusLabel,
+  type CharityProgramDisplayStatus,
+} from '../../models/charity-program-schedule';
 import type {
   CharityProgramRegistration,
   CharityProgramRegistrationStatus,
 } from '../../services/charity-program-registration.service';
 import { CharityProgramRegistrationService } from '../../services/charity-program-registration.service';
+import { CharityProgramClockService } from '../../services/charity-program-clock.service';
 import { CharityProgramStorageService } from '../../services/charity-program-storage.service';
 
 type RegistrationFilter = 'ALL' | CharityProgramRegistrationStatus;
@@ -38,10 +43,13 @@ type RegistrationFilter = 'ALL' | CharityProgramRegistrationStatus;
 })
 export class PartnerProgramManagementPage {
   private readonly auth = inject(AuthService);
+  protected readonly eligibilityLabel = charityEligibilityLabel;
+  protected readonly statusLabel = programDisplayStatusLabel;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly storage = inject(CharityProgramStorageService);
+  private readonly clock = inject(CharityProgramClockService);
   private readonly registrations = inject(CharityProgramRegistrationService);
   private readonly userId = this.auth.currentUser()?.id ?? '';
 
@@ -107,12 +115,8 @@ export class PartnerProgramManagementPage {
     this.feedback.set('Đã hủy đề xuất chương trình.');
   }
 
-  protected statusLabel(status: CharityProgramStatus): string {
-    return {
-      PENDING: 'Chờ duyệt',
-      PUBLISHED: 'Đã xuất bản',
-      REJECTED: 'Cần chỉnh sửa',
-    }[status];
+  protected programStatus(proposal: CharityProgramProposal): CharityProgramDisplayStatus {
+    return programDisplayStatus(proposal, this.clock.now());
   }
 
   protected supportTypeLabel(type: CharitySupportType): string {

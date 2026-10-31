@@ -10,7 +10,7 @@
 
   <div class="admin-locations__filters">
     <label>
-      <span class="visually-hidden">Tìm kiếm điểm phát</span>
+      <span class="visually-hidden">Tìm kiếm điểm tiếp nhận</span>
       <input
         type="search"
         placeholder="Tìm theo tên, địa chỉ hoặc liên hệ..."
@@ -30,17 +30,27 @@
   @if (feedback()) {
     <p class="admin-locations__feedback" aria-live="polite">{{ feedback() }}</p>
   }
+  @if (loadError()) {
+    <div class="admin-locations__error" role="alert">
+      <span>{{ loadError() }}</span>
+      @if (!adminReady()) {
+        <button type="button" (click)="retryLoad()">Thử lại</button>
+      }
+    </div>
+  } @else if (!adminReady()) {
+    <p class="admin-locations__loading" role="status">Đang tải điểm tiếp nhận từ máy chủ...</p>
+  }
 
   <div
     class="location-table-wrap"
     role="region"
     tabindex="0"
-    aria-label="Bảng điểm phát cơm có thể cuộn ngang"
+    aria-label="Bảng điểm tiếp nhận có thể cuộn ngang"
   >
     <table>
       <thead>
         <tr>
-          <th>Điểm phát</th>
+          <th>Điểm tiếp nhận</th>
           <th>Tỉnh/thành</th>
           <th>Lịch và liên hệ</th>
           <th>Vị trí bản đồ</th>
@@ -63,7 +73,17 @@
               <strong>{{ location.schedule }}</strong>
               <small>{{ location.contactName }} · {{ location.phone }}</small>
             </td>
-            <td>{{ location.mapTopPercent }}% / {{ location.mapLeftPercent }}%</td>
+            <td>
+              {{ location.mapTopPercent }}% / {{ location.mapLeftPercent }}%
+              <small [class.location-gps--missing]="!hasGpsCoordinates(location)">
+                GPS:
+                @if (hasGpsCoordinates(location)) {
+                  {{ location.latitude }}, {{ location.longitude }}
+                } @else {
+                  Chưa điền
+                }
+              </small>
+            </td>
             <td>
               <span class="location-status" [attr.data-status]="location.status">
                 {{ statusLabel(location.status) }}
@@ -71,16 +91,36 @@
             </td>
             <td>
               <div class="location-actions">
-                <button type="button" (click)="openEdit(location)">Chỉnh sửa</button>
-                <button type="button" (click)="toggleStatus(location)">
+                <button
+                  type="button"
+                  [disabled]="!adminReady() || saving()"
+                  (click)="openEdit(location)"
+                >
+                  Chỉnh sửa
+                </button>
+                <button
+                  type="button"
+                  [disabled]="!adminReady() || saving()"
+                  (click)="toggleStatus(location)"
+                >
                   {{ location.status === 'ACTIVE' ? 'Tạm ngưng' : 'Tiếp nhận' }}
                 </button>
+                @if (location.status === 'ACTIVE') {
+                  <a
+                    [routerLink]="['/cong-dong/diem-quyen-gop', location.regionId]"
+                    [queryParams]="{ location: location.id }"
+                  >
+                    Xem trên bản đồ
+                  </a>
+                }
               </div>
             </td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="6" class="admin-locations__empty">Không tìm thấy điểm phát phù hợp.</td>
+            <td colspan="6" class="admin-locations__empty">
+              Không tìm thấy điểm tiếp nhận phù hợp.
+            </td>
           </tr>
         }
       </tbody>
@@ -90,7 +130,9 @@
   @if (editorOpen()) {
     <div class="location-editor-backdrop" (click)="closeEditor()">
       <form
+        #editorForm
         class="location-editor"
+        [class.location-editor--submitted]="submitted()"
         role="dialog"
         aria-modal="true"
         aria-labelledby="location-editor-title"
@@ -120,9 +162,21 @@
             </select></label
           >
           <label class="location-editor__wide"
-            >Tên điểm phát<input formControlName="title" maxlength="160"
+            >Tên điểm tiếp nhận<input formControlName="title" maxlength="160"
           /></label>
-          <label>Lịch phát<input formControlName="schedule" maxlength="160" /></label>
+          <fieldset class="location-editor__wide location-editor__weekdays">
+            <legend>Ngày tiếp nhận cố định trong tuần *</legend>
+            @for (day of weekdays; track day.value) {
+              <label><input type="checkbox" [checked]="form.controls.weekdays.value.includes(day.value)"
+                (change)="toggleWeekday(day.value, $event)" />{{ day.label }}</label>
+            }
+            @if (fieldError('weekdays'); as error) {
+              <small class="location-editor__field-error" role="alert">{{ error }}</small>
+            }
+          </fieldset>
+          <label>Giờ bắt đầu *<input type="time" formControlName="startTime" required /></label>
+          <label>Giờ kết thúc *<input type="time" formControlName="endTime" required /></label>
+          <p class="location-editor__wide location-editor__hint">Lịch sẽ tự hiển thị từ các ngày và khung giờ đã chọn; giờ kết thúc phải sau giờ bắt đầu. Điểm tiếp nhận không cần đăng ký.</p>
           <label
             >Trạng thái<select formControlName="status">
               <option value="ACTIVE">Đang tiếp nhận</option>
@@ -153,6 +207,75 @@
               max="100"
               step="0.01"
           /></label>
+          <div class="location-editor__wide location-editor__map-section">
+            <strong>Xem trước vị trí ghim</strong>
+            <div class="location-editor__map-preview">
+              <img
+                [src]="mapPreviewImage()"
+                [alt]="'Bản đồ minh họa ' + regionName(form.controls.regionId.value)"
+                width="750"
+                height="847"
+              />
+              <span
+                class="location-editor__map-pin"
+                [style.top.%]="form.controls.mapTopPercent.value"
+                [style.left.%]="form.controls.mapLeftPercent.value"
+                aria-hidden="true"
+              >
+                <app-community-location-pin />
+              </span>
+            </div>
+            <small>
+              Hai tỷ lệ trên chỉ đặt ghim trên ảnh bản đồ. Hãy nhập tọa độ GPS bên dưới để nút chỉ
+              đường dẫn đến đúng địa điểm.
+            </small>
+          </div>
+          <label
+            >Vĩ độ GPS *<input
+              type="number"
+              formControlName="latitude"
+              min="-90"
+              max="90"
+              step="any"
+              required
+              placeholder="Chưa điền"
+              [attr.aria-invalid]="fieldError('latitude') ? true : null"
+              [attr.aria-describedby]="fieldError('latitude') ? 'location-latitude-error' : null"
+            />
+            @if (fieldError('latitude'); as error) {
+              <small
+                id="location-latitude-error"
+                class="location-editor__field-error"
+                role="alert"
+                >{{ error }}</small
+              >
+            }
+          </label>
+          <label
+            >Kinh độ GPS *<input
+              type="number"
+              formControlName="longitude"
+              min="-180"
+              max="180"
+              step="any"
+              required
+              placeholder="Chưa điền"
+              [attr.aria-invalid]="fieldError('longitude') ? true : null"
+              [attr.aria-describedby]="fieldError('longitude') ? 'location-longitude-error' : null"
+            />
+            @if (fieldError('longitude'); as error) {
+              <small
+                id="location-longitude-error"
+                class="location-editor__field-error"
+                role="alert"
+                >{{ error }}</small
+              >
+            }
+          </label>
+          <p class="location-editor__wide location-editor__hint">
+            Cả hai tọa độ đều bắt buộc. Sao chép vĩ độ và kinh độ từ Google Maps để chỉ đường tới
+            đúng vị trí.
+          </p>
           <label class="location-editor__wide"
             >Mô tả <small>Tách các đoạn bằng một dòng trống.</small
             ><textarea formControlName="description" rows="7" maxlength="2000"></textarea>
@@ -161,14 +284,32 @@
             >Thông điệp nhấn mạnh (không bắt buộc)<input formControlName="emphasis" maxlength="200"
           /></label>
         </div>
-        @if (form.invalid && submitted()) {
-          <p class="location-editor__error">
-            Vui lòng nhập đủ thông tin; tọa độ bản đồ phải nằm trong khoảng 0–100%.
-          </p>
+        @let errors = validationErrors();
+        @if (errors.length) {
+          <div class="location-editor__validation" role="alert" aria-label="Thông tin cần sửa">
+            <strong>Vui lòng kiểm tra {{ errors.length }} mục sau:</strong>
+            <ul>
+              @for (error of errors; track error.field) {
+                <li>
+                  <button type="button" (click)="focusField(error.field)">
+                    {{ error.message }}
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+        @if (feedback()) {
+          <p class="location-editor__error" role="alert">{{ feedback() }}</p>
+        }
+        @if (loadError()) {
+          <p class="location-editor__error" role="alert">{{ loadError() }}</p>
         }
         <div class="location-editor__actions">
           <button type="button" (click)="closeEditor()">Hủy</button>
-          <button type="submit">Lưu địa điểm</button>
+          <button type="submit" [disabled]="saving() || !adminReady()">
+            {{ saving() ? 'Đang lưu...' : 'Lưu địa điểm' }}
+          </button>
         </div>
       </form>
     </div>

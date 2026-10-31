@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
 import { PodcastAdminStorageService } from '../../services/podcast-admin-storage.service';
 import { MentalHealthPage } from './mental-health-page';
@@ -134,6 +135,7 @@ describe('MentalHealthPage', () => {
   it('opens the requested podcast when arriving from a search result', async () => {
     TestBed.overrideProvider(ActivatedRoute, {
       useValue: {
+        queryParamMap: of(convertToParamMap({ podcast: 'PODCAST-002' })),
         snapshot: {
           queryParamMap: convertToParamMap({ podcast: 'PODCAST-002' }),
         },

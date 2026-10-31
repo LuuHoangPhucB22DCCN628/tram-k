@@ -40,6 +40,30 @@
   }
 }
 
+.comments-page__sync {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-brand-soft);
+
+  p { margin: 0; color: var(--color-text-body); }
+  button {
+    flex: none;
+    padding: .7rem 1rem;
+    border: 0;
+    border-radius: var(--radius-md);
+    color: #fff;
+    background: var(--color-brand-primary);
+    cursor: pointer;
+    font: 700 14px var(--font-family-sans);
+  }
+  button:disabled { cursor: wait; opacity: .65; }
+}
+
 .comment-list {
   display: grid;
   gap: var(--space-4);

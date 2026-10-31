@@ -142,6 +142,16 @@
     color: var(--color-danger);
     background: #fff0f0;
   }
+
+  &[data-status='COMPLETED'] {
+    color: #3f367c;
+    background: #eeeaff;
+  }
+
+  &[data-status='NEEDS_SCHEDULE'] {
+    color: #8a4900;
+    background: #fff0cf;
+  }
 }
 
 .admin-program-card__actions,
@@ -255,6 +265,43 @@
   cursor: pointer;
   font-size: 2rem;
 }
+
+.admin-dialog__eligibility {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+
+  h3 { margin: 0; color: var(--color-text-heading); }
+  label { display: grid; gap: 0.4rem; color: var(--color-text-heading); font-weight: 700; }
+  select, textarea, input[type='text'], input[type='date'], input[type='time'] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font: inherit;
+  }
+  textarea { resize: vertical; }
+  .admin-dialog__check { display: flex; align-items: center; gap: 0.6rem; }
+  small { color: var(--color-danger); }
+
+  .admin-dialog__time-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
+  .admin-dialog__weekdays { display: flex; flex-wrap: wrap; gap: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+  .admin-dialog__weekdays legend { font-weight: 700; }
+  .admin-dialog__weekdays label { display: flex; align-items: center; gap: 0.25rem; }
+}
+
+.admin-dialog__warning,
+.admin-dialog__message {
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  color: #7a4200;
+  background: #fff4df;
+}
+
+.admin-dialog__message { color: var(--color-text-body); background: #f2f0ff; }
+
+.admin-dialog__actions button:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .admin-dialog--reject {
   display: grid;

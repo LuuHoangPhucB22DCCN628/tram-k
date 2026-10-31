@@ -47,7 +47,6 @@ export class PublicHeader {
     { label: 'Câu chuyện truyền cảm hứng', path: '/cau-chuyen' },
     { label: 'Cộng đồng', path: '/cong-dong' },
     { label: 'Góc tâm lý và tinh thần', path: '/goc-tam-ly' },
-    { label: 'Về chúng tôi', path: '/ve-chung-toi' },
   ];
 
   readonly accountMenuItems = computed<readonly AccountMenuItem[]>(() => {
@@ -58,6 +57,7 @@ export class PublicHeader {
           { label: 'Hồ sơ', path: '/thanh-vien/ho-so' },
           { label: 'Bài viết', path: '/thanh-vien/bai-viet' },
           { label: 'Bình luận', path: '/thanh-vien/binh-luan' },
+          { label: 'Tra cứu mã đăng ký', path: '/thanh-vien/tra-cuu-ma' },
           { label: 'Đăng ký trở thành đối tác', path: '/thanh-vien/dang-ky-doi-tac' },
           {
             label: 'Các chương trình đã đăng ký',
@@ -69,6 +69,7 @@ export class PublicHeader {
           { label: 'Hồ sơ', path: '/doi-tac/ho-so' },
           { label: 'Bài viết', path: '/doi-tac/bai-viet' },
           { label: 'Bình luận', path: '/doi-tac/binh-luan' },
+          { label: 'Tra cứu mã đăng ký', path: '/doi-tac/tra-cuu-ma' },
           { label: 'Các chương trình đã đăng ký', path: '/doi-tac/chuong-trinh-da-dang-ky' },
           { label: 'Đăng ký hỗ trợ', path: '/doi-tac/dang-ky-ho-tro', group: 'support' },
           { label: 'Quản lý chương trình từ thiện', path: '/doi-tac/quan-ly-chuong-trinh' },

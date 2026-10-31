@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of } from 'rxjs';
 
@@ -75,7 +75,11 @@ export class PartnerApplicationApiService {
   }
 
   upload(files: readonly File[]): Observable<readonly UploadedDocument[] | null> {
-    if (!this.http || !this.apiBaseUrl) return of(null);
+    this.errorState.set('');
+    if (!this.http || !this.apiBaseUrl) {
+      this.errorState.set('Chưa cấu hình kết nối máy chủ. Vui lòng liên hệ quản trị viên.');
+      return of(null);
+    }
     const body = new FormData();
     for (const file of files) body.append('documents', file, file.name);
     return this.http
@@ -85,8 +89,8 @@ export class PartnerApplicationApiService {
       )
       .pipe(
         map((response) => response.data),
-        catchError(() => {
-          this.errorState.set('Không thể tải tệp minh chứng lên máy chủ. Vui lòng thử lại.');
+        catchError((error: unknown) => {
+          this.errorState.set(this.describeError(error, 'Không thể tải tệp minh chứng.'));
           return of(null);
         }),
       );
@@ -96,7 +100,11 @@ export class PartnerApplicationApiService {
     input: Omit<PartnerApplicationInput, 'documentNames'>,
     documentKeys: readonly string[],
   ): Observable<PartnerApplication | null> {
-    if (!this.http || !this.apiBaseUrl) return of(null);
+    this.errorState.set('');
+    if (!this.http || !this.apiBaseUrl) {
+      this.errorState.set('Chưa cấu hình kết nối máy chủ. Vui lòng liên hệ quản trị viên.');
+      return of(null);
+    }
     return this.http
       .post<ApiResponse<RawPartnerApplication>>(`${this.apiBaseUrl}/partner-applications/mine`, {
         ...input,
@@ -107,8 +115,8 @@ export class PartnerApplicationApiService {
           this.errorState.set('');
           return this.mapApplication(response.data);
         }),
-        catchError(() => {
-          this.errorState.set('Không thể gửi hồ sơ. Vui lòng kiểm tra trạng thái và thử lại.');
+        catchError((error: unknown) => {
+          this.errorState.set(this.describeError(error, 'Không thể gửi hồ sơ.'));
           return of(null);
         }),
       );
@@ -172,5 +180,21 @@ export class PartnerApplicationApiService {
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     };
+  }
+
+  private describeError(error: unknown, fallback: string): string {
+    if (!(error instanceof HttpErrorResponse)) return `${fallback} Vui lòng thử lại.`;
+    if (error.status === 0) {
+      return 'Không kết nối được máy chủ. Vui lòng kiểm tra API Trạm K rồi thử lại.';
+    }
+    if (error.status === 401) {
+      return 'Phiên đăng nhập không hợp lệ. Vui lòng đăng xuất và đăng nhập lại.';
+    }
+    const message = (error.error as { error?: { message?: string | string[] } } | null)?.error
+      ?.message;
+    if (typeof message === 'string') return message;
+    if (Array.isArray(message)) return message.join(' ');
+    if (error.status === 413) return 'Tệp minh chứng vượt quá giới hạn tải lên.';
+    return `${fallback} Vui lòng thử lại.`;
   }
 }

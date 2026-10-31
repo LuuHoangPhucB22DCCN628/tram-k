@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -59,6 +60,10 @@ function canResetPassword(status: UserStatus): boolean {
   return status === UserStatus.ACTIVE || status === UserStatus.LOCKED;
 }
 
+function canSignIn(status: UserStatus): boolean {
+  return status === UserStatus.ACTIVE || status === UserStatus.PENDING_VERIFY;
+}
+
 export interface AuthRequestContext {
   readonly ip?: string;
   readonly correlationId?: string;
@@ -70,6 +75,7 @@ export class AuthService {
   private readonly ipHashSecret: string;
   private readonly termsVersion: string;
   private readonly privacyVersion: string;
+  private readonly verificationEmailAvailable: boolean;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -80,6 +86,10 @@ export class AuthService {
     this.ipHashSecret = config.getOrThrow<string>("IP_HASH_SECRET");
     this.termsVersion = config.get<string>("TERMS_VERSION") ?? "2026-10-03";
     this.privacyVersion = config.get<string>("PRIVACY_VERSION") ?? "2026-10-03";
+    this.verificationEmailAvailable =
+      config.get<string>("EMAIL_DELIVERY_MODE", "log") === "webhook" &&
+      !!config.get<string>("EMAIL_WEBHOOK_URL") &&
+      !!config.get<string>("EMAIL_WEBHOOK_TOKEN");
   }
 
   async register(dto: RegisterDto, context: AuthRequestContext = {}) {
@@ -292,6 +302,11 @@ export class AuthService {
   }
 
   async resendVerification(emailValue: string) {
+    if (!this.verificationEmailAvailable) {
+      throw new ServiceUnavailableException(
+        "Dịch vụ gửi email xác minh chưa được cấu hình. Vui lòng liên hệ quản trị viên.",
+      );
+    }
     const email = this.normalizeEmail(emailValue);
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || user.status !== UserStatus.PENDING_VERIFY || user.deletedAt) {
@@ -798,7 +813,7 @@ export class AuthService {
     const [user, emailFailures, ipFailures] = await Promise.all([
       this.prisma.user.findUnique({
         where: { email },
-        include: { role: true, partnerMembership: true },
+        include: { role: true, partnerMembership: true, profile: true },
       }),
       this.prisma.authAttempt.count({
         where: { emailHash, success: false, createdAt: { gte: since } },
@@ -835,12 +850,7 @@ export class AuthService {
       }
       throw new UnauthorizedException("Email hoặc mật khẩu không đúng.");
     }
-    if (user.deletedAt || user.status !== UserStatus.ACTIVE) {
-      if (user.status === UserStatus.PENDING_VERIFY && !user.deletedAt) {
-        throw new ForbiddenException(
-          "Vui lòng xác minh email trước khi đăng nhập.",
-        );
-      }
+    if (user.deletedAt || !canSignIn(user.status)) {
       throw new ForbiddenException("Tài khoản hiện không thể đăng nhập.");
     }
 
@@ -869,7 +879,7 @@ export class AuthService {
     if (
       !user ||
       user.deletedAt ||
-      user.status !== UserStatus.ACTIVE ||
+      !canSignIn(user.status) ||
       user.authVersion !== payload.av
     ) {
       throw new UnauthorizedException("Phiên đăng nhập không hợp lệ.");
@@ -902,14 +912,14 @@ export class AuthService {
   async refresh(refreshToken: string) {
     const session = await this.prisma.authSession.findUnique({
       where: { tokenHash: this.hashOpaqueToken(refreshToken) },
-      include: { user: { include: { role: true, partnerMembership: true } } },
+      include: { user: { include: { role: true, partnerMembership: true, profile: true } } },
     });
     if (
       !session ||
       session.revokedAt ||
       session.expiresAt <= new Date() ||
       session.user.deletedAt ||
-      session.user.status !== UserStatus.ACTIVE ||
+      !canSignIn(session.user.status) ||
       session.authVersion !== session.user.authVersion
     ) {
       throw new UnauthorizedException(
@@ -982,9 +992,11 @@ export class AuthService {
     id: string;
     email: string;
     fullName: string;
+    status: UserStatus;
     authVersion: number;
     role: { name: RoleName };
     partnerMembership: unknown;
+    profile?: { avatarDataUrl: string | null } | null;
   }) {
     const role = user.partnerMembership ? RoleName.PARTNER : user.role.name;
     return {
@@ -993,6 +1005,8 @@ export class AuthService {
         displayName: user.fullName,
         email: user.email,
         role,
+        status: user.status,
+        avatarUrl: user.profile?.avatarDataUrl ?? undefined,
       },
       accessToken: this.signToken({
         id: user.id,

@@ -1,5 +1,11 @@
 # Frontend
 
+## Gợi ý địa chỉ Google Maps cho chương trình hỗ trợ
+
+Form đối tác yêu cầu địa chỉ tổ chức cụ thể. Google Places Autocomplete (New) có thể gợi ý địa điểm tại Việt Nam; khi chọn, form lưu địa chỉ hiển thị và Place ID để tạo liên kết chỉ đường chính xác. Nếu chưa cấu hình Google Maps, form có liên kết mở Google Maps để tra địa chỉ rồi nhập thủ công; quản trị viên vẫn kiểm tra trước khi công khai.
+
+Để bật gợi ý, tạo API key trình duyệt trong Google Cloud, bật **Maps JavaScript API** và **Places API (New)**, rồi điền key vào `googleMapsApiKey` trong `src/environments/environment.ts` (và `environment.production.ts` cho bản triển khai). Giới hạn key theo **HTTP referrers** (`http://localhost:4200/*`, địa chỉ triển khai thực tế) và chỉ các API cần dùng. Không đưa key chưa giới hạn vào mã nguồn đã đẩy lên Git. Google Maps Platform có thể yêu cầu bật billing và tính phí theo mức sử dụng; đặt hạn mức/ngân sách trước khi dùng thật. Trường cấu hình để trống mặc định nhằm tránh phát sinh yêu cầu tính phí ngoài ý muốn.
+
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.19.
 
 ## Development server

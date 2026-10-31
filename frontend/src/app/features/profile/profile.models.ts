@@ -13,6 +13,15 @@ export interface MemberProfile {
   readonly allowComments: boolean;
 }
 
+export interface SharedMemberProfile {
+  readonly id: string;
+  readonly displayName: string;
+  readonly role: string;
+  readonly city: string;
+  readonly bio: string;
+  readonly hasAvatar: boolean;
+}
+
 export type ProfileErrorCode = 'CONFLICT' | 'SESSION_EXPIRED' | 'VALIDATION' | 'UNKNOWN';
 
 export class ProfileApiError extends Error {

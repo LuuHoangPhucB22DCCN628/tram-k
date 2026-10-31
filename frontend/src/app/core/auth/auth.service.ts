@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { catchError, map, Observable, of, tap } from 'rxjs';
+import { catchError, finalize, map, Observable, of, shareReplay, tap } from 'rxjs';
 
 import { AuthApiService } from './auth-api.service';
 import type {
@@ -23,6 +23,7 @@ export class AuthService {
   private readonly accessTokenState = signal<string | null>(null);
   private readonly rememberMeState = signal(false);
   private readonly authModeState = signal<AuthMode>('LOCAL');
+  private refreshInFlight$: Observable<string | null> | null = null;
 
   readonly currentUser = this.userState.asReadonly();
   readonly accessToken = this.accessTokenState.asReadonly();
@@ -76,15 +77,23 @@ export class AuthService {
   refreshAccessToken(): Observable<string | null> {
     const user = this.userState();
     if (!user) return of(null);
+    if (this.refreshInFlight$) return this.refreshInFlight$;
 
-    return this.api.refresh(user, this.authModeState()).pipe(
+    let refresh$: Observable<string | null>;
+    refresh$ = this.api.refresh(user, this.authModeState()).pipe(
       tap((result) => this.acceptSession(result, this.rememberMeState())),
       map((result) => result.accessToken),
       catchError(() => {
         this.clearSession();
         return of(null);
       }),
+      finalize(() => {
+        if (this.refreshInFlight$ === refresh$) this.refreshInFlight$ = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+    this.refreshInFlight$ = refresh$;
+    return refresh$;
   }
 
   logout(): void {
@@ -124,6 +133,15 @@ export class AuthService {
     this.storage.updateUser(updatedUser);
   }
 
+  updateProfileSummary(displayName: string, avatarUrl: string | null): void {
+    const currentUser = this.userState();
+    if (!currentUser) return;
+
+    const updatedUser = { ...currentUser, displayName, avatarUrl: avatarUrl ?? undefined };
+    this.userState.set(updatedUser);
+    this.storage.updateUser(updatedUser);
+  }
+
   private restoreSession(): void {
     const storedSession = this.storage.read();
     if (!storedSession) return;
@@ -136,7 +154,14 @@ export class AuthService {
     this.userState.set(storedSession.user);
     this.rememberMeState.set(storedSession.rememberMe);
     this.authModeState.set(storedSession.authMode ?? 'LOCAL');
-    this.refreshAccessToken().subscribe();
+    if (this.authModeState() === 'LOCAL') {
+      this.refreshAccessToken().subscribe();
+      return;
+    }
+    // Let dependency injection finish before the HTTP interceptor injects AuthService.
+    queueMicrotask(() => {
+      if (this.userState()) this.refreshAccessToken().subscribe();
+    });
   }
 
   private acceptSession(result: AuthResult, rememberMe: boolean): void {

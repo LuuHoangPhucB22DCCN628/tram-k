@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { SOCIAL_LINKS } from '../../../../core/config/social-links';
 import { RevealDirective } from '../../../../shared/directives/reveal.directive';
+import { CountUpDirective } from '../../../../shared/directives/count-up.directive';
 import type { ContentSummary } from '../../../content/models/content.models';
 import {
   ContentSectionService,
@@ -34,7 +35,7 @@ const FALLBACK_CANCERS: readonly CancerCard[] = CANCER_TYPES.filter((item) => !i
 
 @Component({
   selector: 'app-cancer-types-page',
-  imports: [RouterLink, RevealDirective],
+  imports: [RouterLink, RevealDirective, CountUpDirective],
   templateUrl: './cancer-types-page.html',
   styleUrl: './cancer-types-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

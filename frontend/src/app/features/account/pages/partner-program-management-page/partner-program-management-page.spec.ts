@@ -2,6 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
 import { AuthService } from '@core/auth/auth.service';
+import { ManagedResourceSyncService } from '@core/data/managed-resource-sync.service';
+import { CharityProgramClockService } from '../../services/charity-program-clock.service';
+import { of } from 'rxjs';
 
 import { CharityProgramRegistrationService } from '../../services/charity-program-registration.service';
 import { CharityProgramStorageService } from '../../services/charity-program-storage.service';
@@ -11,11 +14,43 @@ describe('PartnerProgramManagementPage', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => localStorage.clear());
 
+  it('shows a completed schedule while keeping its registration history available', async () => {
+    await TestBed.configureTestingModule({
+      imports: [PartnerProgramManagementPage],
+      providers: [provideRouter([])],
+    }).compileComponents();
+    vi.spyOn(TestBed.inject(ManagedResourceSyncService), 'upsertResult').mockReturnValue(of(true));
+    vi.spyOn(TestBed.inject(AuthService), 'currentUser').mockReturnValue({
+      id: 'PARTNER-A', displayName: 'Bếp yêu thương', email: 'bep@example.com', role: 'PARTNER',
+    });
+    const storage = TestBed.inject(CharityProgramStorageService);
+    const program = storage.create('PARTNER-A', 'Bếp yêu thương', {
+      title: 'Bữa cơm đã kết thúc', supportType: 'MEAL',
+      description: 'Trao suất cơm miễn phí cho bệnh nhân.', regionId: 'ha-noi', city: 'Hà Nội',
+      address: 'Bệnh viện K Tân Triều', schedule: '09:00–11:00, ngày 24/10/2099',
+      scheduleType: 'ONE_TIME', startsOn: '2099-10-24', startTime: '09:00', endTime: '11:00',
+      capacity: 20, contactName: 'Minh Anh', phone: '0912345678', email: 'minhanh@example.com',
+    });
+    await storage.review(program.id, 'PUBLISHED');
+    TestBed.inject(CharityProgramClockService).now.set(new Date('2099-10-24T04:00:00Z'));
+
+    const fixture = TestBed.createComponent(PartnerProgramManagementPage);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('.program-card__meta [data-status="COMPLETED"]')?.textContent)
+      .toContain('Đã hoàn thành');
+    element.querySelector<HTMLButtonElement>('.program-card__actions button')?.click();
+    fixture.detectChanges();
+    expect(element.querySelector('.program-registrations')).not.toBeNull();
+    expect(element.textContent).toContain('hồ sơ đăng ký vẫn được lưu');
+  });
+
   it('allows the owner to confirm and complete a patient registration', async () => {
     await TestBed.configureTestingModule({
       imports: [PartnerProgramManagementPage],
       providers: [provideRouter([{ path: '', component: PartnerProgramManagementPage }])],
     }).compileComponents();
+    vi.spyOn(TestBed.inject(ManagedResourceSyncService), 'upsertResult').mockReturnValue(of(true));
     const auth = TestBed.inject(AuthService);
     vi.spyOn(auth, 'currentUser').mockReturnValue({
       id: 'PARTNER-A',
@@ -37,7 +72,7 @@ describe('PartnerProgramManagementPage', () => {
       phone: '0912345678',
       email: 'minhanh@example.com',
     });
-    programs.review(program.id, 'PUBLISHED');
+    await programs.review(program.id, 'PUBLISHED');
     const registrations = TestBed.inject(CharityProgramRegistrationService);
     registrations.register(program.id, 'PATIENT-A', 20, {
       displayName: 'Nguyễn An',

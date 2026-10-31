@@ -26,11 +26,18 @@ export class MemberPostsPage {
   protected readonly isComposerOpen = signal(false);
   protected readonly submitted = signal(false);
   protected readonly feedback = signal<PostFeedback | null>(null);
+  protected readonly saving = signal(false);
+  protected readonly loading = this.storage.mineLoading;
+  protected readonly migrationWarning = this.storage.migrationWarning;
   protected readonly posts = computed(() => this.storage.postsFor(this.userId));
   protected readonly postForm = this.formBuilder.nonNullable.group({
     title: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(120)]],
     content: ['', [Validators.required, Validators.minLength(20), Validators.maxLength(5000)]],
   });
+
+  constructor() {
+    void this.storage.initializeMine(this.userId);
+  }
 
   protected openComposer(): void {
     this.isComposerOpen.set(true);
@@ -43,7 +50,8 @@ export class MemberPostsPage {
     this.postForm.reset();
   }
 
-  protected save(status: Extract<MemberPostStatus, 'DRAFT' | 'PENDING'>): void {
+  protected async save(status: Extract<MemberPostStatus, 'DRAFT' | 'PENDING'>): Promise<void> {
+    if (this.saving() || this.loading()) return;
     this.submitted.set(true);
     this.feedback.set(null);
     if (!this.userId || this.postForm.invalid) {
@@ -51,29 +59,49 @@ export class MemberPostsPage {
       return;
     }
 
-    this.storage.create(
-      this.userId,
-      { ...this.postForm.getRawValue(), status },
-      this.auth.currentUser()?.displayName,
-    );
-    this.closeComposer();
-    this.feedback.set({
-      type: 'success',
-      message: status === 'DRAFT' ? 'Đã lưu bài viết vào bản nháp.' : 'Đã gửi bài viết để duyệt.',
-    });
-  }
-
-  protected submitPost(post: MemberPost): void {
-    if (!this.storage.submit(this.userId, post.id)) return;
-    this.feedback.set({ type: 'success', message: 'Đã gửi bài viết để duyệt.' });
-  }
-
-  protected removePost(post: MemberPost): void {
-    if (!this.storage.remove(this.userId, post.id)) {
-      this.feedback.set({ type: 'error', message: 'Không thể xóa bài viết đã xuất bản.' });
-      return;
+    this.saving.set(true);
+    try {
+      const post = await this.storage.createConfirmed(
+        this.userId, { ...this.postForm.getRawValue(), status }, this.auth.currentUser()?.displayName,
+      );
+      if (!post) {
+        this.feedback.set({ type: 'error', message: 'Chưa lưu được bài viết lên máy chủ. Vui lòng thử lại.' });
+        return;
+      }
+      this.closeComposer();
+      this.feedback.set({
+        type: 'success',
+        message: status === 'DRAFT' ? 'Đã lưu bài viết vào bản nháp.' : 'Đã gửi bài viết để duyệt.',
+      });
+    } finally {
+      this.saving.set(false);
     }
-    this.feedback.set({ type: 'success', message: 'Đã xóa bài viết.' });
+  }
+
+  protected async submitPost(post: MemberPost): Promise<void> {
+    if (this.saving() || this.loading()) return;
+    this.saving.set(true);
+    try {
+      const submitted = await this.storage.submitConfirmed(this.userId, post.id);
+      this.feedback.set(submitted
+        ? { type: 'success', message: 'Đã gửi bài viết để duyệt.' }
+        : { type: 'error', message: 'Chưa gửi được bài viết lên máy chủ. Vui lòng thử lại.' });
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  protected async removePost(post: MemberPost): Promise<void> {
+    if (this.saving() || this.loading()) return;
+    this.saving.set(true);
+    try {
+      const removed = await this.storage.removeConfirmed(this.userId, post.id);
+      this.feedback.set(removed
+        ? { type: 'success', message: 'Đã xóa bài viết.' }
+        : { type: 'error', message: 'Chưa xóa được bài viết hoặc bài đã xuất bản.' });
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   protected statusLabel(status: MemberPostStatus): string {

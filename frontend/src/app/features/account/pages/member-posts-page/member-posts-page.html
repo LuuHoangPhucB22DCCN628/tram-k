@@ -17,6 +17,12 @@
       {{ notice.message }}
     </p>
   }
+  @if (loading()) {
+    <p class="posts-page__feedback" role="status">Đang đồng bộ bài viết từ máy chủ...</p>
+  }
+  @if (migrationWarning()) {
+    <p class="posts-page__feedback posts-page__feedback--error" role="alert">Một số bài cũ trên trình duyệt chưa chuyển được lên máy chủ. Vui lòng tải lại trang để thử đồng bộ trước khi xóa dữ liệu trình duyệt.</p>
+  }
 
   @if (isComposerOpen()) {
     <form class="post-composer" [formGroup]="postForm" (ngSubmit)="save('PENDING')">
@@ -44,10 +50,10 @@
         <small>Nội dung cần ít nhất 20 ký tự.</small>
       }
       <div class="post-composer__actions">
-        <button type="button" class="posts-page__secondary" (click)="save('DRAFT')">
+        <button type="button" class="posts-page__secondary" [disabled]="saving() || loading()" (click)="save('DRAFT')">
           Lưu bản nháp
         </button>
-        <button type="submit" class="posts-page__primary">Gửi duyệt</button>
+        <button type="submit" class="posts-page__primary" [disabled]="saving() || loading()">{{ saving() ? 'Đang lưu...' : 'Gửi duyệt' }}</button>
       </div>
     </form>
   }
@@ -73,12 +79,12 @@
           }
           <div class="post-card__actions">
             @if (post.status === 'DRAFT' || post.status === 'REJECTED') {
-              <button type="button" (click)="submitPost(post)">
+              <button type="button" [disabled]="saving() || loading()" (click)="submitPost(post)">
                 {{ post.status === 'REJECTED' ? 'Gửi duyệt lại' : 'Gửi duyệt' }}
               </button>
             }
             @if (post.status !== 'PUBLISHED') {
-              <button class="post-card__remove" type="button" (click)="removePost(post)">
+              <button class="post-card__remove" type="button" [disabled]="saving() || loading()" (click)="removePost(post)">
                 Xóa
               </button>
             }

@@ -94,7 +94,7 @@ export class AiAssistantPage {
   }
 
   protected isInternalLink(link: string): boolean {
-    return link.startsWith('/');
+    return link.startsWith('/') && !link.startsWith('//');
   }
 
   private focusInput(): void {

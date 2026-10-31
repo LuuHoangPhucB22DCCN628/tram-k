@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 
 import { LoginPage } from './login-page';
 
@@ -63,6 +63,64 @@ describe('LoginPage', () => {
     fixture.detectChanges();
 
     expect(navigateSpy).toHaveBeenCalledWith('/');
+  });
+
+  it('returns to the home page after login even with an old returnUrl', async () => {
+    await TestBed.configureTestingModule({
+      imports: [LoginPage],
+      providers: [
+        provideRouter([{ path: '', component: HomeTestPage }]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: { queryParamMap: convertToParamMap({ returnUrl: '/thanh-vien/ho-so' }) },
+          },
+        },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(LoginPage);
+    const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigateByUrl');
+    fixture.detectChanges();
+
+    fill(fixture.nativeElement, '#login-email', 'phuc@tramk.vn');
+    fill(fixture.nativeElement, '#login-password', 'Matkhau123');
+    (fixture.nativeElement.querySelector('form') as HTMLFormElement).dispatchEvent(
+      new Event('submit'),
+    );
+    fixture.detectChanges();
+
+    expect(navigateSpy).toHaveBeenCalledWith('/');
+  });
+
+  it('returns to the requested hair-registration form after login', async () => {
+    await TestBed.configureTestingModule({
+      imports: [LoginPage],
+      providers: [
+        provideRouter([{ path: '', component: HomeTestPage }]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap({
+                returnUrl: '/cong-dong/thu-vien-toc/nhan-toc',
+              }),
+            },
+          },
+        },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(LoginPage);
+    const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigateByUrl');
+    fixture.detectChanges();
+
+    fill(fixture.nativeElement, '#login-email', 'phuc@tramk.vn');
+    fill(fixture.nativeElement, '#login-password', 'Matkhau123');
+    (fixture.nativeElement.querySelector('form') as HTMLFormElement).dispatchEvent(
+      new Event('submit'),
+    );
+    fixture.detectChanges();
+
+    expect(navigateSpy).toHaveBeenCalledWith('/cong-dong/thu-vien-toc/nhan-toc');
   });
 
   function fill(host: HTMLElement, selector: string, value: string): void {

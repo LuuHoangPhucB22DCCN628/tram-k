@@ -15,15 +15,20 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request>();
+    const payloadTooLarge = this.isPayloadTooLarge(exception);
     const status =
       exception instanceof HttpException
         ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+        : payloadTooLarge
+          ? HttpStatus.PAYLOAD_TOO_LARGE
+          : HttpStatus.INTERNAL_SERVER_ERROR;
     const body: ApiErrorResponse = {
       success: false,
       error: {
         code: `HTTP_${status}`,
-        message: this.getMessage(exception),
+        message: payloadTooLarge
+          ? "Ảnh hoặc dữ liệu gửi lên quá lớn."
+          : this.getMessage(exception),
       },
       timestamp: new Date().toISOString(),
       path: request.url,
@@ -34,6 +39,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
       response.setHeader("Retry-After", retryAfterSeconds);
 
     response.status(status).json(body);
+  }
+
+  private isPayloadTooLarge(exception: unknown): boolean {
+    return (
+      typeof exception === "object" &&
+      exception !== null &&
+      "type" in exception &&
+      exception.type === "entity.too.large"
+    );
   }
 
   private getRetryAfterSeconds(exception: unknown): number | null {

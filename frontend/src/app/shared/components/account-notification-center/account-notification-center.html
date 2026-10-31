@@ -43,12 +43,52 @@
           <span>Cập nhật của bạn</span>
           <h2>Thông báo</h2>
         </div>
-        @if (unreadCount()) {
+        @if (storedUnreadCount()) {
           <button type="button" (click)="markAllRead($event)">Đánh dấu đã đọc</button>
         }
       </header>
 
+      @if (remoteMode()) {
+        <div class="notification-center__settings">
+          <button type="button" [attr.aria-expanded]="showPreferences()" (click)="togglePreferences($event)">
+            {{ showPreferences() ? 'Ẩn tùy chọn thông báo' : 'Tùy chọn thông báo' }}
+          </button>
+          @if (showPreferences()) {
+            @if (preferences(); as settings) {
+              <label><input type="checkbox" [checked]="settings.storyComments" [disabled]="savingPreferences()" (change)="changePreference('storyComments', $event)" /> Bình luận về câu chuyện của tôi</label>
+              <label><input type="checkbox" [checked]="settings.storyReplies" [disabled]="savingPreferences()" (change)="changePreference('storyReplies', $event)" /> Trả lời bình luận của tôi</label>
+              <label><input type="checkbox" [checked]="settings.storyReactions" [disabled]="savingPreferences()" (change)="changePreference('storyReactions', $event)" /> Cảm xúc về câu chuyện của tôi</label>
+            }
+            @if (preferenceError()) { <p role="alert">{{ preferenceError() }}</p> }
+          }
+        </div>
+      }
+
       <div class="notification-center__list">
+        @if (needsEmailVerification()) {
+          <div class="notification-center__verification" role="group" aria-label="Xác minh email">
+            <strong>Tài khoản chưa xác minh email</strong>
+            <p>Hãy xác minh email để có thể gửi hồ sơ đăng ký đối tác.</p>
+            <button
+              type="button"
+              [disabled]="sendingVerification()"
+              (click)="requestVerification($event)"
+            >
+              {{ sendingVerification() ? 'Đang gửi yêu cầu...' : 'Gửi yêu cầu xác minh' }}
+            </button>
+            @if (verificationFeedback()) {
+              <p
+                class="notification-center__verification-feedback"
+                [class.notification-center__verification-feedback--error]="
+                  verificationFeedbackIsError()
+                "
+                [attr.role]="verificationFeedbackIsError() ? 'alert' : 'status'"
+              >
+                {{ verificationFeedback() }}
+              </p>
+            }
+          </div>
+        }
         @for (notification of notifications(); track notification.id) {
           <a
             class="notification-center__item"
@@ -58,6 +98,12 @@
           >
             <span class="notification-center__status" aria-hidden="true">
               @switch (notification.kind) {
+                @case ('STORY_PUBLISHED') {
+                  ✓
+                }
+                @case ('STORY_REJECTED') {
+                  !
+                }
                 @case ('PROGRAM_REGISTRATION_REJECTED') {
                   !
                 }
@@ -73,8 +119,20 @@
                 @case ('PROGRAM_REJECTED') {
                   !
                 }
+                @case ('PROGRAM_DELETED') {
+                  !
+                }
                 @case ('PARTNER_APPLICATION_REJECTED') {
                   !
+                }
+                @case ('HAIR_REGISTRATION_APPROVED') {
+                  ✓
+                }
+                @case ('HAIR_REGISTRATION_REJECTED') {
+                  !
+                }
+                @case ('HAIR_REGISTRATION_COMPLETED') {
+                  ✓
                 }
                 @default {
                   •
@@ -93,11 +151,13 @@
             }
           </a>
         } @empty {
-          <div class="notification-center__empty">
-            <span aria-hidden="true">✓</span>
-            <strong>Bạn đã xem hết thông báo</strong>
-            <p>Các cập nhật về chương trình hỗ trợ sẽ xuất hiện tại đây.</p>
-          </div>
+          @if (!needsEmailVerification()) {
+            <div class="notification-center__empty">
+              <span aria-hidden="true">✓</span>
+              <strong>Bạn đã xem hết thông báo</strong>
+              <p>Các cập nhật về chương trình hỗ trợ sẽ xuất hiện tại đây.</p>
+            </div>
+          }
         }
       </div>
     </section>

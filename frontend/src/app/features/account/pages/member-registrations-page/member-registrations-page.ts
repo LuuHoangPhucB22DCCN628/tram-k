@@ -64,6 +64,7 @@ export class MemberRegistrationsPage {
   );
 
   constructor() {
+    this.locationStorage.initializePublic();
     this.programStorage.initializePublic();
     this.programRegistrationService.loadMine();
     this.route.queryParamMap

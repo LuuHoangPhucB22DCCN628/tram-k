@@ -65,6 +65,7 @@ describe('PublicHeader', () => {
 
   it('should expose real routes for every public menu item', () => {
     expect(component.menuItems.every((item) => item.path.startsWith('/'))).toBe(true);
+    expect(component.menuItems.some((item) => item.path === '/ve-chung-toi')).toBe(false);
   });
 
   it('shows the member avatar, registered name and member functions', () => {

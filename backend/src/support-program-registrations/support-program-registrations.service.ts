@@ -18,6 +18,7 @@ import {
 import { AuthenticatedUser } from "../auth/auth-user.interface";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { parseStructuredSupportSchedule, scheduleHasUpcomingOccurrence } from "../search/support-schedule";
 import { UpdateSupportProgramRegistrationDto } from "./dto/update-support-program-registration.dto";
 
 @Injectable()
@@ -50,6 +51,12 @@ export class SupportProgramRegistrationsService {
     }
     const program = await this.publishedProgram(programId);
     const payload = this.programPayload(program.payload);
+    const schedule = program.payload && typeof program.payload === "object" && !Array.isArray(program.payload)
+      ? parseStructuredSupportSchedule(program.payload as Record<string, unknown>)
+      : null;
+    if (!schedule || !scheduleHasUpcomingOccurrence(schedule)) {
+      throw new BadRequestException("Chương trình chưa có lịch ngày giờ hợp lệ hoặc đã kết thúc; hiện không nhận đăng ký.");
+    }
 
     return this.prisma.$transaction(async (transaction) => {
       const duplicate = await transaction.supportProgramRegistration.findUnique({

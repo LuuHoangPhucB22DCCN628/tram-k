@@ -2,7 +2,7 @@
   <header>
     <p>Hoạt động cộng đồng</p>
     <h1 id="registrations-heading">Các chương trình đã đăng ký</h1>
-    <span>Theo dõi địa điểm, lịch phát và trạng thái xác nhận của từng chương trình.</span>
+    <span>Theo dõi các chương trình hỗ trợ đã đăng ký và những đăng ký trước đây.</span>
   </header>
 
   @if (feedback()) {
@@ -142,8 +142,11 @@
     <div class="registrations-page__empty">
       <span aria-hidden="true">♡</span>
       <h2>Bạn chưa đăng ký chương trình nào</h2>
-      <p>Khám phá các địa điểm phát cơm thiện nguyện và chọn chương trình phù hợp với bạn.</p>
-      <a routerLink="/cong-dong/diem-quyen-gop">Khám phá chương trình cộng đồng</a>
+      <p>
+        Khám phá chương trình hỗ trợ phù hợp. Các điểm tiếp nhận theo lịch cố định không cần đăng
+        ký.
+      </p>
+      <a routerLink="/cong-dong/chuong-trinh-ho-tro">Khám phá chương trình hỗ trợ</a>
     </div>
   }
 </section>

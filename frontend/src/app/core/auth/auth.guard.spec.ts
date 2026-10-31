@@ -8,7 +8,7 @@ import {
 
 import type { UserRole } from './auth.models';
 import { AuthService } from './auth.service';
-import { roleGuard } from './auth.guard';
+import { authGuard, roleGuard } from './auth.guard';
 
 describe('roleGuard access matrix', () => {
   let currentRole: UserRole | null;
@@ -67,6 +67,18 @@ describe('roleGuard access matrix', () => {
     expect(result).toContain('/dang-nhap');
     expect(result).toContain('returnUrl');
     expect(result).toContain('admin');
+  });
+
+  it('protects hair registration and preserves its URL through login', () => {
+    const state = { url: '/cong-dong/thu-vien-toc/nhan-toc' } as RouterStateSnapshot;
+    const route = { data: {} } as ActivatedRouteSnapshot;
+    const guestResult = TestBed.runInInjectionContext(() => authGuard(route, state));
+    expect(urlOf(guestResult as ReturnType<Router['parseUrl']>)).toContain(
+      'returnUrl=%2Fcong-dong%2Fthu-vien-toc%2Fnhan-toc',
+    );
+
+    currentRole = 'PATIENT';
+    expect(TestBed.runInInjectionContext(() => authGuard(route, state))).toBe(true);
   });
 
   it('hides the Admin login path when a guest opens an Admin page', () => {

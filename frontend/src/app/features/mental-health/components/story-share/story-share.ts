@@ -1,8 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { MemberAvatar } from '../../../profile/components/member-avatar/member-avatar';
 import { RevealDirective } from '@shared/directives/reveal.directive';
 import { UiSectionMore } from '@shared/ui';
 import {
@@ -19,6 +28,8 @@ import { CommunityReactionStorageService } from '../../../account/services/commu
 
 interface SharedStory {
   readonly id: string;
+  readonly userId?: string;
+  readonly profileVisibility?: 'PUBLIC' | 'MEMBERS' | 'PRIVATE';
   readonly authorName: string;
   readonly authorRole: string;
   readonly title: string;
@@ -31,7 +42,14 @@ const COMMUNITY_STORY_PREVIEW_LIMIT = 3;
 @Component({
   selector: 'app-story-share',
   standalone: true,
-  imports: [NgTemplateOutlet, ReactiveFormsModule, RevealDirective, UiSectionMore],
+  imports: [
+    NgTemplateOutlet,
+    ReactiveFormsModule,
+    RevealDirective,
+    UiSectionMore,
+    RouterLink,
+    MemberAvatar,
+  ],
   templateUrl: './story-share.html',
   styleUrl: './story-share.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,11 +73,16 @@ export class StoryShare {
   protected readonly notice = signal('');
   protected readonly failed = signal(false);
   protected readonly saved = signal(false);
+  protected readonly saving = signal(false);
   protected readonly expandedStoryId = signal<string | null>(null);
   protected readonly activeDiscussionId = signal<string | null>(null);
   protected readonly replyingToId = signal<string | null>(null);
   protected readonly editingCommentId = signal<string | null>(null);
   protected readonly discussionNotice = signal('');
+  protected readonly discussionBusy = signal(false);
+  protected readonly reactionBusy = signal<string | null>(null);
+  protected readonly targetStoryId = signal<string | null>(null);
+  protected readonly targetCommentId = signal<string | null>(null);
   protected readonly showAllStories = signal(false);
   protected readonly storyPage = signal(1);
   protected readonly reactionOptions: readonly {
@@ -119,17 +142,16 @@ export class StoryShare {
     },
   ];
   protected readonly sharedStories = computed<readonly SharedStory[]>(() => {
-    const publishedStories = this.storage
-      .posts()
-      .filter((post) => post.status === 'PUBLISHED')
-      .map((post) => ({
-        id: post.id,
-        authorName: post.authorName,
-        authorRole: 'Thành viên Trạm K',
-        title: post.title,
-        content: post.content,
-        publishedAt: post.reviewedAt ?? post.updatedAt,
-      }));
+    const publishedStories = this.storage.publishedPosts().map((post) => ({
+      id: post.id,
+      userId: post.userId,
+      profileVisibility: post.profileVisibility,
+      authorName: post.authorName,
+      authorRole: 'Thành viên Trạm K',
+      title: post.title,
+      content: post.content,
+      publishedAt: post.reviewedAt ?? post.updatedAt,
+    }));
     return [...publishedStories, ...this.sampleStories];
   });
   protected readonly storyPagination = computed(() =>
@@ -156,6 +178,34 @@ export class StoryShare {
   });
 
   constructor() {
+    this.storage.initializePublic();
+    effect(() => {
+      const stories = this.sharedStories();
+      for (const story of stories) {
+        const path = this.storyPath(story.id);
+        this.commentsStorage.initializeForSource(story.id, path);
+        this.reactionsStorage.initializeForSource(story.id, path);
+      }
+      const target = this.targetStoryId();
+      if (target) {
+        const index = stories.findIndex((story) => story.id === target);
+        if (index >= 0) this.storyPage.set(Math.floor(index / EXPANDED_SECTION_PAGE_SIZE) + 1);
+      }
+    });
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const targetStoryId = params.get('story');
+      this.targetStoryId.set(targetStoryId);
+      this.targetCommentId.set(params.get('comment'));
+      if (targetStoryId) {
+        this.storage.initializePublic();
+        const path = this.storyPath(targetStoryId);
+        this.commentsStorage.initializeForSource(targetStoryId, path, true);
+        this.reactionsStorage.initializeForSource(targetStoryId, path, true);
+        this.expandedStoryId.set(targetStoryId);
+        this.activeDiscussionId.set(targetStoryId);
+        this.showAllStories.set(true);
+      }
+    });
     const initialPage = parsePaginationPage(this.route.snapshot.queryParamMap.get('storyPage'));
     if (initialPage) {
       this.storyPage.set(initialPage);
@@ -168,8 +218,8 @@ export class StoryShare {
     return control.touched && control.invalid;
   }
 
-  protected save(status: 'DRAFT' | 'PENDING'): void {
-    if (!this.canWrite() || this.saved()) return;
+  protected async save(status: 'DRAFT' | 'PENDING'): Promise<void> {
+    if (!this.canWrite() || this.saved() || this.saving()) return;
     this.notice.set('');
     this.failed.set(false);
     const { title, content } = this.form.getRawValue();
@@ -181,9 +231,15 @@ export class StoryShare {
       (status === 'PENDING' && this.form.controls.consent.invalid)
     )
       return;
+    this.saving.set(true);
     try {
       const user = this.user()!;
-      this.storage.create(user.id, { ...this.form.getRawValue(), status }, user.displayName);
+      const post = await this.storage.createConfirmed(
+        user.id,
+        { ...this.form.getRawValue(), status },
+        user.displayName,
+      );
+      if (!post) throw new Error('save');
       this.saved.set(true);
       this.form.reset();
       this.notice.set(
@@ -196,6 +252,8 @@ export class StoryShare {
       this.notice.set(
         'Chưa thể lưu bài viết. Nội dung vẫn được giữ trong khung soạn thảo, bạn hãy thử lại.',
       );
+    } finally {
+      this.saving.set(false);
     }
   }
 
@@ -218,6 +276,15 @@ export class StoryShare {
 
   protected toggleStory(storyId: string): void {
     this.expandedStoryId.update((currentId) => (currentId === storyId ? null : storyId));
+  }
+
+  protected canViewProfile(
+    userId: string | undefined,
+    visibility: 'PUBLIC' | 'MEMBERS' | 'PRIVATE' | undefined,
+  ): boolean {
+    if (!userId) return false;
+    if (this.user()?.id === userId) return true;
+    return visibility === 'PUBLIC' || (visibility === 'MEMBERS' && Boolean(this.user()));
   }
 
   protected storyPath(storyId: string): string {
@@ -245,7 +312,8 @@ export class StoryShare {
     this.cancelCommentAction();
   }
 
-  protected submitComment(story: SharedStory): void {
+  protected async submitComment(story: SharedStory): Promise<void> {
+    if (this.discussionBusy()) return;
     const user = this.user();
     if (!user || !this.canWrite()) {
       this.discussionNotice.set('Vui lòng đăng nhập bằng tài khoản thành viên để bình luận.');
@@ -257,21 +325,29 @@ export class StoryShare {
       this.commentForm.markAllAsTouched();
       return;
     }
+    this.discussionBusy.set(true);
+    const replying = !!this.replyingToId();
     try {
-      this.commentsStorage.create(user.id, {
+      const created = await this.commentsStorage.createConfirmed(user.id, story.id, {
         authorName: user.displayName,
         content,
         sourceTitle: story.title,
         sourcePath: this.storyPath(story.id),
         parentId: this.replyingToId() ?? undefined,
       });
+      if (!created) throw new Error('comment');
       this.commentForm.reset();
       this.replyingToId.set(null);
       this.discussionNotice.set('Bình luận đã được đăng.');
     } catch {
       this.discussionNotice.set(
-        'Không thể đăng trả lời cho bình luận này. Vui lòng tải lại trang.',
+        this.commentsStorage.lastCreateError() ||
+          (replying
+            ? 'Không thể đăng trả lời. Vui lòng thử lại.'
+            : 'Không thể đăng bình luận. Vui lòng thử lại.'),
       );
+    } finally {
+      this.discussionBusy.set(false);
     }
   }
 
@@ -290,7 +366,8 @@ export class StoryShare {
     this.editCommentForm.setValue({ content: comment.content });
   }
 
-  protected saveComment(comment: MemberComment): void {
+  protected async saveComment(comment: MemberComment): Promise<void> {
+    if (this.discussionBusy()) return;
     const user = this.user();
     const content = this.editCommentForm.controls.content.value.trim();
     this.editCommentForm.setValue({ content });
@@ -298,7 +375,10 @@ export class StoryShare {
       this.editCommentForm.markAllAsTouched();
       return;
     }
-    if (!this.commentsStorage.update(user.id, comment.id, content)) {
+    this.discussionBusy.set(true);
+    const updated = await this.commentsStorage.updateConfirmed(user.id, comment.id, content);
+    this.discussionBusy.set(false);
+    if (!updated) {
       this.discussionNotice.set('Bạn không có quyền sửa bình luận này.');
       return;
     }
@@ -307,9 +387,14 @@ export class StoryShare {
     this.discussionNotice.set('Đã cập nhật bình luận.');
   }
 
-  protected removeComment(comment: MemberComment): void {
+  protected async removeComment(comment: MemberComment): Promise<void> {
+    if (this.discussionBusy()) return;
     const user = this.user();
-    if (!user || !this.commentsStorage.remove(user.id, comment.id)) {
+    if (!user) return;
+    this.discussionBusy.set(true);
+    const removed = await this.commentsStorage.removeConfirmed(user.id, comment.id);
+    this.discussionBusy.set(false);
+    if (!removed) {
       this.discussionNotice.set('Bạn không có quyền xóa bình luận này.');
       return;
     }
@@ -325,14 +410,26 @@ export class StoryShare {
     this.discussionNotice.set('');
   }
 
-  protected toggleReaction(story: SharedStory, type: CommunityReactionType): void {
+  protected async toggleReaction(story: SharedStory, type: CommunityReactionType): Promise<void> {
+    if (this.reactionBusy()) return;
     const user = this.user();
     if (!user || !this.canWrite()) {
       this.activeDiscussionId.set(story.id);
       this.discussionNotice.set('Vui lòng đăng nhập bằng tài khoản thành viên để thả cảm xúc.');
       return;
     }
-    this.reactionsStorage.toggle(user.id, this.storyPath(story.id), type);
+    this.reactionBusy.set(story.id);
+    try {
+      const updated = await this.reactionsStorage.toggleConfirmed(
+        user.id,
+        story.id,
+        this.storyPath(story.id),
+        type,
+      );
+      if (!updated) this.discussionNotice.set('Chưa lưu được cảm xúc. Vui lòng thử lại.');
+    } finally {
+      this.reactionBusy.set(null);
+    }
   }
 
   protected selectedReaction(story: SharedStory): CommunityReactionType | null {

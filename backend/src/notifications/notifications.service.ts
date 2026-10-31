@@ -3,6 +3,7 @@ import { NotificationKind } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
 import { ListNotificationsQueryDto } from "./dto/list-notifications-query.dto";
+import { UpdateNotificationPreferencesDto } from "./dto/update-notification-preferences.dto";
 
 export interface CreateNotificationInput {
   readonly recipientId: string;
@@ -18,6 +19,40 @@ type NotificationWriter = Pick<PrismaService, "notification">;
 @Injectable()
 export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private readonly preferenceSelect = {
+    notifyStoryComments: true,
+    notifyStoryReplies: true,
+    notifyStoryReactions: true,
+  } as const;
+
+  async preferencesFor(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId }, select: this.preferenceSelect,
+    });
+    return {
+      storyComments: user.notifyStoryComments,
+      storyReplies: user.notifyStoryReplies,
+      storyReactions: user.notifyStoryReactions,
+    };
+  }
+
+  async updatePreferences(userId: string, dto: UpdateNotificationPreferencesDto) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.storyComments !== undefined ? { notifyStoryComments: dto.storyComments } : {}),
+        ...(dto.storyReplies !== undefined ? { notifyStoryReplies: dto.storyReplies } : {}),
+        ...(dto.storyReactions !== undefined ? { notifyStoryReactions: dto.storyReactions } : {}),
+      },
+      select: this.preferenceSelect,
+    });
+    return {
+      storyComments: user.notifyStoryComments,
+      storyReplies: user.notifyStoryReplies,
+      storyReactions: user.notifyStoryReactions,
+    };
+  }
 
   async listFor(recipientId: string, query: ListNotificationsQueryDto) {
     const where = {

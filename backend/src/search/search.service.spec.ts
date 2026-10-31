@@ -10,15 +10,123 @@ describe("SearchService", () => {
     upsert: jest.fn(),
     updateMany: jest.fn(),
   };
+  const managedResource = { findMany: jest.fn() };
+  const supportProgramRegistration = { groupBy: jest.fn() };
   const prisma = {
     searchDocument,
+    managedResource,
+    supportProgramRegistration,
     $transaction: jest.fn((operations: readonly Promise<unknown>[]) => Promise.all(operations)),
   } as unknown as PrismaService;
   let service: SearchService;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    managedResource.findMany.mockResolvedValue([]);
+    supportProgramRegistration.groupBy.mockResolvedValue([]);
     service = new SearchService(prisma);
+  });
+
+  it("only recommends published active locations and programs with remaining capacity", async () => {
+    managedResource.findMany.mockResolvedValue([
+      { sourceId: "meal-open", type: SearchDocumentType.SUPPORT_PROGRAM, status: "PUBLISHED", title: "Bữa cơm", description: "Suất cơm", payload: { status: "PUBLISHED", regionId: "ha-noi", city: "Hà Nội", address: "Bệnh viện K", schedule: "24/10/2099", scheduleType: "ONE_TIME", startsOn: "2099-10-24", startTime: "09:00", endTime: "11:00", supportType: "MEAL", capacity: 10 } },
+      { sourceId: "meal-full", type: SearchDocumentType.SUPPORT_PROGRAM, status: "PUBLISHED", title: "Đã đầy", description: "Suất cơm", payload: { status: "PUBLISHED", regionId: "ha-noi", city: "Hà Nội", address: "Bệnh viện K", schedule: "24/10/2099", scheduleType: "ONE_TIME", startsOn: "2099-10-24", startTime: "09:00", endTime: "11:00", supportType: "MEAL", capacity: 2 } },
+      { sourceId: "spot-active", type: SearchDocumentType.DONATION_LOCATION, status: "PUBLISHED", title: "Điểm nhận", description: "Phát cơm", payload: { status: "ACTIVE", regionId: "ha-noi", address: "Tân Triều", schedule: "Thứ Hai, 09:00–11:00", weekdays: [1], startTime: "09:00", endTime: "11:00" } },
+      { sourceId: "spot-inactive", type: SearchDocumentType.DONATION_LOCATION, status: "PUBLISHED", title: "Tạm dừng", description: "Phát cơm", payload: { status: "INACTIVE", regionId: "ha-noi", address: "Tân Triều", schedule: "Chủ Nhật" } },
+    ]);
+    supportProgramRegistration.groupBy.mockResolvedValue([
+      { programId: "meal-open", _count: { _all: 3 } },
+      { programId: "meal-full", _count: { _all: 2 } },
+    ]);
+    const options = await service.publishedSupportOptions();
+    expect(options.map((option) => option.id)).toEqual([
+      "meal-open", "spot-active", "tan-trieu", "ung-buou-ha-noi", "vien-y-hoc-quan-doi",
+    ]);
+    expect(options[0].capacityRemaining).toBe(7);
+    expect(options.find((option) => option.id === "spot-active")?.recurringSchedule)
+      .toEqual({ weekdays: [1], startTime: "09:00", endTime: "11:00" });
+    expect(supportProgramRegistration.groupBy).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ status: { not: "REJECTED" } }),
+    }));
+  });
+
+  it("uses a managed Hanoi point instead of the baseline and respects an inactive override", async () => {
+    managedResource.findMany.mockResolvedValue([
+      { sourceId: "tan-trieu", type: SearchDocumentType.DONATION_LOCATION, title: "Tân Triều mới", description: "", payload: { status: "ACTIVE", regionId: "ha-noi", address: "Địa chỉ đã cập nhật", schedule: "Thứ Hai" } },
+      { sourceId: "ung-buou-ha-noi", type: SearchDocumentType.DONATION_LOCATION, title: "Tạm dừng", description: "", payload: { status: "INACTIVE", regionId: "ha-noi", address: "Thanh Nhàn", schedule: "Thứ Bảy" } },
+    ]);
+
+    const options = await service.publishedSupportOptions();
+
+    expect(options.filter((item) => item.id === "tan-trieu")).toEqual([
+      expect.objectContaining({ address: "Địa chỉ đã cập nhật", schedule: "Thứ Hai" }),
+    ]);
+    expect(options.map((item) => item.id)).not.toContain("ung-buou-ha-noi");
+    expect(options.map((item) => item.id)).toContain("vien-y-hoc-quan-doi");
+  });
+
+  it("flags a published program with a placeholder address for human review", async () => {
+    managedResource.findMany.mockResolvedValue([{
+      sourceId: "cao-bang-meal", type: SearchDocumentType.SUPPORT_PROGRAM,
+      title: "Bữa cơm yêu thương", description: "Suất cơm", payload: {
+        status: "PUBLISHED", regionId: "cao-bang", city: "Cao Bằng",
+        address: "dddddddddddddd", schedule: "24/10/2099", scheduleType: "ONE_TIME",
+        startsOn: "2099-10-24", startTime: "09:00", endTime: "11:00", supportType: "MEAL", capacity: 10,
+      },
+    }]);
+
+    const options = await service.publishedSupportOptions();
+
+    expect(options.find((option) => option.id === "cao-bang-meal")).toEqual(expect.objectContaining({
+      addressNeedsReview: true,
+    }));
+  });
+
+  it("does not recommend a structured program after its final session ended", async () => {
+    managedResource.findMany.mockResolvedValue([{
+      sourceId: "expired-meal", type: SearchDocumentType.SUPPORT_PROGRAM,
+      title: "Suất cơm cũ", description: "Suất cơm", payload: {
+        status: "PUBLISHED", regionId: "ha-noi", city: "Hà Nội",
+        address: "Bệnh viện K Tân Triều", schedule: "09:00–11:00, ngày 01/01/2020",
+        scheduleType: "ONE_TIME", startsOn: "2020-01-01", startTime: "09:00", endTime: "11:00",
+        supportType: "MEAL", capacity: 20,
+      },
+    }]);
+
+    const options = await service.publishedSupportOptions();
+
+    expect(options.map((option) => option.id)).not.toContain("expired-meal");
+  });
+
+  it("does not recommend a legacy program without dated schedule", async () => {
+    managedResource.findMany.mockResolvedValue([{
+      sourceId: "legacy-meal", type: SearchDocumentType.SUPPORT_PROGRAM,
+      title: "Lịch cũ", description: "Suất cơm", payload: {
+        status: "PUBLISHED", regionId: "ha-noi", address: "Bệnh viện K Tân Triều",
+        schedule: "Thứ Hai", capacity: 10,
+      },
+    }]);
+    const options = await service.publishedSupportOptions();
+    expect(options.map((option) => option.id)).not.toContain("legacy-meal");
+  });
+
+  it("excludes expired and legacy programs before search pagination and count", async () => {
+    managedResource.findMany.mockResolvedValue([
+      { sourceId: "future", payload: { status: "PUBLISHED", scheduleType: "ONE_TIME",
+        startsOn: "2099-10-24", startTime: "09:00", endTime: "11:00" } },
+      { sourceId: "expired", payload: { status: "PUBLISHED", scheduleType: "ONE_TIME",
+        startsOn: "2020-01-01", startTime: "09:00", endTime: "11:00" } },
+      { sourceId: "legacy", payload: { status: "PUBLISHED", schedule: "Thứ Hai" } },
+    ]);
+    searchDocument.findMany.mockResolvedValue([]);
+    searchDocument.count.mockResolvedValue(0);
+    await service.search({ q: "suất cơm", type: SearchDocumentType.SUPPORT_PROGRAM, page: 1, pageSize: 8 });
+    expect(searchDocument.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ OR: [{ sourceId: { in: ["future"] } }] }),
+    }));
+    expect(searchDocument.count).toHaveBeenCalledWith({ where: expect.objectContaining({
+      OR: [{ sourceId: { in: ["future"] } }],
+    }) });
   });
 
   it("normalizes Vietnamese text, scopes public results and returns pagination metadata", async () => {
@@ -62,7 +170,9 @@ describe("SearchService", () => {
 
     expect(searchDocument.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { active: true, normalizedText: { contains: "ung thu" } },
+        where: expect.objectContaining({ active: true, normalizedText: { contains: "ung thu" },
+          OR: [{ type: { not: SearchDocumentType.SUPPORT_PROGRAM } },
+            { type: SearchDocumentType.SUPPORT_PROGRAM, sourceId: { in: [] } }] }),
         skip: 0,
         take: 8,
       }),
@@ -110,5 +220,21 @@ describe("SearchService", () => {
       where: { type: SearchDocumentType.PODCAST, sourceId: "PODCAST-1", active: true },
       data: { active: false },
     });
+  });
+
+  it("extracts answer passages only from published resources", async () => {
+    managedResource.findMany.mockResolvedValue([{
+      sourceId: "GUIDE-1",
+      type: SearchDocumentType.GUIDE,
+      description: "Tóm tắt bài viết.",
+      payload: { detailLead: "Lời dẫn.", sections: [{ heading: "Dấu hiệu", paragraphs: ["Trao đổi các dấu hiệu với bác sĩ."], bullets: ["Ghi lại câu hỏi."] }] },
+    }]);
+
+    const result = await service.publishedPassages([{ id: "GUIDE-1", type: SearchDocumentType.GUIDE }]);
+
+    expect(managedResource.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ status: "PUBLISHED", OR: [{ sourceId: "GUIDE-1", type: SearchDocumentType.GUIDE }] }),
+    }));
+    expect(result[0].passages).toContain("Trao đổi các dấu hiệu với bác sĩ.");
   });
 });

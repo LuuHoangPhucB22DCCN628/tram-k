@@ -28,7 +28,9 @@ export class AdminLayout {
     { label: 'Kiểm duyệt cộng đồng', path: '/admin/kiem-duyet' },
     { label: 'Quản lý nội dung', path: '/admin/noi-dung' },
     { label: 'Chương trình hỗ trợ', path: '/admin/chuong-trinh' },
+    { label: 'Hiến và nhận tóc', path: '/admin/hien-nhan-toc' },
     { label: 'Điểm tiếp nhận', path: '/admin/diem-phat-com' },
+    { label: 'Quyên góp', path: '/admin/quyen-gop' },
   ];
 
   protected toggleSidebar(): void {

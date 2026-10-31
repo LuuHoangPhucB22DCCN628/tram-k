@@ -11,11 +11,11 @@
         <p class="auth-form__alert auth-form__alert--success" role="status">
           Email đã được xác minh. Tài khoản của bạn đã sẵn sàng.
         </p>
-        <app-ui-button (buttonClick)="goToLogin()">Đăng nhập</app-ui-button>
+        <app-ui-button (buttonClick)="continue()">Tiếp tục</app-ui-button>
       }
       @case ('missing') {
         <p class="auth-form__alert auth-form__alert--error" role="alert">
-          Liên kết không chứa mã xác minh.
+          Chưa có liên kết xác minh? Hãy nhập email để yêu cầu gửi lại.
         </p>
       }
       @case ('error') {
@@ -41,9 +41,18 @@
           }
         </div>
         @if (resendMessage(); as message) {
-          <p class="auth-form__alert" role="status">{{ message }}</p>
+          <p
+            class="auth-form__alert"
+            [class.auth-form__alert--error]="resendIsError()"
+            [class.auth-form__alert--success]="!resendIsError()"
+            [attr.role]="resendIsError() ? 'alert' : 'status'"
+          >
+            {{ message }}
+          </p>
         }
-        <app-ui-button type="submit">Gửi lại email xác minh</app-ui-button>
+        <app-ui-button type="submit" [loading]="sendingResend()" [disabled]="sendingResend()">
+          {{ sendingResend() ? 'Đang gửi yêu cầu...' : 'Gửi lại email xác minh' }}
+        </app-ui-button>
       </form>
     }
 

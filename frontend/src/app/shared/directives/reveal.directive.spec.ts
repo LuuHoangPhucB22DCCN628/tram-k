@@ -27,4 +27,35 @@ describe('RevealDirective', () => {
     expect(section.classList).toContain('is-visible');
     expect(section.style.getPropertyValue('--ui-reveal-delay')).toBe('600ms');
   });
+
+  it('reveals tall sections as soon as they enter the viewport', () => {
+    let observerOptions: IntersectionObserverInit | undefined;
+    let notify: IntersectionObserverCallback | undefined;
+    class FakeIntersectionObserver {
+      constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+        notify = callback;
+        observerOptions = options;
+      }
+      observe(): void {}
+      unobserve(): void {}
+    }
+    vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
+
+    try {
+      fixture = TestBed.createComponent(RevealHostComponent);
+      fixture.detectChanges();
+      const section = fixture.nativeElement.querySelector('section') as HTMLElement;
+
+      expect(observerOptions?.threshold).toBe(0);
+      expect(section.classList).not.toContain('is-visible');
+      notify?.(
+        [{ isIntersecting: true, target: section } as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+      fixture.detectChanges();
+      expect(section.classList).toContain('is-visible');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

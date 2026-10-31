@@ -37,6 +37,7 @@ describe('AdminCommunityModerationPage', () => {
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
     element.querySelector<HTMLButtonElement>('.moderation-card__approve')?.click();
+    await fixture.whenStable();
     fixture.detectChanges();
     expect(posts.postsFor('MEMBER-A').find((item) => item.id === post.id)?.status).toBe(
       'PUBLISHED',
@@ -45,6 +46,7 @@ describe('AdminCommunityModerationPage', () => {
     element.querySelectorAll<HTMLButtonElement>('.moderation-tabs button')[1].click();
     fixture.detectChanges();
     element.querySelector<HTMLButtonElement>('.moderation-card__reject')?.click();
+    await fixture.whenStable();
     fixture.detectChanges();
     expect(comments.commentsFor('MEMBER-A')).toHaveLength(0);
   });

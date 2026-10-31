@@ -7,10 +7,11 @@ import { CommunityLoveTitle } from '../../components/community-love-title/commun
 import { CommunityMapBackground } from '../../components/community-map-background/community-map-background';
 import { type DonationMapRegion, DONATION_MAP_REGIONS } from '../../data/donation-map-regions.data';
 import { HANOI_DONATION_LOCATIONS } from '../../data/hanoi-donation-locations.data';
+import { donationMapImageForRegion } from '../../data/donation-location-map.utils';
 import { CommunityLocationAdminStorageService } from '../../services/community-location-admin-storage.service';
 
 interface DonationMapRegionView extends DonationMapRegion {
-  readonly detailRoute?: string;
+  readonly detailRoute: string;
   readonly locationCount: number;
 }
 
@@ -40,7 +41,7 @@ export class CommunityDonationMapPage {
       return {
         ...region,
         locationCount,
-        detailRoute: locationCount > 0 ? `/cong-dong/diem-quyen-gop/${region.id}` : undefined,
+        detailRoute: `/cong-dong/diem-quyen-gop/${region.id}`,
       };
     });
   });
@@ -48,7 +49,9 @@ export class CommunityDonationMapPage {
   protected readonly selectedRegion = computed(
     () => this.regions().find((region) => region.id === this.selectedRegionId()) ?? null,
   );
+  protected readonly mapImageForRegion = donationMapImageForRegion;
   constructor() {
+    this.locationStorage.initializePublic();
     const requestedRegion = this.route.snapshot.queryParamMap.get('region');
     const region = this.regions().find((item) => item.id === requestedRegion);
     if (region) this.selectedRegionId.set(region.id);

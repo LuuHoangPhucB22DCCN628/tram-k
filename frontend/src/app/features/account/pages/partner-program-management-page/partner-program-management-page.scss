@@ -138,6 +138,16 @@
     color: var(--color-danger);
     background: #fff0f0;
   }
+
+  &[data-status='COMPLETED'] {
+    color: #3f367c;
+    background: #eeeaff;
+  }
+
+  &[data-status='NEEDS_SCHEDULE'] {
+    color: #8a4900;
+    background: #fff0cf;
+  }
 }
 
 .program-card__actions {

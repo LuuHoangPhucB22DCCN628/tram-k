@@ -8,18 +8,20 @@ import { ManagedResourceSyncService } from '@core/data/managed-resource-sync.ser
 import type {
   CharityProgramProposal,
   CharityProgramStatus,
+  CharityEligibleAudience,
   CreateCharityProgramInput,
 } from '../models/charity-program.models';
+import { charityProgramAddressIsUsable } from '../models/charity-program.models';
+import { programHasUpcomingOccurrence, programScheduleHasUpcomingOccurrence, validProgramSchedule,
+  type StructuredProgramSchedule } from '../models/charity-program-schedule';
 import {
   donationRegionIdFromName,
   DONATION_MAP_REGIONS,
 } from '@features/community/data/donation-map-regions.data';
-import { AccountNotificationStorageService } from './account-notification-storage.service';
 
 @Injectable({ providedIn: 'root' })
 export class CharityProgramStorageService {
   private readonly storageKey = 'tram-k.charity-program-proposals';
-  private readonly notifications = inject(AccountNotificationStorageService);
   private readonly resourceSync = inject(ManagedResourceSyncService);
   private readonly adminApi = inject(ManagedResourceAdminApiService);
   private readonly publicApi = inject(ManagedResourcePublicApiService);
@@ -102,6 +104,7 @@ export class CharityProgramStorageService {
       ownerName: ownerName.trim(),
       title: input.title.trim(),
       description: input.description.trim(),
+      eligibilityNote: input.eligibilityNote?.trim() ?? '',
       city: input.city.trim(),
       address: input.address.trim(),
       schedule: input.schedule.trim(),
@@ -137,6 +140,7 @@ export class CharityProgramStorageService {
         ...input,
         title: input.title.trim(),
         description: input.description.trim(),
+        eligibilityNote: input.eligibilityNote?.trim() ?? '',
         city: input.city.trim(),
         address: input.address.trim(),
         schedule: input.schedule.trim(),
@@ -158,11 +162,16 @@ export class CharityProgramStorageService {
     return updatedProposal;
   }
 
-  review(
+  async review(
     proposalId: string,
     decision: Extract<CharityProgramStatus, 'PUBLISHED' | 'REJECTED'>,
     reason = '',
-  ): CharityProgramProposal | null {
+    eligibility?: {
+      readonly eligibleAudience: CharityEligibleAudience;
+      readonly financialNeedRequired: boolean;
+      readonly eligibilityNote: string;
+    },
+  ): Promise<CharityProgramProposal | null> {
     const normalizedReason = reason.trim();
     if (decision === 'REJECTED' && normalizedReason.length < 10) return null;
 
@@ -172,6 +181,9 @@ export class CharityProgramStorageService {
       if (proposal.id !== proposalId || proposal.status !== 'PENDING') return proposal;
       reviewedProposal = {
         ...proposal,
+        ...(decision === 'PUBLISHED' && eligibility
+          ? { ...eligibility, eligibilityNote: eligibility.eligibilityNote.trim().slice(0, 500) }
+          : {}),
         status: decision,
         reviewReason: decision === 'REJECTED' ? normalizedReason : undefined,
         reviewedAt: now,
@@ -183,22 +195,51 @@ export class CharityProgramStorageService {
       (proposal) => proposal.id === proposalId && proposal.status === decision,
     );
     if (reviewedProposal && notificationProposal) {
+      try {
+        if (!(await firstValueFrom(this.syncProposalResult(notificationProposal)))) return null;
+      } catch {
+        return null;
+      }
       this.persist(proposals);
-      this.syncProposal(notificationProposal);
-      this.notifications.create({
-        recipientUserId: notificationProposal.ownerId,
-        kind: decision === 'PUBLISHED' ? 'PROGRAM_PUBLISHED' : 'PROGRAM_REJECTED',
-        title:
-          decision === 'PUBLISHED' ? 'Chương trình đã được xuất bản' : 'Chương trình cần chỉnh sửa',
-        message:
-          decision === 'PUBLISHED'
-            ? `Chương trình “${notificationProposal.title}” đã được duyệt và hiển thị công khai.`
-            : `Chương trình “${notificationProposal.title}” chưa được duyệt. Lý do: ${normalizedReason}`,
-        link: `/doi-tac/quan-ly-chuong-trinh?program=${encodeURIComponent(proposalId)}`,
-        dedupeKey: `program-review:${proposalId}:${decision}:${notificationProposal.updatedAt}`,
-      });
     }
     return reviewedProposal;
+  }
+
+  async updatePublishedDetails(
+    proposalId: string,
+    changes: {
+      readonly address: string;
+      readonly schedule: string;
+      readonly structuredSchedule?: StructuredProgramSchedule;
+      readonly eligibleAudience?: CharityEligibleAudience;
+      readonly financialNeedRequired: boolean;
+      readonly eligibilityNote: string;
+    },
+  ): Promise<CharityProgramProposal | null> {
+    const proposal = this.proposalsState().find((item) => item.id === proposalId);
+    const address = changes.address.trim().replace(/\s+/g, ' ');
+    const schedule = changes.schedule.trim();
+    if (!proposal || proposal.status !== 'PUBLISHED' || !charityProgramAddressIsUsable(address) ||
+      schedule.length < 5 || schedule.length > 200 ||
+      ((schedule !== proposal.schedule || !programHasUpcomingOccurrence(proposal)) &&
+        !changes.structuredSchedule) ||
+      (changes.structuredSchedule && (!validProgramSchedule(changes.structuredSchedule) ||
+        !programScheduleHasUpcomingOccurrence(changes.structuredSchedule)))) return null;
+
+    const updated: CharityProgramProposal = {
+      ...proposal,
+      address,
+      googlePlaceId: address === proposal.address ? proposal.googlePlaceId : undefined,
+      schedule,
+      ...(changes.structuredSchedule ?? {}),
+      eligibleAudience: changes.eligibleAudience,
+      financialNeedRequired: changes.financialNeedRequired,
+      eligibilityNote: changes.eligibilityNote.trim().slice(0, 500),
+      updatedAt: new Date().toISOString(),
+    };
+    if (!(await firstValueFrom(this.syncProposalResult(updated)))) return null;
+    this.persist(this.proposalsState().map((item) => item.id === proposalId ? updated : item));
+    return updated;
   }
 
   cancelPending(ownerId: string, proposalId: string): boolean {
@@ -214,6 +255,30 @@ export class CharityProgramStorageService {
     );
     this.resourceSync.remove('SUPPORT_PROGRAM', proposalId);
     return true;
+  }
+
+  async deleteByAdmin(proposalId: string): Promise<number | null> {
+    const proposal = this.proposalsState().find((item) => item.id === proposalId);
+    if (!proposal) return null;
+    const deletedRegistrations = await firstValueFrom(this.resourceSync.removeResult('SUPPORT_PROGRAM', proposalId));
+    if (deletedRegistrations === null) return null;
+    this.persist(this.proposalsState().filter((item) => item.id !== proposalId));
+    this.removeLegacyProposal(proposalId);
+    return deletedRegistrations;
+  }
+
+  private removeLegacyProposal(proposalId: string): void {
+    try {
+      const raw = localStorage.getItem(this.storageKey);
+      if (!raw) return;
+      const value: unknown = JSON.parse(raw);
+      if (!Array.isArray(value)) return;
+      localStorage.setItem(this.storageKey, JSON.stringify(value.filter((item) =>
+        !item || typeof item !== 'object' || (item as Record<string, unknown>)['id'] !== proposalId)));
+    } catch {
+      // The remote deletion succeeded; invalid old browser cache must not restore the item.
+      localStorage.removeItem(this.storageKey);
+    }
   }
 
   private syncProposal(proposal: CharityProgramProposal): void {
@@ -245,7 +310,9 @@ export class CharityProgramStorageService {
     canClearAll: boolean,
   ): Promise<void> {
     const current = this.proposalsState();
-    const legacy = current.filter((item) => !ownerId || item.ownerId === ownerId);
+    // Published server data is authoritative: an old browser cache must never recreate a deleted program.
+    const legacy = current.filter((item) =>
+      (!ownerId || item.ownerId === ownerId) && item.status !== 'PUBLISHED');
     const remoteIds = new Set(remote.map((item) => item.id));
     try {
       for (const proposal of legacy) {

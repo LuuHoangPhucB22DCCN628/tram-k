@@ -1,0 +1,100 @@
+<main class="donations-admin">
+  <header class="donations-admin__header">
+    <p class="eyebrow">Quản trị tài chính</p>
+    <h1>Quyên góp và sao kê</h1>
+    <p>Nhập sao kê CSV hoặc Excel, kiểm tra giao dịch và xác nhận trước khi công khai.</p>
+  </header>
+
+  @if (error()) { <p class="notice notice--error" role="alert">{{ error() }}</p> }
+
+  <section class="panel" aria-labelledby="import-heading">
+    <div class="panel__heading">
+      <div><h2 id="import-heading">1. Nhập sao kê</h2><p>Tệp tối đa 5 MB, 5.000 dòng. Chỉ hỗ trợ .csv UTF-8 và .xlsx.</p></div>
+    </div>
+    <div class="form-grid">
+      <label class="field"><span>Tệp sao kê</span>
+        <input type="file" accept=".csv,.xlsx" (change)="selectFile($event)" />
+      </label>
+      <label class="field"><span>Tài khoản nhận tiền / mã tài khoản *</span>
+        <input type="text" maxlength="100" placeholder="Ví dụ: MB-27012004..." [value]="accountKey()"
+          (input)="accountKey.set($any($event.target).value)" />
+      </label>
+    </div>
+    <p class="hint">Mã tài khoản dùng để chống nhập trùng giữa các tệp. Hãy dùng cùng một mã cho cùng tài khoản nhận tiền.</p>
+
+    @if (loading()) { <p role="status">Đang đọc tệp...</p> }
+    @if (preview(); as data) {
+      <div class="form-grid">
+        @if (data.sheets.length > 1) {
+          <label class="field"><span>Sheet Excel</span>
+            <select [value]="sheet()" (change)="selectSheet($event)">
+              @for (item of data.sheets; track item) { <option [value]="item">{{ item }}</option> }
+            </select>
+          </label>
+        }
+        <label class="field"><span>Dòng tiêu đề</span>
+          <select [value]="headerRow()" (change)="setHeaderRow($event)">
+            @for (row of data.rows.slice(0, 5); track $index) { <option [value]="$index + 1">Dòng {{ $index + 1 }}</option> }
+          </select>
+        </label>
+      </div>
+      <p class="hint">Tệp có {{ data.totalRows }} dòng. Chọn cột tương ứng; các cột không có trong tệp có thể để trống.</p>
+      <div class="mapping-grid">
+        @for (field of mappingFields; track field.key) {
+          <label class="field"><span>{{ field.label }} @if (field.required) { * }</span>
+            <select [value]="mapping()[field.key] ?? -1" (change)="updateMapping(field.key, $event)">
+              <option value="-1">— Chưa chọn —</option>
+              @for (header of headers(); track $index) { <option [value]="$index">{{ $index + 1 }}. {{ header || '(Không có tên)' }}</option> }
+            </select>
+          </label>
+        }
+      </div>
+      <div class="preview-scroll"><table><caption>Xem trước tối đa 14 dòng của tệp</caption>
+        <thead><tr><th scope="col">Dòng</th>@for (header of headers(); track $index) { <th scope="col">{{ header || 'Cột ' + ($index + 1) }}</th> }</tr></thead>
+        <tbody>@for (row of data.rows.slice(headerRow()); track $index) {
+          <tr><td>{{ headerRow() + $index + 1 }}</td>@for (header of headers(); track $index) { <td>{{ row[$index] }}</td> }</tr>
+        }</tbody>
+      </table></div>
+      <div class="actions"><button type="button" class="primary" [disabled]="importing() || mapping().date < 0 || mapping().credit < 0 || !accountKey().trim()"
+        (click)="importStatement()">{{ importing() ? 'Đang nhập...' : 'Nhập vào danh sách chờ duyệt' }}</button></div>
+    }
+    @if (result(); as imported) {
+      <div class="notice notice--success" role="status">
+        Đã thêm {{ imported.addedCount }} giao dịch chờ duyệt; bỏ qua {{ imported.duplicateCount }} dòng trùng
+        và {{ imported.outgoingCount }} khoản tiền ra.
+        @if (imported.errors.length) { <strong>{{ imported.errors.length }} dòng lỗi cần kiểm tra:</strong>
+          <ul>@for (issue of imported.errors.slice(0, 20); track issue.row) { <li>Dòng {{ issue.row }}: {{ issue.message }}</li> }</ul>
+        }
+      </div>
+    }
+  </section>
+
+  <section class="panel" aria-labelledby="review-heading">
+    <div class="panel__heading"><div><h2 id="review-heading">2. Đối soát và duyệt</h2>
+      <p>Chỉ giao dịch đã xác nhận mới xuất hiện trên trang cộng đồng.</p></div>
+      <label class="field"><span>Trạng thái</span><select [value]="status()" (change)="changeStatus($event)">
+        <option value="PENDING">Chờ duyệt</option><option value="CONFIRMED">Đã xác nhận</option><option value="REJECTED">Đã từ chối</option>
+      </select></label>
+    </div>
+    @if (status() === 'PENDING' && selectedIds().length) {
+      <div class="review-actions"><span>Đã chọn {{ selectedIds().length }} giao dịch</span>
+        <input type="text" maxlength="500" placeholder="Ghi chú xử lý (nếu có)" [value]="reviewNote()"
+          (input)="reviewNote.set($any($event.target).value)" />
+        <button type="button" class="primary" [disabled]="reviewing()" (click)="review('CONFIRMED')">Xác nhận</button>
+        <button type="button" class="danger" [disabled]="reviewing()" (click)="review('REJECTED')">Từ chối</button>
+      </div>
+    }
+    <div class="preview-scroll"><table><thead><tr>
+      @if (status() === 'PENDING') { <th scope="col"><input type="checkbox" aria-label="Chọn tất cả giao dịch" (change)="selectAll($event)" /></th> }
+      <th scope="col">Thời gian</th><th scope="col">Số tiền vào</th><th scope="col">Mã giao dịch</th>
+      <th scope="col">Nội dung</th><th scope="col">Nguồn</th>
+    </tr></thead><tbody>
+      @for (entry of entries(); track entry.id) { <tr>
+        @if (status() === 'PENDING') { <td><input type="checkbox" [checked]="selectedIds().includes(entry.id)" [attr.aria-label]="'Chọn giao dịch ' + entry.id" (change)="toggleSelection(entry.id, $event)" /></td> }
+        <td>{{ entry.occurredAt | date:'HH:mm dd/MM/yyyy':'+0700' }}</td>
+        <td>{{ formatVnd(entry.amountVnd) }} đ</td><td>{{ entry.sourceReference || 'Chưa có mã' }}</td>
+        <td>{{ entry.description || '—' }}</td><td>{{ entry.statementImport.fileName }}<br /><small>{{ entry.statementImport.accountKey }}</small></td>
+      </tr> } @empty { <tr><td [attr.colspan]="status() === 'PENDING' ? 6 : 5">Chưa có giao dịch ở trạng thái này.</td></tr> }
+    </tbody></table></div>
+  </section>
+</main>

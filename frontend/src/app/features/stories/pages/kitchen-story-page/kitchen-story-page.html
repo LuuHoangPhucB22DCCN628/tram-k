@@ -1,0 +1,160 @@
+<article class="kitchen-detail">
+  <app-kitchen-story-hero [showCta]="false" />
+
+  <div class="kitchen-detail__article">
+    <section class="kitchen-detail__opening" aria-label="Giới thiệu Bếp An Yên">
+      <blockquote>“Trái tim có những lý lẽ<br />mà lý trí không bao giờ biết tới”</blockquote>
+      <p class="kitchen-detail__copy">
+        Câu nói khuyết danh ấy dường như là lời giải đáp hoàn hảo nhất cho câu hỏi: Tại sao giữa
+        cuộc sống hối hả, xô bồ và đầy rẫy những lo toan cá nhân, lại có những con người sẵn sàng
+        dành trọn tâm huyết, thời gian và sức lực của mình vì người khác? Câu trả lời ấy đang được
+        viết lên mỗi ngày bởi chị Nguyễn Thị Vân và những cộng sự tại “Bếp An Yên”, trạm dừng chân
+        ấm áp nằm kề bên Bệnh viện K Tân Triều.
+      </p>
+      <figure class="kitchen-detail__figure kitchen-detail__figure--gallery">
+        <div class="kitchen-detail__gallery kitchen-detail__gallery--portrait">
+          @for (photo of firstGallery; track photo.src; let index = $index) {
+            <div
+              class="kitchen-detail__polaroid"
+              [class.kitchen-detail__polaroid--middle]="index === 1"
+            >
+              <img [src]="photo.src" [alt]="photo.alt" loading="eager" decoding="async" />
+            </div>
+          }
+        </div>
+        <figcaption>
+          Những đôi bàn tay tỉ mẩn chuẩn bị từng suất cơm đong đầy tình nghĩa tại Bếp An Yên.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="kitchen-detail__chapter" aria-labelledby="kitchen-meals-title">
+      <h2 id="kitchen-meals-title" class="kitchen-detail__heading">
+        <span>“Niêu cơm Thạch Sanh”</span>
+        <small>giữa trần đời</small>
+      </h2>
+      <p class="kitchen-detail__copy">
+        Với những bệnh nhân ung thư đang ngày đêm chống chọi với bệnh tật tại Bệnh viện K Tân Triều,
+        nỗi đau thể xác thường đi kèm với những gánh nặng trĩu vai về tài chính. Thấu hiểu được
+        những nhọc nhằn đó, chị Nguyễn Thị Vân - nhóm trưởng thiện nguyện - đã cùng các mạnh thường
+        quân thắp lên ngọn lửa của Bếp An Yên.
+      </p>
+      <figure class="kitchen-detail__figure kitchen-detail__figure--wide">
+        <div class="kitchen-detail__photo-frame">
+          <img
+            src="/assets/images/stories/kitchen-story/founder.jpg"
+            alt="Chị Nguyễn Thị Vân, nhóm trưởng thiện nguyện Bếp An Yên"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+        <figcaption>Chị Nguyễn Thị Vân - nhóm trưởng thiện nguyện</figcaption>
+      </figure>
+      <p class="kitchen-detail__copy">
+        Đều đặn vào mỗi thứ 4 và Chủ nhật hàng tuần, góc bếp nhỏ lại đỏ lửa. Hình ảnh một người phụ
+        nữ nhỏ nhắn, dáng vẻ thoăn thoắt cùng nụ cười rạng rỡ luôn thường trực trên môi đã trở nên
+        vô cùng thân thuộc với bà con nơi đây. Bếp An Yên không chỉ đơn thuần cung cấp những suất ăn
+        0 đồng, mà đó thực sự là một “niêu cơm Thạch Sanh” cứ vơi rồi lại đầy, mang theo tâm niệm sẻ
+        chia khó khăn và tinh thần “lá lành đùm lá rách”. Mỗi suất cơm được trao tay tuy có thể
+        không mang giá trị vật chất quá lớn lao, nhưng lại thấm đẫm tình người, xoa dịu đi những tổn
+        thương và tiếp thêm sức mạnh tinh thần to lớn để người bệnh chiến đấu với bạo bệnh.
+      </p>
+      <figure class="kitchen-detail__figure kitchen-detail__figure--gallery">
+        <div class="kitchen-detail__gallery kitchen-detail__gallery--landscape">
+          @for (photo of volunteerGallery; track photo.src; let index = $index) {
+            <div
+              class="kitchen-detail__polaroid"
+              [class.kitchen-detail__polaroid--middle]="index === 1"
+            >
+              <img [src]="photo.src" [alt]="photo.alt" loading="eager" decoding="async" />
+            </div>
+          }
+        </div>
+        <figcaption>
+          Chị Nguyễn Thị Vân cùng các tình nguyện viên trao gửi những bữa cơm no bụng, ấm lòng đến
+          hàng nghìn bệnh nhân nghèo.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="kitchen-detail__chapter" aria-labelledby="kitchen-shelter-title">
+      <h2 id="kitchen-shelter-title" class="kitchen-detail__heading">
+        <small>Mái ấm An Yên</small>
+        <span>Chốn về bình yên</span>
+        <small>sau những đợt xạ trị</small>
+      </h2>
+      <p class="kitchen-detail__copy">
+        Không chỉ dừng lại ở việc lo cái ăn, tình thương của Bếp An Yên còn mở rộng thành một vòng
+        tay che chở trọn vẹn hơn. Ngay gần căn bếp nhỏ, chỉ cách khoảng 2-3 bước chân, là một không
+        gian đặc biệt khác mang tên “Mái ấm An Yên”.
+      </p>
+      <p class="kitchen-detail__copy">
+        Đây là căn nhà 0 đồng do đích thân chị Nguyễn Thị Vân đứng ra thuê để dành tặng riêng cho
+        các bệnh nhân nghèo. Những người bệnh sau khi trải qua các đợt xạ trị đau đớn và mệt mỏi rã
+        rời trên viện, nay đã có một nơi chốn tươm tất, an toàn để sinh hoạt và nghỉ ngơi ngả lưng.
+        Mái ấm nhỏ bé ấy đã thực sự trở thành một gia đình thứ hai, nơi những người đồng cảnh ngộ có
+        thể dựa vào nhau và dựa vào tình yêu thương vô điều kiện của cộng đồng.
+      </p>
+      <figure class="kitchen-detail__figure kitchen-detail__figure--gallery">
+        <div class="kitchen-detail__gallery kitchen-detail__gallery--landscape">
+          @for (photo of secondGallery; track photo.src; let index = $index) {
+            <div
+              class="kitchen-detail__polaroid"
+              [class.kitchen-detail__polaroid--middle]="index === 1"
+            >
+              <img [src]="photo.src" [alt]="photo.alt" loading="eager" decoding="async" />
+            </div>
+          }
+        </div>
+        <figcaption>
+          Mái ấm An Yên - Căn nhà 0 đồng, chốn tá túc bình yên cho người bệnh sau những đợt xạ trị
+          mệt mỏi.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="kitchen-detail__chapter" aria-labelledby="kitchen-community-title">
+      <h2 id="kitchen-community-title" class="kitchen-detail__heading">
+        <small>Sự hội tụ của những</small>
+        <span>tấm lòng vàng</span>
+      </h2>
+      <p class="kitchen-detail__copy">
+        Để duy trì được ngọn lửa ấm áp và bền bỉ ấy, Bếp An Yên đã trở thành cầu nối gắn kết vô số
+        những trái tim đồng điệu. Từ những người hoàn toàn xa lạ, tiếng nói của lòng tử tế đã kéo họ
+        xích lại gần nhau.
+      </p>
+      <p class="kitchen-detail__copy">
+        Họ là những mạnh thường quân âm thầm đóng góp tiền tài, vật chất; họ là những tình nguyện
+        viên đến từ mọi tầng lớp trong xã hội. Đó có thể là những bạn sinh viên trẻ mang trong mình
+        đầy nhiệt huyết, hay những người đã về hưu nhưng vẫn cháy bỏng đam mê phục vụ cộng đồng. Mỗi
+        người đến với bếp mang theo một câu chuyện riêng, một lý do riêng, nhưng tất cả đều chung
+        một sứ mệnh làm đẹp cho đời. Với những con người nơi đây, thiện nguyện không phải là một
+        nhiệm vụ ép buộc, mà đó là trách nhiệm xã hội, là niềm vui và là một phần không thể thiếu
+        của cuộc sống hàng ngày. Sự hy sinh thầm lặng của họ đã biến mỗi bữa ăn trở nên đặc biệt,
+        lan tỏa một nguồn động viên to lớn đến những mảnh đời bất hạnh.
+      </p>
+      <p class="kitchen-detail__copy">
+        Có một tài sản vô giá mang tên cuộc sống, có một điều kỳ diệu mang tên tình thương và có một
+        món quà tuyệt vời mang tên hạnh phúc. Giữa dòng chảy hối hả của thời gian, những con người
+        tại Bếp An Yên đã chọn cách sống chậm lại, nghĩ khác đi và yêu thương nhiều hơn. Đúng như
+        phương châm mà bếp luôn theo đuổi: “Cho đi là còn mãi”, những gì Bếp An Yên đang làm không
+        chỉ là những bữa cơm hay giấc ngủ, mà họ đang gieo mầm những đóa hoa của sự sống, của niềm
+        tin và hy vọng cho một ngày mai tươi sáng hơn.
+      </p>
+    </section>
+
+    <section class="kitchen-detail__closing" aria-labelledby="kitchen-closing-title">
+      <h2 id="kitchen-closing-title" class="kitchen-detail__heading">
+        <span>Bếp An Yên</span>
+        <small>Cho đi là còn mãi</small>
+      </h2>
+      <img
+        src="/assets/images/stories/kitchen-story/meal.jpg"
+        alt="Bữa cơm ấm áp được chuẩn bị tại Bếp An Yên"
+        loading="eager"
+        decoding="async"
+      />
+      <a routerLink="/cau-chuyen">Xem những câu chuyện khác <span aria-hidden="true">→</span></a>
+    </section>
+  </div>
+</article>

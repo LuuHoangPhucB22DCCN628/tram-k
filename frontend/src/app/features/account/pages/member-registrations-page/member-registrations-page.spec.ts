@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
 import { AuthService } from '@core/auth/auth.service';
+import { ManagedResourceSyncService } from '@core/data/managed-resource-sync.service';
 import { CharityProgramRegistrationService } from '@features/account/services/charity-program-registration.service';
 import { CharityProgramStorageService } from '@features/account/services/charity-program-storage.service';
 import { CommunityMealRegistrationService } from '@features/community/services/community-meal-registration.service';
@@ -48,6 +50,7 @@ describe('MemberRegistrationsPage', () => {
       imports: [MemberRegistrationsPage],
       providers: [provideRouter([])],
     }).compileComponents();
+    vi.spyOn(TestBed.inject(ManagedResourceSyncService), 'upsertResult').mockReturnValue(of(true));
     const auth = TestBed.inject(AuthService);
     vi.spyOn(auth, 'currentUser').mockReturnValue({
       id: 'MEMBER-A',
@@ -69,7 +72,7 @@ describe('MemberRegistrationsPage', () => {
       phone: '0912345678',
       email: 'minhanh@example.com',
     });
-    storage.review(program.id, 'PUBLISHED');
+    await storage.review(program.id, 'PUBLISHED');
     TestBed.inject(CharityProgramRegistrationService).register(program.id, 'MEMBER-A', 80);
     await TestBed.inject(Router).navigateByUrl(`/?program=${encodeURIComponent(program.id)}`);
 

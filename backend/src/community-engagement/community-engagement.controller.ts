@@ -25,6 +25,30 @@ import { UpdateCommunityCommentDto } from "./dto/update-community-comment.dto";
 export class CommunityEngagementController {
   constructor(private readonly engagement: CommunityEngagementService) {}
 
+  @Get("mine/comments")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async myComments(@CurrentUser() user: AuthenticatedUser): Promise<ApiSuccessResponse<unknown>> {
+    return { success: true, data: await this.engagement.listMineComments(user.id) };
+  }
+
+  @Get("admin/comments")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async adminComments(@CurrentUser() user: AuthenticatedUser): Promise<ApiSuccessResponse<unknown>> {
+    return { success: true, data: await this.engagement.listAdminComments(user.id) };
+  }
+
+  @Delete("admin/comments/:commentId")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async moderateComment(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("commentId") commentId: string,
+  ): Promise<ApiSuccessResponse<unknown>> {
+    return { success: true, data: await this.engagement.moderateRemoveComment(user.id, commentId) };
+  }
+
   @Get(":sourceKey/comments")
   async listComments(
     @Param() params: CommunitySourceKeyParamDto,
@@ -37,6 +61,16 @@ export class CommunityEngagementController {
     @Param() params: CommunitySourceKeyParamDto,
   ): Promise<ApiSuccessResponse<unknown>> {
     return { success: true, data: await this.engagement.reactionSummary(params.sourceKey) };
+  }
+
+  @Get(":sourceKey/reactions/mine")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async myReaction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() params: CommunitySourceKeyParamDto,
+  ): Promise<ApiSuccessResponse<unknown>> {
+    return { success: true, data: await this.engagement.myReaction(user.id, params.sourceKey) };
   }
 
   @Post(":sourceKey/comments")
@@ -98,5 +132,18 @@ export class CommunityEngagementController {
         sourceKey: params.sourceKey,
       }),
     };
+  }
+
+  @Post(":sourceKey/reactions/import")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async importReaction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() params: CommunitySourceKeyParamDto,
+    @Body() dto: ToggleCommunityReactionBodyDto,
+  ): Promise<ApiSuccessResponse<unknown>> {
+    return { success: true, data: await this.engagement.importReaction(user.id, {
+      ...dto, sourceKey: params.sourceKey,
+    }) };
   }
 }

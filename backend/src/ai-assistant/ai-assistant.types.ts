@@ -1,4 +1,4 @@
-export type AiAssistantMode = "LOCAL" | "OPENAI" | "SAFETY";
+export type AiAssistantMode = "LOCAL" | "OLLAMA" | "OPENAI" | "SAFETY";
 
 export interface AiAssistantSource {
   readonly title: string;

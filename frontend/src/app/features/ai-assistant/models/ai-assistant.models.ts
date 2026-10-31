@@ -1,4 +1,4 @@
-export type AiAssistantMode = 'LOCAL' | 'OPENAI' | 'SAFETY';
+export type AiAssistantMode = 'LOCAL' | 'OLLAMA' | 'OPENAI' | 'SAFETY';
 export type AiChatRole = 'user' | 'assistant';
 
 export interface AiConversationMessage {

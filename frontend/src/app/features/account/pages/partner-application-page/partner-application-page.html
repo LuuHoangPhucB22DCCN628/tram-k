@@ -5,6 +5,28 @@
     <span>Quyền đối tác chỉ được cấp sau khi hồ sơ được quản trị viên phê duyệt.</span>
   </div>
 
+  @if (needsEmailVerification()) {
+    <article class="partner-application__verification" aria-labelledby="partner-verification-title">
+      <h2 id="partner-verification-title">Tài khoản chưa xác minh email</h2>
+      <p>
+        Bạn có thể đăng nhập, nhưng cần xác minh email tài khoản trước khi gửi hồ sơ đối tác. Liên
+        kết xác minh có hiệu lực trong 24 giờ.
+      </p>
+      <button type="button" [disabled]="sendingVerification()" (click)="requestVerification()">
+        {{ sendingVerification() ? 'Đang gửi yêu cầu...' : 'Gửi lại email xác minh' }}
+      </button>
+      @if (verificationFeedback()) {
+        <p
+          class="partner-application__feedback"
+          [attr.data-state]="verificationFeedbackIsError() ? 'error' : 'success'"
+          [attr.role]="verificationFeedbackIsError() ? 'alert' : 'status'"
+        >
+          {{ verificationFeedback() }}
+        </p>
+      }
+    </article>
+  }
+
   @if (currentApplication(); as application) {
     <article class="partner-application__status" [attr.data-status]="application.status">
       <div>
@@ -29,7 +51,10 @@
     </article>
   }
 
-  @if (!currentApplication() || currentApplication()?.status === 'REJECTED') {
+  @if (
+    (!currentApplication() || currentApplication()?.status === 'REJECTED') &&
+    !needsEmailVerification()
+  ) {
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <div class="partner-application__grid">
         <label>
@@ -177,8 +202,14 @@
           {{ feedback() }}
         </p>
       }
-      <button type="submit">
-        {{ currentApplication()?.status === 'REJECTED' ? 'Gửi lại hồ sơ' : 'Gửi hồ sơ xét duyệt' }}
+      <button type="submit" [disabled]="submitting()">
+        {{
+          submitting()
+            ? 'Đang gửi hồ sơ...'
+            : currentApplication()?.status === 'REJECTED'
+              ? 'Gửi lại hồ sơ'
+              : 'Gửi hồ sơ xét duyệt'
+        }}
       </button>
     </form>
   }

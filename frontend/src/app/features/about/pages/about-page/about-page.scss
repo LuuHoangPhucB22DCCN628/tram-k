@@ -1,0 +1,152 @@
+:host {
+  display: block;
+}
+
+.about-page {
+  color: var(--color-text-body);
+}
+
+.about-container {
+  width: min(100% - 2.5rem, 72rem);
+  margin-inline: auto;
+}
+
+.about-hero {
+  padding-block: clamp(4.5rem, 9vw, 7rem);
+  background: linear-gradient(135deg, var(--color-brand-soft), var(--color-surface));
+
+  .about-container {
+    max-width: 56rem;
+    text-align: center;
+  }
+
+  h1 {
+    margin: 0;
+    color: var(--color-text-heading);
+    font-size: clamp(2.25rem, 5vw, 4rem);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1.16;
+  }
+
+  &__lead {
+    max-width: 45rem;
+    margin: 1.5rem auto 0;
+    font-size: clamp(1rem, 1.8vw, 1.18rem);
+    line-height: 1.75;
+  }
+}
+
+.about-eyebrow {
+  margin: 0 0 1rem;
+  color: var(--color-brand-primary);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.about-content {
+  padding-block: clamp(4rem, 7vw, 6rem);
+}
+
+.about-intro {
+  max-width: 43rem;
+
+  h2 {
+    margin: 0;
+    color: var(--color-text-heading);
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    line-height: 1.25;
+  }
+
+  > p:last-child {
+    margin: 1rem 0 0;
+    line-height: 1.75;
+  }
+}
+
+.about-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-top: 2.5rem;
+}
+
+.about-link {
+  display: flex;
+  min-height: 16rem;
+  flex-direction: column;
+  padding: 1.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1.25rem;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--color-brand-primary);
+    transform: translateY(-2px);
+  }
+
+  &__number {
+    color: var(--color-brand-primary);
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  h3 {
+    margin: 1.25rem 0 0.5rem;
+    color: var(--color-text-heading);
+    font-size: 1.3rem;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.65;
+  }
+
+  &__action {
+    margin-top: auto;
+    padding-top: 1.5rem;
+    color: var(--color-brand-primary);
+    font-weight: 700;
+  }
+}
+
+.about-note {
+  padding-block: 2.5rem;
+  background: var(--color-surface-subtle);
+
+  .about-container {
+    max-width: 56rem;
+  }
+
+  strong {
+    color: var(--color-text-heading);
+  }
+
+  p {
+    margin: 0.5rem 0 0;
+    line-height: 1.7;
+  }
+}
+
+@media (max-width: 48rem) {
+  .about-links {
+    grid-template-columns: 1fr;
+  }
+
+  .about-link {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-link {
+    transition: none;
+  }
+}

@@ -2,6 +2,7 @@ export interface MemberComment {
   readonly id: string;
   readonly userId: string;
   readonly authorName: string;
+  readonly profileVisibility?: 'PUBLIC' | 'MEMBERS' | 'PRIVATE';
   readonly content: string;
   readonly sourceTitle: string;
   readonly sourcePath: string;

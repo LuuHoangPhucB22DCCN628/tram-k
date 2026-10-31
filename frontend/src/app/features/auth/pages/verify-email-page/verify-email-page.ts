@@ -23,41 +23,69 @@ export class VerifyEmailPage implements OnInit {
 
   protected readonly state = signal<VerificationState>('loading');
   protected readonly resendMessage = signal<string | null>(null);
+  protected readonly resendIsError = signal(false);
+  protected readonly sendingResend = signal(false);
   protected readonly resendForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
   });
 
   ngOnInit(): void {
+    this.resendForm.controls.email.setValue(
+      this.route.snapshot.queryParamMap.get('email')?.trim() ??
+        this.auth.currentUser()?.email ??
+        '',
+    );
     const token = this.route.snapshot.queryParamMap.get('token')?.trim();
     if (!token) {
       this.state.set('missing');
       return;
     }
     this.auth.verifyEmail(token).subscribe({
-      next: () => this.state.set('success'),
+      next: () => {
+        if (!this.auth.currentUser()) {
+          this.state.set('success');
+          return;
+        }
+        this.auth.refreshAccessToken().subscribe({
+          next: () => this.state.set('success'),
+          error: () => this.state.set('success'),
+        });
+      },
       error: () => this.state.set('error'),
     });
   }
 
   protected resend(): void {
+    if (this.sendingResend()) return;
     this.resendMessage.set(null);
+    this.resendIsError.set(false);
     if (this.resendForm.invalid) {
       this.resendForm.markAllAsTouched();
       return;
     }
+    this.sendingResend.set(true);
     this.auth.resendVerification(this.resendForm.controls.email.value).subscribe({
-      next: () =>
-        this.resendMessage.set('Nếu tài khoản đang chờ xác minh, Trạm K sẽ gửi một liên kết mới.'),
-      error: (error: unknown) =>
+      next: () => {
+        this.sendingResend.set(false);
+        this.resendMessage.set('Nếu tài khoản đang chờ xác minh, Trạm K sẽ gửi một liên kết mới.');
+      },
+      error: (error: unknown) => {
+        this.sendingResend.set(false);
+        this.resendIsError.set(true);
         this.resendMessage.set(
           error instanceof AuthApiError && error.code === 'VERIFICATION_RATE_LIMITED'
             ? 'Bạn đã yêu cầu quá nhiều lần. Vui lòng thử lại sau.'
-            : 'Chưa thể gửi lại email. Vui lòng thử lại.',
-        ),
+            : error instanceof AuthApiError
+              ? error.message
+              : 'Chưa thể gửi lại email. Vui lòng thử lại.',
+        );
+      },
     });
   }
 
-  protected goToLogin(): void {
-    void this.router.navigateByUrl('/dang-nhap');
+  protected continue(): void {
+    void this.router.navigateByUrl(
+      this.auth.currentUser() ? '/thanh-vien/dang-ky-doi-tac' : '/dang-nhap',
+    );
   }
 }

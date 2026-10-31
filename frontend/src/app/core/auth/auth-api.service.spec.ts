@@ -71,6 +71,23 @@ describe('AuthApiService', () => {
     await expect(resultPromise).resolves.toMatchObject({ authMode: 'LOCAL' });
   });
 
+  it('does not create a demo session when the backend rejects the login', async () => {
+    const resultPromise = firstValueFrom(
+      TestBed.inject(AuthApiService).login(
+        { email: 'phuc@tramk.vn', password: 'wrong-password', rememberMe: false },
+        'PUBLIC',
+      ),
+    );
+    TestBed.inject(HttpTestingController)
+      .expectOne('http://localhost:3000/auth/login')
+      .flush(
+        { success: false, error: { message: 'Email hoặc mật khẩu không đúng.' } },
+        { status: 401, statusText: 'Unauthorized' },
+      );
+
+    await expect(resultPromise).rejects.toMatchObject({ message: 'Email hoặc mật khẩu không đúng.' });
+  });
+
   it('verifies an email token through the backend', async () => {
     const resultPromise = firstValueFrom(
       TestBed.inject(AuthApiService).verifyEmail('verification-token'),

@@ -80,4 +80,19 @@ describe('ProfileApiService', () => {
     expect(saved.version).toBe(4);
     await expect(firstValueFrom(service.getOwnProfile(user, 'LOCAL'))).resolves.toEqual(saved);
   });
+
+  it('explains an oversized avatar response instead of showing a generic error', async () => {
+    const resultPromise = firstValueFrom(
+      TestBed.inject(ProfileApiService).updateOwnProfile(user, 'REMOTE', profile),
+    );
+    const request = TestBed.inject(HttpTestingController).expectOne(
+      'http://localhost:3000/profile/me',
+    );
+    request.flush(null, { status: 413, statusText: 'Payload Too Large' });
+
+    await expect(resultPromise).rejects.toMatchObject({
+      code: 'VALIDATION',
+      message: expect.stringContaining('chọn ảnh khác'),
+    });
+  });
 });

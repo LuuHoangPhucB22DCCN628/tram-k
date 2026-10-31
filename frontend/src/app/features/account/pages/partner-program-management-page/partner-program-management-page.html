@@ -17,7 +17,7 @@
       @for (proposal of proposals(); track proposal.id) {
         <article class="program-card">
           <div class="program-card__meta">
-            <span [attr.data-status]="proposal.status">{{ statusLabel(proposal.status) }}</span>
+            <span [attr.data-status]="programStatus(proposal)">{{ statusLabel(programStatus(proposal)) }}</span>
             <time [attr.datetime]="proposal.updatedAt">
               Cập nhật {{ proposal.updatedAt | date: 'dd/MM/yyyy, HH:mm' }}
             </time>
@@ -40,14 +40,16 @@
             </div>
             <div>
               <dt>Quy mô</dt>
-              <dd>{{ proposal.capacity }} người/suất mỗi đợt</dd>
+              <dd>{{ proposal.capacity }} chỗ đăng ký cho cả chương trình</dd>
             </div>
             @if (proposal.status === 'PUBLISHED') {
               <div>
                 <dt>Đăng ký</dt>
                 <dd>
-                  {{ registrationCount(proposal.id) }}/{{ proposal.capacity }} · còn
-                  {{ remainingCapacity(proposal) }} chỗ
+                  {{ registrationCount(proposal.id) }}/{{ proposal.capacity }}
+                  @if (programStatus(proposal) === 'PUBLISHED') {
+                    · còn {{ remainingCapacity(proposal) }} chỗ
+                  }
                 </dd>
               </div>
             }
@@ -96,8 +98,8 @@
         >
           ×
         </button>
-        <span class="program-dialog__status" [attr.data-status]="proposal.status">
-          {{ statusLabel(proposal.status) }}
+        <span class="program-dialog__status" [attr.data-status]="programStatus(proposal)">
+          {{ statusLabel(programStatus(proposal)) }}
         </span>
         <h2 id="program-dialog-title">{{ proposal.title }}</h2>
         <p>{{ proposal.description }}</p>
@@ -121,7 +123,11 @@
           </div>
           <div>
             <dt>Khả năng hỗ trợ</dt>
-            <dd>{{ proposal.capacity }} người/suất mỗi đợt</dd>
+            <dd>{{ proposal.capacity }} chỗ đăng ký cho cả chương trình</dd>
+          </div>
+          <div>
+            <dt>Đối tượng / điều kiện</dt>
+            <dd>{{ eligibilityLabel(proposal) }}</dd>
           </div>
           <div>
             <dt>Người liên hệ</dt>
@@ -145,7 +151,13 @@
                 <h3 id="program-registrations-title">
                   {{ registrationCount(proposal.id) }}/{{ proposal.capacity }} chỗ đã sử dụng
                 </h3>
-                <span>Còn {{ remainingCapacity(proposal) }} chỗ trong đợt hỗ trợ này.</span>
+                <span>
+                  @if (programStatus(proposal) === 'COMPLETED') {
+                    Chương trình đã kết thúc; hồ sơ đăng ký vẫn được lưu để đối soát.
+                  } @else {
+                    Còn {{ remainingCapacity(proposal) }} chỗ trong đợt hỗ trợ này.
+                  }
+                </span>
               </div>
               <label>
                 <span>Lọc trạng thái</span>

@@ -52,6 +52,75 @@
   min-height: 1291px;
 }
 
+.hair-registration__body--complete,
+.hair-registration--receive .hair-registration__body--complete {
+  min-height: 0;
+}
+
+.hair-registration__confirmation {
+  width: min(640px, 100%);
+  padding: 48px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  border: 1px solid #b5ade7;
+  border-radius: 14px;
+  background: #fff;
+  text-align: center;
+}
+
+.hair-registration__confirmation-mark {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 20px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #5e4dcb;
+  font-size: 30px;
+}
+
+.hair-registration__confirmation h2 {
+  margin: 0 0 12px;
+  color: #1b2034;
+  font-size: 28px;
+}
+
+.hair-registration__confirmation p {
+  color: #5d698e;
+  line-height: 1.6;
+}
+
+.hair-registration__confirmation-code {
+  padding: 14px;
+  border-radius: 12px;
+  background: #efedfa;
+}
+
+.hair-registration__confirmation-code strong {
+  color: #1b2034;
+}
+
+.hair-registration__confirmation a {
+  display: inline-block;
+  padding: 12px 24px;
+  margin-top: 12px;
+  border-radius: 12px;
+  color: #fff;
+  background: #5e4dcb;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.hair-registration__confirmation a:hover {
+  background: var(--color-brand-primary-hover);
+}
+
+.hair-registration__confirmation a:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .hair-form {
   width: min(976px, 100%);
   padding: 41px;
@@ -325,6 +394,10 @@
 
   .hair-form {
     padding: 28px 20px;
+  }
+
+  .hair-registration__confirmation {
+    padding: 32px 20px;
   }
 
   .hair-form__grid--three,

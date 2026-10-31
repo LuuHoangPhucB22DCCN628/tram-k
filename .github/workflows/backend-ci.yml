@@ -7,10 +7,12 @@ on:
   pull_request:
     paths:
       - "backend/**"
+      - "shared/support-data/**"
       - ".github/workflows/backend-ci.yml"
   push:
     paths:
       - "backend/**"
+      - "shared/support-data/**"
       - ".github/workflows/backend-ci.yml"
 
 jobs:

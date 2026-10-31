@@ -67,24 +67,13 @@
     @if (selectedRegion(); as region) {
       <div class="donation-region-dialog">
         <div class="donation-region-dialog__visual" aria-hidden="true">
-          <img
-            [src]="
-              region.detailRoute
-                ? region.id === 'ha-noi'
-                  ? '/assets/images/community/community-hanoi-map.svg'
-                  : '/assets/images/community/community-donation-map.svg'
-                : '/assets/images/community/community-donation-map.svg'
-            "
-            alt=""
-            width="210"
-            height="210"
-          />
+          <img [src]="mapImageForRegion(region.id)" alt="" width="210" height="210" />
           <span>{{ region.name }}</span>
         </div>
 
         <div class="donation-region-dialog__content">
           <p class="donation-region-dialog__eyebrow">KHU VỰC ĐÃ CHỌN</p>
-          @if (region.detailRoute) {
+          @if (region.locationCount > 0) {
             <h3>{{ region.locationCount }} điểm quyên góp đang hoạt động</h3>
             <p>
               Xem địa chỉ, lịch tiếp nhận và thông tin liên hệ của các điểm quyên góp tại
@@ -110,14 +99,12 @@
         <button type="button" class="donation-region-dialog__button" (click)="closeRegion()">
           Đóng
         </button>
-        @if (region.detailRoute) {
-          <a
-            class="donation-region-dialog__button donation-region-dialog__button--primary"
-            [routerLink]="region.detailRoute"
-          >
-            Xem các điểm quyên góp
-          </a>
-        }
+        <a
+          class="donation-region-dialog__button donation-region-dialog__button--primary"
+          [routerLink]="region.detailRoute"
+        >
+          {{ region.locationCount > 0 ? 'Xem các điểm quyên góp' : 'Xem bản đồ khu vực' }}
+        </a>
       </div>
     }
   </app-ui-modal>

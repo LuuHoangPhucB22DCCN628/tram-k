@@ -3,4 +3,5 @@ export const environment = {
   production: true,
   apiBaseUrl: '/api',
   useMockAuthFallback: false,
+  googleMapsApiKey: '',
 } as const;

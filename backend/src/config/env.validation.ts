@@ -38,7 +38,7 @@ const environmentSchema = Joi.object({
     }),
   TERMS_VERSION: Joi.string().default("2026-10-03"),
   PRIVACY_VERSION: Joi.string().default("2026-10-03"),
-  PUBLIC_WEB_URL: Joi.string().uri().default("http://localhost:4201"),
+  PUBLIC_WEB_URL: Joi.string().uri().default("http://localhost:4200"),
   AUTH_JOBS_ENABLED: Joi.boolean().truthy("true").falsy("false").default(true),
   OUTBOX_POLL_INTERVAL_MS: Joi.number().integer().min(1000).default(5000),
   ACCOUNT_CLEANUP_INTERVAL_MS: Joi.number()
@@ -59,7 +59,8 @@ const environmentSchema = Joi.object({
   EMAIL_FROM: Joi.string().default("Trạm K <no-reply@tramk.local>"),
   SEED_ADMIN_EMAIL: Joi.string().email().default("admin@tramk.vn"),
   SEED_ADMIN_PASSWORD: Joi.string().min(8).optional(),
-  AI_PROVIDER: Joi.string().valid("local", "openai").default("local"),
+  AI_PROVIDER: Joi.string().valid("local", "ollama", "openai").default("local"),
+  OLLAMA_MODEL: Joi.string().default("qwen3:4b-instruct"),
   OPENAI_API_KEY: Joi.string().min(20).optional(),
   OPENAI_MODEL: Joi.string().default("gpt-6-luna"),
   AI_RATE_LIMIT_PER_MINUTE: Joi.number().integer().min(1).max(60).default(12),

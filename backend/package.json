@@ -21,8 +21,11 @@
     "@nestjs/platform-express": "^11.2.3",
     "@nestjs/swagger": "^11.4.7",
     "@prisma/client": "^6.12.0",
+    "@tram-k/support-data": "file:../shared/support-data",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "csv-parse": "^5.6.0",
+    "exceljs": "^4.4.0",
     "joi": "^18.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
@@ -48,7 +51,7 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.ts$": "ts-jest"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"

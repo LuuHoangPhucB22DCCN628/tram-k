@@ -1,0 +1,353 @@
+.hair-admin {
+  display: grid;
+  gap: 1.4rem;
+  padding: clamp(1.25rem, 3vw, 3rem);
+  color: var(--color-text-heading);
+}
+
+.hair-admin__heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+}
+
+.hair-admin__eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--color-brand-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+h1 {
+  margin-bottom: 0.4rem;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+}
+.hair-admin__heading > div > p:last-child {
+  margin-bottom: 0;
+  color: var(--color-text-muted);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.hair-admin__reload,
+.hair-admin__view,
+.hair-admin__pagination button {
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--color-brand-primary);
+  border-radius: var(--radius-md);
+  color: var(--color-brand-primary);
+  background: #fff;
+  font-weight: 700;
+}
+
+.hair-admin__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+.hair-admin__stats > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 1.1rem 1.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+}
+.hair-admin__stats strong {
+  color: var(--color-brand-primary);
+  font-size: 1.6rem;
+}
+.hair-admin__stats span {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.hair-admin__filters {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) auto minmax(9rem, 12rem) minmax(9rem, 12rem);
+  align-items: end;
+  gap: 0.8rem;
+}
+.hair-admin__filters label,
+.hair-admin__actions label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+.hair-admin__filters label span,
+.hair-admin__actions label span {
+  font-size: 0.87rem;
+}
+.hair-admin__filters input,
+.hair-admin__filters select,
+.hair-admin__actions textarea {
+  width: 100%;
+  min-height: 2.8rem;
+  box-sizing: border-box;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+.hair-admin__filters button,
+.hair-admin__primary {
+  min-height: 2.8rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--color-brand-primary);
+  border-radius: var(--radius-md);
+  color: #fff;
+  background: var(--color-brand-primary);
+  font-weight: 700;
+}
+.hair-admin__feedback,
+.hair-admin__error,
+.hair-admin__loading {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-md);
+}
+.hair-admin__feedback {
+  color: #24633f;
+  background: #eaf8f0;
+}
+.hair-admin__error {
+  color: #a42e31;
+  background: #fff0f0;
+}
+.hair-admin__loading {
+  color: var(--color-text-muted);
+  background: #f5f4fe;
+}
+
+.hair-admin__content {
+  display: grid;
+  gap: 1.15rem;
+  min-width: 0;
+}
+.hair-admin__content--detail {
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 25rem);
+  align-items: start;
+}
+.hair-admin__table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+}
+.hair-admin__table-wrap table {
+  width: 100%;
+  min-width: 48rem;
+  border-collapse: collapse;
+}
+.hair-admin__table-wrap th,
+.hair-admin__table-wrap td {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+.hair-admin__table-wrap th {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+.hair-admin__table-wrap td strong,
+.hair-admin__table-wrap td small {
+  display: block;
+}
+.hair-admin__table-wrap td small {
+  margin-top: 0.3rem;
+  color: var(--color-text-muted);
+}
+.hair-admin__row--selected {
+  background: #f4f1ff;
+}
+.hair-admin__empty {
+  padding: 2rem !important;
+  text-align: center !important;
+  color: var(--color-text-muted);
+}
+
+.hair-admin__status,
+.hair-admin__mode {
+  display: inline-block;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  color: #674bbd;
+  background: #efebff;
+  font-size: 0.78rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.hair-admin__status[data-status='APPROVED'] {
+  color: #176c48;
+  background: #e6f6ed;
+}
+.hair-admin__status[data-status='COMPLETED'] {
+  color: #206678;
+  background: #e2f3f7;
+}
+.hair-admin__status[data-status='REJECTED'] {
+  color: #a43f4a;
+  background: #fff0f1;
+}
+
+.hair-admin__detail {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+}
+.hair-admin__detail header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 0.8rem;
+}
+.hair-admin__detail h2 {
+  margin: 0.5rem 0 0.2rem;
+  font-size: 1.35rem;
+}
+.hair-admin__detail header p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.hair-admin__close {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-heading);
+  font-size: 1.8rem;
+  line-height: 1;
+}
+.hair-admin__details-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+.hair-admin__details-list > div {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0.5rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.hair-admin__details-list dt {
+  color: var(--color-text-muted);
+}
+.hair-admin__details-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.hair-admin__details-list a {
+  color: var(--color-brand-primary);
+}
+.hair-admin__actions {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 0.6rem;
+}
+.hair-admin__actions p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+.hair-admin__actions textarea {
+  resize: vertical;
+  min-height: 5rem;
+}
+.hair-admin__reject {
+  padding: 0.7rem 1rem;
+  border: 1px solid #b94952;
+  border-radius: var(--radius-md);
+  color: #a42e31;
+  background: #fff;
+  font-weight: 700;
+}
+.hair-admin__history {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.75rem;
+}
+.hair-admin__history h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+.hair-admin__history > div {
+  padding: 0.55rem 0;
+}
+.hair-admin__history time {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+.hair-admin__history p {
+  margin: 0.35rem 0 0;
+}
+.hair-admin__pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 1100px) {
+  .hair-admin__content--detail {
+    grid-template-columns: 1fr;
+  }
+  .hair-admin__filters {
+    grid-template-columns: minmax(0, 1fr) auto repeat(2, minmax(9rem, 12rem));
+  }
+}
+@media (max-width: 760px) {
+  .hair-admin__heading {
+    align-items: start;
+    flex-direction: column;
+  }
+  .hair-admin__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hair-admin__filters {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .hair-admin__filters label:nth-of-type(n + 2) {
+    grid-column: span 1;
+  }
+}
+@media (max-width: 480px) {
+  .hair-admin__filters {
+    grid-template-columns: 1fr;
+  }
+  .hair-admin__pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .hair-admin__details-list > div {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+}

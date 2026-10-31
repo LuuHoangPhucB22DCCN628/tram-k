@@ -17,6 +17,7 @@ export class PartnerApplicationStorageService {
   private adminInitialized = false;
 
   readonly applications = this.applicationsState.asReadonly();
+  readonly lastError = this.api.lastError;
 
   all(): readonly PartnerApplication[] {
     return [...this.applicationsState()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));

@@ -1,10 +1,11 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Prisma, ProfileVisibility } from "@prisma/client";
+import { Prisma, ProfileVisibility, UserStatus } from "@prisma/client";
 import { createHash, randomUUID } from "crypto";
 
 import { PrismaService } from "../prisma/prisma.service";
@@ -32,6 +33,48 @@ export class ProfilesService {
     });
     if (!user) throw new NotFoundException("Không tìm thấy hồ sơ.");
     return this.toProfile(user);
+  }
+
+  async getSharedProfile(userId: string, viewerId: string | null) {
+    const user = await this.findVisibleProfile(userId, viewerId);
+    return {
+      id: user.id,
+      displayName: user.fullName,
+      role: user.partnerMembership ? "PARTNER" : user.role.name,
+      city: user.profile?.city ?? "",
+      bio: user.profile?.bio ?? "",
+      hasAvatar: Boolean(user.profile?.avatarDataUrl),
+    };
+  }
+
+  async getSharedAvatar(userId: string, viewerId: string | null) {
+    const user = await this.findVisibleProfile(userId, viewerId);
+    const match =
+      /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(
+        user.profile?.avatarDataUrl ?? "",
+      );
+    if (!match) throw new NotFoundException("Không tìm thấy ảnh đại diện.");
+    return { mimeType: match[1], bytes: Buffer.from(match[2], "base64") };
+  }
+
+  private async findVisibleProfile(userId: string, viewerId: string | null) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null, status: UserStatus.ACTIVE },
+      include: { role: true, profile: true, partnerMembership: true },
+    });
+    if (!user) throw new NotFoundException("Không tìm thấy hồ sơ.");
+    const visibility = user.profile?.visibility ?? ProfileVisibility.MEMBERS;
+    if (viewerId !== userId && visibility === ProfileVisibility.PRIVATE) {
+      throw new ForbiddenException("Thành viên chưa chia sẻ hồ sơ.");
+    }
+    if (
+      viewerId !== userId &&
+      visibility === ProfileVisibility.MEMBERS &&
+      !viewerId
+    ) {
+      throw new ForbiddenException("Vui lòng đăng nhập để xem hồ sơ này.");
+    }
+    return user;
   }
 
   async updateOwnProfile(

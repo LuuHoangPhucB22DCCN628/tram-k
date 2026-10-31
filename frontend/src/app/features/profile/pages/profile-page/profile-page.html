@@ -16,20 +16,53 @@
             <span aria-hidden="true">{{ initials() }}</span>
           }
         </div>
-        <label class="profile-avatar__upload" for="profile-avatar-input">Chọn ảnh mới</label>
+        <button
+          class="profile-avatar__upload"
+          type="button"
+          [disabled]="isLoading() || isSaving() || avatarProcessing()"
+          (click)="avatarInput.click()"
+        >
+          Chọn ảnh mới
+        </button>
         <input
+          #avatarInput
           id="profile-avatar-input"
           class="profile-avatar__input"
           type="file"
           accept="image/jpeg,image/png,image/webp"
+          [disabled]="isLoading() || isSaving() || avatarProcessing()"
           (change)="selectAvatar($event)"
         />
         @if (avatarDataUrl()) {
-          <button type="button" class="profile-avatar__remove" (click)="removeAvatar()">
+          <button
+            type="button"
+            class="profile-avatar__remove"
+            [disabled]="avatarProcessing() || isSaving()"
+            (click)="removeAvatar()"
+          >
             Xóa ảnh
           </button>
         }
-        <small>JPG, PNG hoặc WebP, tối đa 1 MB.</small>
+        <small>JPG, PNG hoặc WebP, ảnh gốc tối đa 10 MB. Ảnh lớn sẽ tự được tối ưu.</small>
+        @if (avatarFeedback(); as result) {
+          <p
+            class="profile-avatar__feedback"
+            [class.profile-avatar__feedback--error]="result.type === 'error'"
+            [attr.role]="result.type === 'error' ? 'alert' : 'status'"
+          >
+            {{ result.message }}
+          </p>
+        }
+        @if (avatarPending()) {
+          <button
+            class="profile-avatar__save"
+            type="button"
+            [disabled]="isLoading() || isSaving() || avatarProcessing()"
+            (click)="save()"
+          >
+            {{ isSaving() ? 'Đang lưu...' : 'Lưu ảnh' }}
+          </button>
+        }
       </aside>
 
       <div class="profile-page__content">
@@ -149,10 +182,6 @@
           </fieldset>
 
           <div class="profile-privacy__switches">
-            <label
-              ><input type="checkbox" formControlName="showEmail" /> Hiển thị email trên hồ
-              sơ</label
-            >
             <label
               ><input type="checkbox" formControlName="allowComments" /> Cho phép thành viên bình
               luận vào câu chuyện của tôi</label

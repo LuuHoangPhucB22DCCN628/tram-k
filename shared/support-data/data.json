@@ -1,0 +1,233 @@
+{
+  "DONATION_MAP_REGIONS": [
+    {
+      "id": "bac-ninh",
+      "svgId": "BN",
+      "name": "Bắc Ninh"
+    },
+    {
+      "id": "ca-mau",
+      "svgId": "CM",
+      "name": "Cà Mau"
+    },
+    {
+      "id": "cao-bang",
+      "svgId": "CB",
+      "name": "Cao Bằng"
+    },
+    {
+      "id": "dien-bien",
+      "svgId": "DB",
+      "name": "Điện Biên"
+    },
+    {
+      "id": "dong-nai",
+      "svgId": "DN",
+      "name": "Đồng Nai"
+    },
+    {
+      "id": "gia-lai",
+      "svgId": "GL",
+      "name": "Gia Lai"
+    },
+    {
+      "id": "ha-tinh",
+      "svgId": "HT",
+      "name": "Hà Tĩnh"
+    },
+    {
+      "id": "hai-phong",
+      "svgId": "HP",
+      "name": "Hải Phòng"
+    },
+    {
+      "id": "an-giang",
+      "svgId": "AG",
+      "name": "An Giang"
+    },
+    {
+      "id": "lao-cai",
+      "svgId": "LC",
+      "name": "Lào Cai"
+    },
+    {
+      "id": "lam-dong",
+      "svgId": "LD",
+      "name": "Lâm Đồng"
+    },
+    {
+      "id": "lang-son",
+      "svgId": "LS",
+      "name": "Lạng Sơn"
+    },
+    {
+      "id": "nghe-an",
+      "svgId": "NA",
+      "name": "Nghệ An"
+    },
+    {
+      "id": "ninh-binh",
+      "svgId": "NB",
+      "name": "Ninh Bình"
+    },
+    {
+      "id": "khanh-hoa",
+      "svgId": "KH",
+      "name": "Khánh Hòa"
+    },
+    {
+      "id": "dak-lak",
+      "svgId": "DL",
+      "name": "Đắk Lắk"
+    },
+    {
+      "id": "da-nang",
+      "svgId": "DN_2",
+      "name": "Đà Nẵng"
+    },
+    {
+      "id": "hue",
+      "svgId": "H",
+      "name": "Huế"
+    },
+    {
+      "id": "quang-ngai",
+      "svgId": "QN",
+      "name": "Quảng Ngãi"
+    },
+    {
+      "id": "quang-ninh",
+      "svgId": "QN_2",
+      "name": "Quảng Ninh"
+    },
+    {
+      "id": "can-tho",
+      "svgId": "CT",
+      "name": "Cần Thơ"
+    },
+    {
+      "id": "son-la",
+      "svgId": "SL",
+      "name": "Sơn La"
+    },
+    {
+      "id": "tay-ninh",
+      "svgId": "TN",
+      "name": "Tây Ninh"
+    },
+    {
+      "id": "hung-yen",
+      "svgId": "HY",
+      "name": "Hưng Yên"
+    },
+    {
+      "id": "thai-nguyen",
+      "svgId": "TN_2",
+      "name": "Thái Nguyên"
+    },
+    {
+      "id": "thanh-hoa",
+      "svgId": "TH",
+      "name": "Thanh Hóa"
+    },
+    {
+      "id": "quang-tri",
+      "svgId": "QN_3",
+      "name": "Quảng Trị"
+    },
+    {
+      "id": "dong-thap",
+      "svgId": "DT",
+      "name": "Đồng Tháp"
+    },
+    {
+      "id": "ho-chi-minh",
+      "svgId": "HCM",
+      "name": "Thành phố Hồ Chí Minh"
+    },
+    {
+      "id": "tuyen-quang",
+      "svgId": "TQ",
+      "name": "Tuyên Quang"
+    },
+    {
+      "id": "vinh-long",
+      "svgId": "VL",
+      "name": "Vĩnh Long"
+    },
+    {
+      "id": "phu-tho",
+      "svgId": "PT",
+      "name": "Phú Thọ"
+    },
+    {
+      "id": "lai-chau",
+      "svgId": "LC_2",
+      "name": "Lai Châu"
+    },
+    {
+      "id": "ha-noi",
+      "svgId": "HN",
+      "name": "Hà Nội"
+    }
+  ],
+  "HANOI_DONATION_LOCATIONS": [
+    {
+      "id": "tan-trieu",
+      "regionId": "ha-noi",
+      "label": "Viện K Tân Triều",
+      "title": "Viện K Tân Triều",
+      "image": "/assets/images/community/community-location-tan-trieu.png",
+      "description": [
+        "Mái ấm An Yên là ngôi nhà 0 đồng dành cho bệnh nhân và người nhà bệnh nhân có hoàn cảnh khó khăn, mang đến nơi lưu trú miễn phí, an toàn và ấm áp trong thời gian điều trị tại Hà Nội.",
+        "Bên cạnh việc hỗ trợ chỗ ở, Mái ấm An Yên còn duy trì các bữa cơm thiện nguyện được nấu và phát vào thứ Tư và Chủ Nhật hằng tuần tại Bệnh viện K Tân Triều, góp phần sẻ chia gánh nặng với những người đang trên hành trình chiến đấu với bệnh tật."
+      ],
+      "summary": "Mái ấm An Yên phát cơm thiện nguyện cho bệnh nhân và người nhà theo lịch cố định.",
+      "emphasis": "Một mái nhà bình yên – Một điểm tựa yêu thương. ♥",
+      "schedule": "Thứ Tư & Chủ Nhật (hàng tuần)",
+      "address": "Viện K Tân Triều, Số 30 Cầu Bươu, Phường Thanh Liệt, Thành phố Hà Nội.",
+      "contactName": "Mái ấm An Yên",
+      "phone": "Đang cập nhật",
+      "status": "ACTIVE",
+      "mapTopPercent": 47.7,
+      "mapLeftPercent": 61.47
+    },
+    {
+      "id": "ung-buou-ha-noi",
+      "regionId": "ha-noi",
+      "label": "Bệnh viện Ung Bướu Hà Nội",
+      "title": "Bệnh viện Ung Bướu Hà Nội",
+      "image": "/assets/images/community/community-location-ung-buou-ha-noi.png",
+      "description": [
+        "Cứ vào mỗi sáng thứ Bảy hằng tuần, Bếp chay Từ Ân tổ chức hoạt động phát cơm chay 0 đồng cho các bệnh nhân đang điều trị tại Bệnh viện Ung Bướu Hà Nội.",
+        "Bếp chay Từ Ân là dự án tặng cơm chay 0 đồng cho bệnh nhân, người nghèo và người có hoàn cảnh khó khăn. Những hộp cơm, bát cháo ấm tình người không chỉ là sự động viên mà còn giúp người bệnh vơi bớt khó khăn và an tâm điều trị."
+      ],
+      "summary": "Bếp chay Từ Ân phát cơm chay 0 đồng cho bệnh nhân theo lịch cố định.",
+      "schedule": "Sáng thứ Bảy (hàng tuần)",
+      "address": "Bệnh viện Ung Bướu Hà Nội, Số 42A Thanh Nhàn, Phường Bạch Mai, Thành phố Hà Nội.",
+      "contactName": "Bếp chay Từ Ân",
+      "phone": "Đang cập nhật",
+      "status": "ACTIVE",
+      "mapTopPercent": 42.98,
+      "mapLeftPercent": 65.07
+    },
+    {
+      "id": "vien-y-hoc-quan-doi",
+      "regionId": "ha-noi",
+      "label": "Viện Y học phóng xạ và Ung bướu Quân đội",
+      "title": "Viện Y học phóng xạ và Ung bướu Quân đội",
+      "image": "/assets/images/community/community-location-army-hospital.png",
+      "description": [
+        "Từ gần một năm nay, “cơm thiện nguyện” đã trở nên quen thuộc với các bệnh nhân nghèo điều trị tại Viện Y học phóng xạ và Ung bướu Quân đội, quận Hoàng Mai (Hà Nội). Chỉ đơn giản với vài ba món chay và cơm trắng, những “đầu bếp” cao tuổi đến từ miền Tây của bếp cơm “Từ Tâm” đang truyền đi giá trị lớn hơn cả hành động “Lá lành đùm lá rách”: đó là tấm lòng của người nghèo vì người nghèo."
+      ],
+      "summary": "Bếp cơm Từ Tâm hỗ trợ cơm thiện nguyện cho bệnh nhân theo lịch cố định.",
+      "schedule": "Các ngày trong tuần",
+      "address": "Viện Y học phóng xạ và Ung bướu Quân đội, Số 18 Định Công Thượng, Phường Định Công, Thành phố Hà Nội.",
+      "contactName": "Bếp cơm Từ Tâm",
+      "phone": "Đang cập nhật",
+      "status": "ACTIVE",
+      "mapTopPercent": 41.56,
+      "mapLeftPercent": 70.13
+    }
+  ]
+}

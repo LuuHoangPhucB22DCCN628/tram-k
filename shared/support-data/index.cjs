@@ -1,0 +1,6 @@
+const {
+  DONATION_MAP_REGIONS,
+  HANOI_DONATION_LOCATIONS,
+} = require("./data.json");
+
+module.exports = { DONATION_MAP_REGIONS, HANOI_DONATION_LOCATIONS };

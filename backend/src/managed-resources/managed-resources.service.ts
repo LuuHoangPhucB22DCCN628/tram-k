@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
 import {
   ManagedResourceStatus,
+  NotificationKind,
   Prisma,
   RoleName,
   SearchDocumentType,
@@ -12,8 +14,11 @@ import {
 } from "@prisma/client";
 
 import { AuthenticatedUser } from "../auth/auth-user.interface";
+import { NotificationsService } from "../notifications/notifications.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SearchService } from "../search/search.service";
+import { parseRecurringLocationSchedule, parseStructuredSupportSchedule,
+  scheduleHasUpcomingOccurrence } from "../search/support-schedule";
 import { UpsertManagedResourceDto } from "./dto/upsert-managed-resource.dto";
 
 @Injectable()
@@ -21,6 +26,7 @@ export class ManagedResourcesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly search: SearchService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async listPublished(type?: SearchDocumentType) {
@@ -117,10 +123,31 @@ export class ManagedResourcesService {
     dto: UpsertManagedResourceDto,
   ) {
     await this.assertCanWrite(actor, type, dto);
+    if (type === SearchDocumentType.DONATION_LOCATION) {
+      this.validateDonationLocationGps(dto.payload);
+      if ((dto.payload["weekdays"] || dto.payload["startTime"] || dto.payload["endTime"]) &&
+        !parseRecurringLocationSchedule(dto.payload)) {
+        throw new BadRequestException("Lịch điểm tiếp nhận cần có thứ trong tuần và giờ bắt đầu, kết thúc hợp lệ.");
+      }
+    }
+    if (type === SearchDocumentType.SUPPORT_PROGRAM && dto.status !== ManagedResourceStatus.REJECTED) {
+      this.validateSupportProgramAddress(dto.payload);
+      if (dto.status === ManagedResourceStatus.PENDING || dto.payload["scheduleType"]) {
+        const schedule = parseStructuredSupportSchedule(dto.payload);
+        if (!schedule || !scheduleHasUpcomingOccurrence(schedule)) {
+          throw new BadRequestException("Vui lòng chọn ngày, khung giờ và thời hạn hỗ trợ hợp lệ trong tương lai.");
+        }
+      }
+    }
     const normalizedSourceId = sourceId.trim();
     const publishedAt = new Date(dto.publishedAt);
 
     return this.prisma.$transaction(async (transaction) => {
+      const previous = type === SearchDocumentType.SUPPORT_PROGRAM
+        ? await transaction.managedResource.findUnique({
+          where: { type_sourceId: { type, sourceId: normalizedSourceId } },
+          select: { status: true },
+        }) : null;
       const resource = await transaction.managedResource.upsert({
         where: { type_sourceId: { type, sourceId: normalizedSourceId } },
         create: {
@@ -141,7 +168,10 @@ export class ManagedResourcesService {
         },
       });
 
-      if (dto.status === ManagedResourceStatus.PUBLISHED) {
+      if (type === SearchDocumentType.DONATION_LOCATION) {
+        // Map locations are found via their region map, not the article search index.
+        await this.search.deactivate(type, normalizedSourceId, transaction);
+      } else if (dto.status === ManagedResourceStatus.PUBLISHED) {
         await this.search.upsert(
           {
             sourceId: normalizedSourceId,
@@ -163,6 +193,27 @@ export class ManagedResourcesService {
         await this.search.deactivate(type, normalizedSourceId, transaction);
       }
 
+      if (actor.role === RoleName.ADMIN && type === SearchDocumentType.SUPPORT_PROGRAM &&
+        previous?.status === ManagedResourceStatus.PENDING &&
+        (dto.status === ManagedResourceStatus.PUBLISHED || dto.status === ManagedResourceStatus.REJECTED)) {
+        const ownerId = dto.payload["ownerId"];
+        if (typeof ownerId === "string" && ownerId) {
+          const approved = dto.status === ManagedResourceStatus.PUBLISHED;
+          const reason = typeof dto.payload["reviewReason"] === "string"
+            ? dto.payload["reviewReason"].trim() : "";
+          await this.notifications.create({
+            recipientId: ownerId,
+            kind: approved ? NotificationKind.PROGRAM_PUBLISHED : NotificationKind.PROGRAM_REJECTED,
+            title: approved ? "Chương trình đã được xuất bản" : "Chương trình cần chỉnh sửa",
+            message: approved
+              ? `Chương trình “${resource.title}” đã được duyệt và hiển thị công khai.`
+              : `Chương trình “${resource.title}” chưa được duyệt.${reason ? ` Lý do: ${reason}` : ""}`,
+            link: `/doi-tac/quan-ly-chuong-trinh?program=${encodeURIComponent(normalizedSourceId)}`,
+            dedupeKey: `program-review:${normalizedSourceId}:${dto.status}:${resource.updatedAt.getTime()}`,
+          }, transaction);
+        }
+      }
+
       return {
         sourceId: resource.sourceId,
         type: resource.type,
@@ -172,21 +223,69 @@ export class ManagedResourcesService {
     });
   }
 
+  private validateDonationLocationGps(payload: Record<string, unknown>): void {
+    const latitude = payload["latitude"];
+    const longitude = payload["longitude"];
+    if (typeof latitude !== "number" || !Number.isFinite(latitude)) {
+      throw new BadRequestException("Chưa điền vĩ độ GPS hợp lệ.");
+    }
+    if (latitude < -90 || latitude > 90) {
+      throw new BadRequestException("Vĩ độ GPS phải từ -90 đến 90.");
+    }
+    if (typeof longitude !== "number" || !Number.isFinite(longitude)) {
+      throw new BadRequestException("Chưa điền kinh độ GPS hợp lệ.");
+    }
+    if (longitude < -180 || longitude > 180) {
+      throw new BadRequestException("Kinh độ GPS phải từ -180 đến 180.");
+    }
+  }
+
+  private validateSupportProgramAddress(payload: Record<string, unknown>): void {
+    const address = payload["address"];
+    if (typeof address !== "string" || !address.trim()) {
+      throw new BadRequestException("Vui lòng nhập địa chỉ tổ chức cụ thể.");
+    }
+    const value = address.trim().replace(/\s+/g, " ");
+    if (value.length < 10 || value.length > 250 || !/\S+\s+\S+/.test(value) || /(.)\1{5,}/i.test(value)) {
+      throw new BadRequestException("Địa chỉ tổ chức chưa đủ cụ thể hoặc chứa nội dung thử nghiệm.");
+    }
+  }
+
   async remove(
     actor: AuthenticatedUser,
     type: SearchDocumentType,
     sourceId: string,
-  ): Promise<void> {
+  ): Promise<{ deletedRegistrations: number }> {
     const resource = await this.prisma.managedResource.findUnique({
       where: { type_sourceId: { type, sourceId } },
     });
     if (!resource)
       throw new NotFoundException("Không tìm thấy nội dung đồng bộ.");
-    await this.assertCanDelete(actor, resource.type, resource.payload);
+    await this.assertCanDelete(actor, resource.type, resource.status, resource.payload);
 
-    await this.prisma.$transaction(async (transaction) => {
+    return this.prisma.$transaction(async (transaction) => {
+      const recipients = type === SearchDocumentType.SUPPORT_PROGRAM
+        ? await transaction.supportProgramRegistration.findMany({
+          where: { programId: sourceId }, select: { userId: true },
+        }) : [];
+      const registrations = type === SearchDocumentType.SUPPORT_PROGRAM
+        ? await transaction.supportProgramRegistration.deleteMany({ where: { programId: sourceId } })
+        : { count: 0 };
       await transaction.managedResource.delete({ where: { id: resource.id } });
       await this.search.deactivate(type, sourceId, transaction);
+      if (actor.role === RoleName.ADMIN && type === SearchDocumentType.SUPPORT_PROGRAM) {
+        for (const userId of new Set(recipients.map((item) => item.userId))) {
+          await this.notifications.create({
+            recipientId: userId,
+            kind: NotificationKind.PROGRAM_DELETED,
+            title: "Chương trình hỗ trợ đã được xóa",
+            message: `Chương trình “${resource.title}” đã được Trạm K xóa. Hồ sơ đăng ký của bạn cho chương trình này cũng đã được xóa.`,
+            link: "/cong-dong/chuong-trinh-ho-tro",
+            dedupeKey: `program-deleted:${sourceId}:${userId}`,
+          }, transaction);
+        }
+      }
+      return { deletedRegistrations: registrations.count };
     });
   }
 
@@ -221,6 +320,7 @@ export class ManagedResourcesService {
   private async assertCanDelete(
     actor: AuthenticatedUser,
     type: SearchDocumentType,
+    status: ManagedResourceStatus,
     payload: Prisma.JsonValue,
   ): Promise<void> {
     const user = await this.activeUser(actor.id);
@@ -231,6 +331,7 @@ export class ManagedResourcesService {
         : null;
     if (
       type !== SearchDocumentType.SUPPORT_PROGRAM ||
+      status !== ManagedResourceStatus.PENDING ||
       !user.partnerMembership ||
       ownerId !== actor.id
     ) {

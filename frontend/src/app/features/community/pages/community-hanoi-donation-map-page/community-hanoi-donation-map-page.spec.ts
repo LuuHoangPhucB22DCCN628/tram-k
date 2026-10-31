@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 
-import { AuthService } from '@core/auth/auth.service';
 import { HANOI_DONATION_LOCATIONS } from '../../data/hanoi-donation-locations.data';
 import { CommunityLocationAdminStorageService } from '../../services/community-location-admin-storage.service';
 import { CommunityHanoiDonationMapPage } from './community-hanoi-donation-map-page';
@@ -36,14 +35,12 @@ describe('CommunityHanoiDonationMapPage', () => {
     expect(element.querySelectorAll('app-community-location-pin')).toHaveLength(3);
   });
 
-  it('opens the matching Figma detail and redirects a guest to login before registration', async () => {
+  it('opens the matching detail with fixed schedule and directions but no registration', async () => {
     await TestBed.configureTestingModule({
       imports: [CommunityHanoiDonationMapPage],
       providers: [provideRouter([])],
     }).compileComponents();
     const fixture = TestBed.createComponent(CommunityHanoiDonationMapPage);
-    const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
@@ -57,42 +54,14 @@ describe('CommunityHanoiDonationMapPage', () => {
       'Viện Y học phóng xạ và Ung bướu Quân đội',
     );
 
-    element.querySelector<HTMLButtonElement>('.location-dialog__register')?.click();
-    expect(navigateSpy).toHaveBeenCalledWith(['/dang-nhap'], {
-      queryParams: {
-        returnUrl: '/cong-dong/diem-quyen-gop/ha-noi?location=vien-y-hoc-quan-doi',
-      },
-    });
-  });
-
-  it('stores a member registration once and disables duplicate registration', async () => {
-    await TestBed.configureTestingModule({
-      imports: [CommunityHanoiDonationMapPage],
-      providers: [provideRouter([])],
-    }).compileComponents();
-    const auth = TestBed.inject(AuthService);
-    vi.spyOn(auth, 'currentUser').mockReturnValue({
-      id: 'member-1',
-      displayName: 'Thành viên',
-      email: 'member@tramk.vn',
-      role: 'PATIENT',
-    });
-    vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
-    vi.spyOn(auth, 'hasRole').mockReturnValue(true);
-
-    const fixture = TestBed.createComponent(CommunityHanoiDonationMapPage);
-    fixture.detectChanges();
-    const element = fixture.nativeElement as HTMLElement;
-    element.querySelector<HTMLButtonElement>('.hanoi-map-hero__marker')?.click();
-    fixture.detectChanges();
-
-    const registerButton = element.querySelector<HTMLButtonElement>('.location-dialog__register')!;
-    registerButton.click();
-    fixture.detectChanges();
-
-    expect(registerButton.disabled).toBe(true);
-    expect(registerButton.textContent?.trim()).toBe('Đã đăng ký');
-    expect(element.textContent).toContain('Đăng ký thành công');
+    const directions = element.querySelector<HTMLAnchorElement>('.location-dialog__directions');
+    expect(directions?.href).toBe(
+      `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(HANOI_DONATION_LOCATIONS[2].address)}`,
+    );
+    expect(directions?.target).toBe('_blank');
+    expect(directions?.rel).toContain('noopener');
+    expect(element.textContent).toContain('không cần đăng ký trước');
+    expect(element.querySelector('.location-dialog__register')).toBeNull();
   });
 
   it('renders only active locations assigned to the route region', async () => {
@@ -128,8 +97,69 @@ describe('CommunityHanoiDonationMapPage', () => {
 
     expect(element.querySelectorAll('.hanoi-map-hero__marker')).toHaveLength(1);
     expect(element.querySelector<HTMLImageElement>('.hanoi-map-hero__map')?.src).toContain(
-      'community-donation-map.svg',
+      'community-region-hue.svg',
     );
     expect(element.querySelector('.hanoi-map-hero')?.getAttribute('aria-label')).toContain('Huế');
+  });
+
+  it('routes to GPS coordinates when an admin supplies both coordinates', async () => {
+    await TestBed.configureTestingModule({
+      imports: [CommunityHanoiDonationMapPage],
+      providers: [provideRouter([])],
+    }).compileComponents();
+    const storage = TestBed.inject(CommunityLocationAdminStorageService);
+    storage.save(
+      HANOI_DONATION_LOCATIONS.map((item) => item.id),
+      { ...HANOI_DONATION_LOCATIONS[0], latitude: 21.03, longitude: 105.79 },
+    );
+    const fixture = TestBed.createComponent(CommunityHanoiDonationMapPage);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    element.querySelector<HTMLButtonElement>('.hanoi-map-hero__marker')?.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector<HTMLAnchorElement>('.location-dialog__directions')?.href).toBe(
+      'https://www.google.com/maps/dir/?api=1&destination=21.03%2C105.79',
+    );
+  });
+
+  it('opens a deep-linked location after the server data arrives', async () => {
+    await TestBed.configureTestingModule({
+      imports: [CommunityHanoiDonationMapPage],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({ regionId: 'hue' }),
+              queryParamMap: convertToParamMap({ location: 'hue-location' }),
+            },
+          },
+        },
+      ],
+    }).compileComponents();
+    const storage = TestBed.inject(CommunityLocationAdminStorageService);
+    const fixture = TestBed.createComponent(CommunityHanoiDonationMapPage);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.location-dialog')).toBeNull();
+
+    storage.save(
+      HANOI_DONATION_LOCATIONS.map((item) => item.id),
+      {
+        ...HANOI_DONATION_LOCATIONS[0],
+        id: 'hue-location',
+        regionId: 'hue',
+        title: 'Điểm tiếp nhận Huế',
+        label: 'Điểm tiếp nhận Huế',
+      },
+    );
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.location-dialog h2')?.textContent,
+    ).toContain('Điểm tiếp nhận Huế');
   });
 });

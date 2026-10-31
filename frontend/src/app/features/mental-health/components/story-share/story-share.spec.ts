@@ -16,12 +16,16 @@ describe('StoryShare', () => {
     user.set({ id: 'member-1', displayName: 'Mai', role: 'PATIENT' });
     posts.set([]);
     create.mockReset();
+    create.mockResolvedValue({ id: 'saved-story' });
     await TestBed.configureTestingModule({
       imports: [StoryShare],
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: { currentUser: user } },
-        { provide: MemberPostStorageService, useValue: { create, posts } },
+        {
+          provide: MemberPostStorageService,
+          useValue: { createConfirmed: create, publishedPosts: posts, initializePublic: vi.fn() },
+        },
       ],
     }).compileComponents();
   });
@@ -107,6 +111,55 @@ describe('StoryShare', () => {
     expect(element.querySelectorAll('.shared-story')).toHaveLength(2);
     expect(pageTwo.getAttribute('aria-current')).toBe('page');
   });
+  it('links a published author profile and shows the saved avatar', () => {
+    user.set({
+      id: 'member-1',
+      displayName: 'Mai',
+      role: 'PATIENT',
+      avatarUrl: 'data:image/png;base64,YWJj',
+    });
+    posts.set([
+      {
+        id: 'published-story-1',
+        userId: 'member-1',
+        authorName: 'Mai',
+        title: 'Câu chuyện của Mai',
+        content: 'Nội dung câu chuyện đã được duyệt và chia sẻ.',
+        status: 'PUBLISHED',
+        createdAt: '2026-10-01T08:00:00.000Z',
+        updatedAt: '2026-10-02T08:00:00.000Z',
+        reviewedAt: '2026-10-03T08:00:00.000Z',
+      },
+    ]);
+    const { fixture } = setup();
+    const card = (fixture.nativeElement as HTMLElement).querySelector('.shared-story')!;
+    expect(card.querySelector('a[aria-label="Xem hồ sơ Mai"]')?.getAttribute('href')).toBe(
+      '/ho-so/member-1',
+    );
+    expect(card.querySelector('app-member-avatar img')?.getAttribute('src')).toBe(
+      'data:image/png;base64,YWJj',
+    );
+  });
+  it('does not offer another member’s private profile or avatar to visitors', () => {
+    user.set(null);
+    posts.set([
+      {
+        id: 'private-author-story',
+        userId: 'member-private',
+        authorName: 'Tác giả',
+        profileVisibility: 'PRIVATE',
+        title: 'Câu chuyện riêng',
+        content: 'Nội dung câu chuyện đã được duyệt và chia sẻ.',
+        status: 'PUBLISHED',
+        createdAt: '2026-10-01T08:00:00.000Z',
+        updatedAt: '2026-10-02T08:00:00.000Z',
+      },
+    ]);
+    const { fixture } = setup();
+    const card = (fixture.nativeElement as HTMLElement).querySelector('.shared-story')!;
+    expect(card.querySelector('a[aria-label^="Xem hồ sơ"]')).toBeNull();
+    expect(card.querySelector('app-member-avatar img')).toBeNull();
+  });
   it('rejects whitespace-only text and requires consent for submission', () => {
     const { component } = setup();
     component.save('PENDING');
@@ -115,10 +168,10 @@ describe('StoryShare', () => {
     component.save('PENDING');
     expect(create).not.toHaveBeenCalled();
   });
-  it('saves a trimmed draft without public consent and prevents duplicate submissions', () => {
+  it('saves a trimmed draft without public consent and prevents duplicate submissions', async () => {
     const { component } = setup();
-    component.save('DRAFT');
-    component.save('DRAFT');
+    await component.save('DRAFT');
+    await component.save('DRAFT');
     expect(create).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledWith(
       'member-1',
@@ -126,11 +179,11 @@ describe('StoryShare', () => {
       'Mai',
     );
   });
-  it('submits for review and links to the correct account area', () => {
+  it('submits for review and links to the correct account area', async () => {
     user.set({ id: 'partner-1', displayName: 'Lan', role: 'PARTNER' });
     const { fixture, component } = setup();
     component.form.patchValue({ consent: true });
-    component.save('PENDING');
+    await component.save('PENDING');
     fixture.detectChanges();
     expect(create).toHaveBeenCalledWith(
       'partner-1',
@@ -139,41 +192,54 @@ describe('StoryShare', () => {
     );
     expect(fixture.nativeElement.querySelector('a').getAttribute('href')).toBe('/doi-tac/bai-viet');
   });
-  it('keeps the story if saving fails and permits retry', () => {
+  it('keeps the story if saving fails and permits retry', async () => {
     const { component } = setup();
     create.mockImplementationOnce(() => {
       throw new Error('quota');
     });
-    component.save('DRAFT');
+    await component.save('DRAFT');
     expect(component.form.controls.content.value).not.toBe('');
     expect(component.failed()).toBe(true);
-    component.save('DRAFT');
+    await component.save('DRAFT');
     expect(component.saved()).toBe(true);
   });
 
-  it('posts a comment and a reply under the selected story', () => {
+  it('posts a comment and a reply under the selected story', async () => {
     const { component } = setup();
     const story = component.sharedStories()[0];
     component.commentForm.setValue({ content: 'Cảm ơn bạn đã chia sẻ câu chuyện này.' });
-    component.submitComment(story);
+    await component.submitComment(story);
     const comments = TestBed.inject(MemberCommentStorageService);
     const parent = comments.commentsForSource(component.storyPath(story.id))[0];
     expect(parent.content).toContain('Cảm ơn');
     component.startReply(parent);
     component.commentForm.setValue({ content: 'Mình cũng muốn gửi một lời đồng hành.' });
-    component.submitComment(story);
+    await component.submitComment(story);
     expect(component.repliesFor(story, parent.id)).toHaveLength(1);
   });
 
-  it('toggles or changes a single reaction for the current account', () => {
+  it('reports a failed new comment as a comment failure, not a reply failure', async () => {
+    const { component } = setup();
+    const comments = TestBed.inject(MemberCommentStorageService);
+    vi.spyOn(comments, 'createConfirmed').mockResolvedValueOnce(false);
+    component.commentForm.setValue({ content: 'alo' });
+
+    await component.submitComment(component.sharedStories()[0]);
+
+    expect(component.discussionNotice()).toContain('Không thể đăng bình luận');
+    expect(component.discussionNotice()).not.toContain('trả lời');
+    expect(component.commentForm.controls.content.value).toBe('alo');
+  });
+
+  it('toggles or changes a single reaction for the current account', async () => {
     const { component } = setup();
     const story = component.sharedStories()[0];
-    component.toggleReaction(story, 'LIKE');
-    component.toggleReaction(story, 'LOVE');
+    await component.toggleReaction(story, 'LIKE');
+    await component.toggleReaction(story, 'LOVE');
     const reactions = TestBed.inject(CommunityReactionStorageService);
     expect(reactions.reactions()).toHaveLength(1);
     expect(component.selectedReaction(story)).toBe('LOVE');
-    component.toggleReaction(story, 'LOVE');
+    await component.toggleReaction(story, 'LOVE');
     expect(component.selectedReaction(story)).toBeNull();
   });
 });

@@ -21,6 +21,13 @@ describe('HomePage', () => {
     expect(component).toBeTruthy();
   });
 
+  it('uses the existing guide image instead of a duplicate homepage copy', () => {
+    const firstGuide = (fixture.nativeElement as HTMLElement).querySelector<HTMLImageElement>(
+      '.guide-card__photo img',
+    );
+    expect(firstGuide?.getAttribute('src')).toBe('/assets/images/guides/care-01.png');
+  });
+
   it('renders every main homepage section', () => {
     const element = fixture.nativeElement as HTMLElement;
     const headings = Array.from(element.querySelectorAll('h1, h2')).map((heading) =>

@@ -1,0 +1,39 @@
+<section class="kitchen-hero" aria-labelledby="kitchen-title">
+  <img
+    class="kitchen-hero__art"
+    appReveal="left"
+    src="/assets/images/stories/kitchen-visual.png"
+    alt="Các tình nguyện viên Bếp An Yên chuẩn bị suất cơm cho bệnh nhân Bệnh viện K Tân Triều"
+  />
+  <div class="kitchen-hero__content" appReveal="right" [revealDelay]="100">
+    <img
+      class="kitchen-hero__title-art"
+      src="/assets/images/stories/kitchen-title.svg"
+      alt=""
+      aria-hidden="true"
+    />
+    <p class="kitchen-hero__subtitle">Bếp An Yên - cho đi là còn mãi</p>
+    @if (showCta) {
+      <h2 id="kitchen-title" class="kitchen-hero__semantic-title">
+        Nơi tình người sưởi ấm bệnh nhân viện K
+      </h2>
+    } @else {
+      <h1 id="kitchen-title" class="kitchen-hero__semantic-title">
+        Nơi tình người sưởi ấm bệnh nhân viện K
+      </h1>
+    }
+    <p class="kitchen-hero__intro">
+      “Trái tim có những lý lẽ mà lí trí không bao giờ biết tới”. Câu nói khuyết danh ấy dường như
+      là lời giải đáp hoàn hảo nhất cho câu hỏi: Tại sao giữa cuộc sống hối hả, xô bồ và đầy rẫy
+      những lo toan cá nhân, lại có những con người sẵn sàng dành trọn tâm huyết, thời gian và sức
+      lực của mình vì người khác? Câu trả lời ấy đang được viết lên mỗi ngày bởi chị Nguyễn Thị Vân
+      và những cộng sự tại “Bếp An Yên” – một trạm dừng chân ấm áp nằm kề bên Bệnh viện K Tân Triều.
+    </p>
+    @if (showCta) {
+      <a class="kitchen-hero__button" routerLink="/cau-chuyen/bep-an-yen">
+        <span>Đọc thêm</span>
+        <img src="/assets/images/stories/arrow-light.svg" alt="" aria-hidden="true" />
+      </a>
+    }
+  </div>
+</section>

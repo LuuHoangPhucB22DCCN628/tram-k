@@ -1,0 +1,78 @@
+<section class="hair-lookup">
+  <header class="hair-lookup__header">
+    <p>HIẾN VÀ NHẬN TÓC</p>
+    <h1>Tra cứu mã đăng ký</h1>
+    <span>Kiểm tra tiến độ hồ sơ hiến hoặc nhận tóc đã gửi bằng tài khoản của bạn.</span>
+  </header>
+
+  <div class="hair-lookup__card">
+    <form (submit)="lookup($event)">
+      <label for="hair-reference">Mã đăng ký</label>
+      <div class="hair-lookup__input-row">
+        <input
+          id="hair-reference"
+          type="text"
+          [value]="code()"
+          (input)="onCodeInput($event)"
+          placeholder="TK-YYYYMMDD-XXXXXXXX"
+          autocomplete="off"
+          autocapitalize="characters"
+          [attr.aria-invalid]="error() ? true : null"
+          [attr.aria-describedby]="error() ? 'hair-lookup-error' : 'hair-lookup-hint'"
+        />
+        <button type="submit" [disabled]="loading()">
+          {{ loading() ? 'Đang tra cứu...' : 'Tra cứu' }}
+        </button>
+      </div>
+      <small id="hair-lookup-hint"
+        >Mã được cấp ngay sau khi gửi đăng ký và có trong thông báo của bạn.</small
+      >
+      @if (error()) {
+        <p id="hair-lookup-error" class="hair-lookup__error" role="alert">{{ error() }}</p>
+        @if (reconnectRequired()) {
+          <button class="hair-lookup__reconnect" type="button" (click)="reconnect()">
+            Đăng nhập lại để tra cứu
+          </button>
+        }
+      }
+    </form>
+
+    @if (result(); as registration) {
+      <section class="hair-lookup__result" aria-live="polite">
+        <div class="hair-lookup__result-heading">
+          <div>
+            <p>HỒ SƠ {{ modeLabel(registration.mode) }}</p>
+            <h2>{{ registration.reference }}</h2>
+          </div>
+          <span
+            class="hair-lookup__status hair-lookup__status--{{ registration.status.toLowerCase() }}"
+          >
+            {{ statusLabel(registration.status) }}
+          </span>
+        </div>
+        <dl>
+          <div>
+            <dt>Ngày gửi</dt>
+            <dd>{{ registration.submittedAt | date: 'dd/MM/yyyy, HH:mm' }}</dd>
+          </div>
+          <div>
+            <dt>Cập nhật lần cuối</dt>
+            <dd>{{ registration.updatedAt | date: 'dd/MM/yyyy, HH:mm' }}</dd>
+          </div>
+        </dl>
+        @if (registration.rejectionReason) {
+          <p class="hair-lookup__reason">
+            <strong>Lý do từ chối:</strong> {{ registration.rejectionReason }}
+          </p>
+        }
+        @if (registration.status === 'PENDING') {
+          <p>Hồ sơ đã được tiếp nhận. Trạm K sẽ thông báo khi có kết quả xét duyệt.</p>
+        }
+      </section>
+    }
+  </div>
+
+  <a class="hair-lookup__back" routerLink="/cong-dong" fragment="community-hair-library"
+    >← Quay lại Thư viện tóc</a
+  >
+</section>

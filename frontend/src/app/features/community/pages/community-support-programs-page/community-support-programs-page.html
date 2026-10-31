@@ -46,7 +46,7 @@
             <div class="support-program-card__body">
               <div class="support-program-card__meta">
                 <span>{{ program.city }}</span>
-                <span>{{ program.capacity }} suất/người mỗi đợt</span>
+                <span>{{ program.capacity }} chỗ đăng ký cho cả chương trình</span>
               </div>
               <h2>{{ program.title }}</h2>
               <p>{{ program.description }}</p>
@@ -96,7 +96,14 @@
           </div>
           <div>
             <dt>Địa điểm</dt>
-            <dd>{{ program.address }}, {{ program.city }}</dd>
+            <dd>
+              @if (addressIsUsable(program.address)) {
+                {{ program.address }}, {{ program.city }}
+                <a [href]="directionsUrl(program)" target="_blank" rel="noopener noreferrer">Chỉ đường bằng Google Maps ↗</a>
+              } @else {
+                Địa chỉ chi tiết đang được xác minh tại {{ program.city }}. Vui lòng liên hệ đơn vị tổ chức trước khi đến.
+              }
+            </dd>
           </div>
           <div>
             <dt>Thời gian</dt>
@@ -104,7 +111,11 @@
           </div>
           <div>
             <dt>Quy mô</dt>
-            <dd>{{ program.capacity }} suất/người mỗi đợt</dd>
+            <dd>{{ program.capacity }} chỗ đăng ký cho cả chương trình</dd>
+          </div>
+          <div>
+            <dt>Đối tượng / điều kiện</dt>
+            <dd>{{ eligibilityLabel(program) }}</dd>
           </div>
           <div>
             <dt>Liên hệ</dt>
@@ -131,7 +142,7 @@
         <button
           type="button"
           class="support-program-dialog__button support-program-dialog__button--primary"
-          [disabled]="selectedProgramRegistered() || selectedProgramFull()"
+          [disabled]="selectedProgramRegistered() || selectedProgramFull() || selectedProgramEnded()"
           (click)="registerForProgram()"
         >
           {{ programRegistrationLabel() }}

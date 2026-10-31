@@ -63,4 +63,36 @@ describe('AiChatWidget', () => {
       '/cam-nang',
     );
   });
+
+  it('keeps program query parameters in clickable recommendation links', async () => {
+    api.ask.mockReturnValue(
+      of({
+        answer: 'Có chương trình phù hợp.',
+        mode: 'LOCAL',
+        disclaimer: '',
+        sources: [
+          {
+            title: 'Bữa cơm yêu thương',
+            link: '/cong-dong/chuong-trinh-ho-tro?program=meal-1',
+            type: 'SUPPORT_PROGRAM',
+          },
+        ],
+        suggestedQuestions: [],
+      }),
+    );
+    const element = fixture.nativeElement as HTMLElement;
+    element.querySelector<HTMLButtonElement>('.ai-widget__launcher')!.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const textarea = element.querySelector<HTMLTextAreaElement>('#ai-widget-message')!;
+    textarea.value = 'Tìm chương trình hỗ trợ';
+    textarea.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('.ai-widget__input-row > button')!.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(
+      element.querySelector<HTMLAnchorElement>('.widget-message__sources a')?.getAttribute('href'),
+    ).toBe('/cong-dong/chuong-trinh-ho-tro?program=meal-1');
+  });
 });

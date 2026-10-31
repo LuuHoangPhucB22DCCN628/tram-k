@@ -10,6 +10,5 @@ import { PublicHeader } from '@shared/components/public-header/public-header'; /
   standalone: true,
   imports: [PublicHeader, PublicFooter, RouterOutlet, AiChatWidget], // Cho phép layout dùng header, footer, chat và router-outlet
   templateUrl: './public-layout.html',
-  styleUrl: './public-layout.scss',
 })
 export class PublicLayout {}

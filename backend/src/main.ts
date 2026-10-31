@@ -2,12 +2,15 @@ import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { json } from "express";
 
 import { AppModule } from "./app.module";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  // Ảnh đại diện 1 MB được gửi dưới dạng base64 (~1,4 MB). Chỉ nâng giới hạn cho hồ sơ.
+  app.use("/profile/me", json({ limit: "2mb" }));
   const config = app.get(ConfigService);
   const port = config.get<number>("PORT", 3000);
   const configuredOrigins = config

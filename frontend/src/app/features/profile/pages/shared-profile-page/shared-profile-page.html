@@ -1,0 +1,27 @@
+<section class="shared-profile" aria-labelledby="shared-profile-title">
+  <a routerLink="/goc-tam-ly" class="shared-profile__back">← Về câu chuyện cộng đồng</a>
+  @if (loading()) {
+    <p role="status">Đang tải hồ sơ…</p>
+  } @else if (profile(); as member) {
+    <article class="shared-profile__card">
+      <app-member-avatar [userId]="member.id" [name]="member.displayName" />
+      <div>
+        <p class="shared-profile__eyebrow">Hồ sơ thành viên</p>
+        <h1 id="shared-profile-title">{{ member.displayName }}</h1>
+        <p>{{ roleLabel(member.role) }}</p>
+        @if (member.city) {
+          <p>Tỉnh / Thành phố: {{ member.city }}</p>
+        }
+        @if (member.bio) {
+          <h2>Giới thiệu</h2>
+          <p class="shared-profile__bio">{{ member.bio }}</p>
+        }
+      </div>
+    </article>
+  } @else {
+    <div class="shared-profile__card" role="status">
+      <h1 id="shared-profile-title">Hồ sơ chưa khả dụng</h1>
+      <p>{{ error() }}</p>
+    </div>
+  }
+</section>

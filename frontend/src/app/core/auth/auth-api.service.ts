@@ -292,9 +292,7 @@ export class AuthApiService {
 
   private shouldUseMock(error: HttpErrorResponse): boolean {
     if (!environment.useMockAuthFallback) return false;
-    return (
-      error.status === 0 || error.status === 401 || error.status === 404 || error.status >= 500
-    );
+    return error.status === 0;
   }
 
   private mapError(error: HttpErrorResponse, fallbackCode: AuthApiError['code']): AuthApiError {

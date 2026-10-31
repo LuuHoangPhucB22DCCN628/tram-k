@@ -16,8 +16,8 @@ import { LoginForm } from '../../components/login-form/login-form';
 })
 export class LoginPage {
   private readonly auth = inject(AuthService);
-  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly isSubmitting = signal(false);
   protected readonly feedback = signal<AuthFeedback | null>(null);
@@ -29,7 +29,11 @@ export class LoginPage {
       next: () => {
         this.isSubmitting.set(false);
         this.feedback.set({ type: 'success', message: 'Đăng nhập thành công.' });
-        void this.router.navigateByUrl(this.safeReturnUrl());
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        const hairRegistrationRoute = /^\/cong-dong\/thu-vien-toc\/(?:nhan-toc|hien-toc)$/.test(
+          returnUrl ?? '',
+        );
+        void this.router.navigateByUrl(hairRegistrationRoute ? returnUrl! : '/');
       },
       error: (error: unknown) => {
         this.isSubmitting.set(false);
@@ -47,10 +51,5 @@ export class LoginPage {
       return 'Tài khoản không phù hợp với khu vực đăng nhập này.';
     }
     return 'Email hoặc mật khẩu không đúng.';
-  }
-
-  private safeReturnUrl(): string {
-    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-    return returnUrl?.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/';
   }
 }

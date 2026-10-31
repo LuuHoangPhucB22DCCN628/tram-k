@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { RevealDirective } from '../../../../shared/directives/reveal.directive';
 import { CommunityLoveTitle } from '../../components/community-love-title/community-love-title';
+import { AdminDonationsApiService, PublicDonationSummary } from '@features/admin/services/admin-donations-api.service';
 
 interface HairLibraryCard {
   readonly title: string;
@@ -46,6 +47,10 @@ interface DirectDonationBrand {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CommunityPage {
+  private readonly donationsApi = inject(AdminDonationsApiService);
+  private readonly donationSummary = signal<PublicDonationSummary | null>(null);
+  protected readonly donationsLoading = signal(true);
+  protected readonly donationsError = signal(false);
   private readonly donationDetails = [
     'Ngân hàng TMCP Ngoại thương Việt Nam',
     '123 567 890',
@@ -71,74 +76,30 @@ export class CommunityPage {
     },
   ];
 
-  protected readonly donationStats: readonly DonationStat[] = [
+  protected readonly donationStats = computed<readonly DonationStat[]>(() => [
     {
-      value: '12,8 tỷ',
+      value: this.donationSummary() ? `${new Intl.NumberFormat('vi-VN').format(BigInt(this.donationSummary()!.totalAmountVnd))} đ` : '—',
       label: 'Tổng đóng góp',
       icon: '/assets/images/community/community-stat-total.svg',
     },
     {
-      value: '4.268',
+      value: this.donationSummary() ? new Intl.NumberFormat('vi-VN').format(this.donationSummary()!.totalCount) : '—',
       label: 'Lượt quyên góp',
       icon: '/assets/images/community/community-stat-donations.svg',
     },
     {
-      value: '1.250+',
+      value: '—',
       label: 'Bệnh nhân được hỗ trợ',
       icon: '/assets/images/community/community-stat-patients.svg',
     },
-  ];
+  ]);
 
-  protected readonly donations: readonly DonationRow[] = [
-    {
-      id: '233098',
-      name: 'Nguyễn Minh Thu',
-      time: '18:36 · 03/06/2026',
-      amount: '5.000.000đ',
-    },
-    {
-      id: '233097',
-      name: 'Đào Thị Ánh Dương',
-      time: '18:20 · 03/06/2026',
-      amount: '100.000đ',
-    },
-    {
-      id: '233096',
-      name: 'Đặng Minh Phúc',
-      time: '17:12 · 03/06/2026',
-      amount: '50.000đ',
-    },
-    {
-      id: '233095',
-      name: 'Kiều Em',
-      time: '14:54 · 03/06/2026',
-      amount: '200.000đ',
-    },
-    {
-      id: '233094',
-      name: 'Hoàng Duy Anh',
-      time: '10:38 · 03/06/2026',
-      amount: '300.000đ',
-    },
-    {
-      id: '233093',
-      name: 'Chuối ngốk',
-      time: '23:09 · 02/06/2026',
-      amount: '1.000.000đ',
-    },
-    {
-      id: '233092',
-      name: 'Người quyên góp ẩn danh',
-      time: '18:36 · 02/06/2026',
-      amount: '500.000đ',
-    },
-    {
-      id: '233091',
-      name: 'Người quyên góp ẩn danh',
-      time: '23:09 · 02/06/2026',
-      amount: '1.000.000đ',
-    },
-  ];
+  protected readonly donations = computed<readonly DonationRow[]>(() => (this.donationSummary()?.items ?? []).map((entry) => ({
+    id: `QG-${entry.id.slice(-8).toUpperCase()}`,
+    name: entry.name,
+    time: new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(entry.occurredAt)),
+    amount: `${new Intl.NumberFormat('vi-VN').format(BigInt(entry.amountVnd))}đ`,
+  })));
 
   protected readonly fundDetails: readonly FundDetail[] = [
     {
@@ -214,6 +175,13 @@ export class CommunityPage {
   ];
 
   protected readonly copyLabel = signal('Sao chép thông tin');
+
+  constructor() {
+    this.donationsApi.publicList().subscribe({
+      next: (summary) => { this.donationSummary.set(summary); this.donationsLoading.set(false); },
+      error: () => { this.donationsError.set(true); this.donationsLoading.set(false); },
+    });
+  }
 
   protected async copyDonationDetails(): Promise<void> {
     try {

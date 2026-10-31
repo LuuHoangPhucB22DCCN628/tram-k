@@ -7,10 +7,12 @@ on:
   pull_request:
     paths:
       - "frontend/**"
+      - "shared/support-data/**"
       - ".github/workflows/frontend-ci.yml"
   push:
     paths:
       - "frontend/**"
+      - "shared/support-data/**"
       - ".github/workflows/frontend-ci.yml"
 
 jobs:

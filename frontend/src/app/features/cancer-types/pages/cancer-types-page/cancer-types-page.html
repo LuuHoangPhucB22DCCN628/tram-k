@@ -44,7 +44,7 @@
       <article class="fact-card" appReveal="up" [revealDelay]="index * 70" data-ui-card>
         <h3>{{ fact.label }}</h3>
         <div>
-          <strong>{{ fact.value }}</strong>
+          <strong [appCountUp]="fact.value" [attr.aria-label]="fact.value"></strong>
           <p>{{ fact.description }}</p>
         </div>
       </article>

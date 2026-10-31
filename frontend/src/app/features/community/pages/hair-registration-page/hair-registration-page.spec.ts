@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { FormGroup } from '@angular/forms';
 import { of, throwError } from 'rxjs';
 
@@ -16,6 +16,7 @@ describe('HairRegistrationPage', () => {
       imports: [HairRegistrationPage],
       providers: [
         provideHttpClient(),
+        provideRouter([]),
         { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
         { provide: ActivatedRoute, useValue: { snapshot: { data: { mode } } } },
       ],
@@ -76,7 +77,10 @@ describe('HairRegistrationPage', () => {
 
   it('does not apply hidden donor commitments to the receive-hair form', async () => {
     const { fixture, element } = await createPage('receive');
-    const component = fixture.componentInstance as unknown as { form: FormGroup };
+    const component = fixture.componentInstance as unknown as {
+      form: FormGroup;
+      submit: () => void;
+    };
     const registrationService = TestBed.inject(HairRegistrationService);
     const submitSpy = vi.spyOn(registrationService, 'submit').mockReturnValue(
       of({
@@ -117,6 +121,14 @@ describe('HairRegistrationPage', () => {
       }),
     );
     expect(element.querySelector('[role="status"]')?.textContent).toContain('TK-TEST-0001');
+    expect(element.querySelector('[role="status"]')?.textContent).toContain('Đã gửi đăng ký');
+    expect(element.querySelector('.hair-form')).toBeNull();
+    expect(element.querySelector('a[routerlink="/cong-dong"]')?.textContent).toContain(
+      'Quay lại Thư viện tóc',
+    );
+
+    component.submit();
+    expect(submitSpy).toHaveBeenCalledTimes(1);
   });
 
   it('requires every visible commitment on the donate-hair form', async () => {

@@ -9,6 +9,7 @@ import {
 } from '@features/content/services/content-section.service';
 import { RevealDirective } from '../../../../shared/directives/reveal.directive';
 import { DestinyStoryHero } from '../../components/destiny-story-hero/destiny-story-hero';
+import { KitchenStoryHero } from '../../components/kitchen-story-hero/kitchen-story-hero';
 
 interface StoryCard {
   readonly image: string;
@@ -51,7 +52,7 @@ const FALLBACK_STORIES: readonly StoryCard[] = [
 @Component({
   selector: 'app-stories-page',
   standalone: true,
-  imports: [DestinyStoryHero, RouterLink, RevealDirective],
+  imports: [DestinyStoryHero, KitchenStoryHero, RouterLink, RevealDirective],
   templateUrl: './stories-page.html',
   styleUrl: './stories-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -62,10 +63,6 @@ export class StoriesPage {
 
   constructor() {
     void this.loadStories();
-  }
-
-  protected scrollToStories(): void {
-    document.querySelector('#story-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   private async loadStories(): Promise<void> {

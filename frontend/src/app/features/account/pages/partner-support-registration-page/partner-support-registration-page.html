@@ -38,7 +38,7 @@
         </label>
 
         <label>
-          Khả năng hỗ trợ mỗi đợt <span aria-hidden="true">*</span>
+          Số người có thể đăng ký trong cả chương trình <span aria-hidden="true">*</span>
           <input formControlName="capacity" type="number" min="1" max="100000" />
           @if (hasError('capacity')) {
             <small>Số lượng cần lớn hơn 0.</small>
@@ -59,33 +59,161 @@
         </label>
 
         <label>
-          Tỉnh/Thành phố <span aria-hidden="true">*</span>
-          <select formControlName="regionId">
-            <option value="">Chọn tỉnh/thành phố</option>
-            @for (region of regions; track region.id) {
-              <option [value]="region.id">{{ region.name }}</option>
-            }
+          Đối tượng nhận hỗ trợ <span aria-hidden="true">*</span>
+          <select formControlName="eligibleAudience">
+            <option value="">Chọn đối tượng</option>
+            <option value="PATIENT">Chỉ bệnh nhân</option>
+            <option value="PATIENT_AND_CAREGIVER">Bệnh nhân và người chăm sóc</option>
+            <option value="ANYONE">Mọi người cần hỗ trợ</option>
           </select>
-          @if (hasError('regionId')) {
-            <small>Vui lòng chọn tỉnh hoặc thành phố.</small>
+          @if (hasError('eligibleAudience')) {
+            <small>Vui lòng nêu rõ đối tượng được nhận hỗ trợ.</small>
           }
         </label>
 
-        <label>
-          Lịch dự kiến <span aria-hidden="true">*</span>
-          <input formControlName="schedule" maxlength="200" placeholder="Sáng thứ Bảy hằng tuần" />
-          @if (hasError('schedule')) {
-            <small>Vui lòng nhập lịch dự kiến.</small>
-          }
+        <label class="support-form__checkbox">
+          <input formControlName="financialNeedRequired" type="checkbox" />
+          Chỉ dành cho người có hoàn cảnh khó khăn
         </label>
 
         <label class="support-form__wide">
-          Địa chỉ tổ chức <span aria-hidden="true">*</span>
-          <input formControlName="address" maxlength="250" placeholder="Địa chỉ cụ thể" />
-          @if (hasError('address')) {
-            <small>Vui lòng nhập địa chỉ tổ chức.</small>
+          Điều kiện bổ sung (nếu có)
+          <textarea formControlName="eligibilityNote" rows="3" maxlength="500"
+            placeholder="Ví dụ: đang điều trị tại cơ sở tổ chức; cần xác nhận trước khi đến"></textarea>
+          @if (hasError('eligibilityNote')) {
+            <small>Điều kiện bổ sung tối đa 500 ký tự.</small>
           }
         </label>
+
+        <div class="support-form__wide support-form__schedule">
+          <h3>Thời gian hỗ trợ cụ thể <span aria-hidden="true">*</span></h3>
+          <div class="support-form__schedule-grid">
+            <label>
+              Loại lịch
+              <select formControlName="scheduleType">
+                <option value="ONE_TIME">Một ngày cụ thể</option>
+                <option value="WEEKLY">Lặp hằng tuần</option>
+              </select>
+            </label>
+            <label>
+              {{ form.controls.scheduleType.value === 'WEEKLY' ? 'Bắt đầu áp dụng' : 'Ngày tổ chức' }}
+              <input type="date" formControlName="startsOn" [min]="today" />
+            </label>
+            @if (form.controls.scheduleType.value === 'WEEKLY') {
+              <label>
+                Kết thúc áp dụng
+                <input type="date" formControlName="endsOn" [min]="form.controls.startsOn.value || today" />
+              </label>
+            }
+            <label>
+              Giờ bắt đầu
+              <input type="time" formControlName="startTime" />
+            </label>
+            <label>
+              Giờ kết thúc
+              <input type="time" formControlName="endTime" />
+            </label>
+          </div>
+          @if (form.controls.scheduleType.value === 'WEEKLY') {
+            <fieldset class="support-form__weekdays">
+              <legend>Ngày diễn ra trong tuần</legend>
+              <div>
+                @for (day of weekdays; track day.value) {
+                  <label>
+                    <input type="checkbox" [checked]="selectedWeekdays().includes(day.value)"
+                      (change)="toggleWeekday(day.value, $event)" />
+                    {{ day.label }}
+                  </label>
+                }
+              </div>
+            </fieldset>
+          }
+          @if (scheduleError()) {
+            <small role="alert">{{ scheduleError() }}</small>
+          }
+          @if (schedulePreview(); as preview) {
+            <p class="support-form__schedule-preview">Lịch sẽ công khai: {{ preview }}</p>
+          }
+          <p class="support-form__address-hint">Lịch hằng tuần chỉ được gợi ý trong khoảng ngày áp dụng; bạn cần cập nhật hoặc tạo chương trình mới khi hết hạn.</p>
+        </div>
+
+        <div class="support-form__wide support-form__address">
+          <strong>Địa chỉ tổ chức cụ thể <span aria-hidden="true">*</span></strong>
+          <button type="button" class="support-form__address-summary" (click)="openAddressPicker()"
+            [class.support-form__address-summary--empty]="!form.controls.address.value">
+            <span class="support-form__address-icon" aria-hidden="true">⌖</span>
+            <span class="support-form__address-copy">
+              <b>{{ form.controls.address.value || 'Chọn địa chỉ tổ chức' }}</b>
+              <small>{{ selectedRegionName() || 'Chọn tỉnh/thành phố, sau đó nhập địa điểm cụ thể' }}</small>
+            </span>
+            <span class="support-form__address-change">{{ form.controls.address.value ? 'Thay đổi' : 'Chọn địa chỉ' }} →</span>
+          </button>
+          @if (hasError('regionId')) {
+            <small role="alert">Vui lòng chọn tỉnh/thành phố.</small>
+          }
+          @if (hasError('address')) {
+            <small role="alert">Nhập địa chỉ đủ cụ thể, ít nhất hai từ; không dùng ký tự lặp hoặc nội dung thử nghiệm.</small>
+          }
+          <p class="support-form__address-hint">Địa chỉ sẽ được quản trị viên kiểm tra trước khi công khai.</p>
+
+          <app-ui-modal [open]="addressPickerOpen()" title="Chọn địa chỉ tổ chức" size="lg"
+            (closed)="cancelAddressPicker()">
+            <div class="support-form__picker">
+              <div class="support-form__picker-steps" aria-label="Các bước chọn địa chỉ">
+                <button type="button" [class.is-active]="addressPickerStep() === 'REGION'"
+                  (click)="showRegionStep()">1. Tỉnh/thành phố</button>
+                <span aria-hidden="true">›</span>
+                <button type="button" [class.is-active]="addressPickerStep() === 'DETAIL'"
+                  [disabled]="!form.controls.regionId.value" (click)="addressPickerStep.set('DETAIL')">2. Địa điểm cụ thể</button>
+              </div>
+              @if (addressPickerStep() === 'REGION') {
+                <label for="program-region-search">Tìm tỉnh/thành phố</label>
+                <input id="program-region-search" type="search" [value]="regionSearch()"
+                  (input)="regionSearch.set($any($event.target).value)" placeholder="Ví dụ: Hà Nội, Cao Bằng..." />
+                <div class="support-form__region-list" aria-label="Danh sách tỉnh/thành phố">
+                  @for (region of filteredRegions(); track region.id) {
+                    <button type="button" [class.is-selected]="form.controls.regionId.value === region.id"
+                      (click)="chooseRegion(region.id)">{{ region.name }} <span aria-hidden="true">→</span></button>
+                  } @empty {
+                    <p>Không tìm thấy tỉnh/thành phố phù hợp.</p>
+                  }
+                </div>
+              } @else {
+                <p class="support-form__picker-region">{{ selectedRegionName() }}
+                  <button type="button" (click)="showRegionStep()">Đổi tỉnh/thành</button>
+                </p>
+                <label for="program-address">Số nhà, đường/phố, phường/xã hoặc tên cơ sở <span aria-hidden="true">*</span></label>
+                @if (googleMapsAvailable) {
+                  <button type="button" class="support-form__maps-button" (click)="openGoogleAddressSearch()"
+                    [disabled]="googleLoading() || googleOpen()">
+                    {{ googleLoading() ? 'Đang tải gợi ý...' : googleOpen() ? 'Chọn địa điểm gợi ý bên dưới' : 'Tìm địa điểm trên Google Maps' }}
+                  </button>
+                } @else {
+                  <a class="support-form__maps-button" [href]="googleMapsSearchUrl()" target="_blank" rel="noopener noreferrer">
+                    Tra địa chỉ trên Google Maps ↗
+                  </a>
+                }
+                <div #googlePlacesHost class="support-form__places-host" [class.support-form__places-host--open]="googleOpen()"></div>
+                @if (googleError()) { <small role="alert">{{ googleError() }}</small> }
+                <input id="program-address" formControlName="address" maxlength="250" (input)="onAddressTyped()"
+                  placeholder="Ví dụ: Bệnh viện K Tân Triều, phường Thanh Liệt" />
+                @if (hasError('address')) {
+                  <small role="alert">Nhập địa chỉ đủ cụ thể, ít nhất hai từ; không dùng ký tự lặp hoặc nội dung thử nghiệm.</small>
+                }
+                <div class="support-form__address-preview">
+                  <span>Địa chỉ sẽ hiển thị</span>
+                  <strong>{{ form.controls.address.value || 'Chưa nhập địa điểm' }}</strong>
+                  <small>{{ selectedRegionName() }}{{ googlePlaceId() ? ' · Đã chọn từ Google Maps' : ' · Cần quản trị viên kiểm tra vị trí' }}</small>
+                </div>
+                <p class="support-form__address-hint">Nếu không có gợi ý phù hợp, hãy nhập thủ công. Khi chưa có ghim chính xác, nút chỉ đường sẽ tìm theo địa chỉ đã duyệt.</p>
+              }
+            </div>
+            <div uiModalFooter class="support-form__picker-actions">
+              <button type="button" (click)="cancelAddressPicker()">Hủy</button>
+              <button type="button" class="support-form__picker-confirm" (click)="confirmAddressPicker()">Xác nhận địa chỉ</button>
+            </div>
+          </app-ui-modal>
+        </div>
       </div>
     </fieldset>
 

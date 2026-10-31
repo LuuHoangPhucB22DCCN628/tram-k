@@ -1,0 +1,1 @@
+ALTER TYPE "SearchDocumentType" ADD VALUE 'DONATION_LOCATION';

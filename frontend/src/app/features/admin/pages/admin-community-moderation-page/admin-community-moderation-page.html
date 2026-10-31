@@ -66,8 +66,8 @@
             <div class="moderation-card__actions">
               <button type="button" (click)="openPost(post)">Xem đầy đủ</button>
               @if (post.status === 'PENDING') {
-                <button class="moderation-card__approve" type="button" (click)="publish(post)">
-                  Xuất bản
+                <button class="moderation-card__approve" type="button" [disabled]="reviewBusy()" (click)="publish(post)">
+                  {{ reviewBusy() ? 'Đang lưu...' : 'Xuất bản' }}
                 </button>
                 <button class="moderation-card__reject" type="button" (click)="openReject(post)">
                   Yêu cầu sửa
@@ -193,7 +193,7 @@
           <button
             class="moderation-card__reject"
             type="button"
-            [disabled]="rejectionReason().trim().length < 10"
+            [disabled]="rejectionReason().trim().length < 10 || reviewBusy()"
             (click)="reject()"
           >
             Gửi yêu cầu sửa

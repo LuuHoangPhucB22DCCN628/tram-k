@@ -1,4 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
+import { AuthService } from '@core/auth/auth.service';
+import { CommunityEngagementApiService } from './community-engagement-api.service';
 
 import { MemberCommentStorageService } from './member-comment-storage.service';
 
@@ -85,5 +88,47 @@ describe('MemberCommentStorageService', () => {
     expect(service.moderateRemove(comment.id)).toBe(true);
     expect(service.moderateRemove(comment.id)).toBe(false);
     expect(service.commentsFor('OWNER')).toHaveLength(0);
+  });
+
+  it('keeps a legacy comment locally when the server cannot accept it', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [
+      { provide: AuthService, useValue: { currentUser: () => ({ id: 'USER-A' }), authMode: () => 'REMOTE' } },
+      { provide: CommunityEngagementApiService, useValue: { available: true, createComment: () => of(null) } },
+    ] });
+    const service = TestBed.inject(MemberCommentStorageService);
+    service.create('USER-A', {
+      authorName: 'Người dùng A', content: 'Bình luận cũ', sourceTitle: 'Câu chuyện',
+      sourcePath: '/goc-tam-ly?story=POST-1#cau-chuyen-POST-1',
+    });
+    await expect(service.migrateLegacyFor('USER-A')).resolves.toEqual({ migrated: 0, remaining: 1 });
+    expect(service.legacyCountFor('USER-A')).toBe(1);
+    expect(JSON.parse(localStorage.getItem('tram-k.member-comments') ?? '[]')).toHaveLength(1);
+  });
+
+  it('removes a legacy comment only after the server confirms it', async () => {
+    TestBed.resetTestingModule();
+    let idempotencyKey = '';
+    TestBed.configureTestingModule({ providers: [
+      { provide: AuthService, useValue: { currentUser: () => ({ id: 'USER-A' }), authMode: () => 'REMOTE' } },
+      { provide: CommunityEngagementApiService, useValue: { available: true,
+        createComment: (_source: string, input: { idempotencyKey: string }) => {
+          idempotencyKey = input.idempotencyKey;
+          return of({ id: 'REMOTE-1', userId: 'USER-A', authorName: 'Người dùng A',
+            content: 'Bình luận cũ', sourceTitle: 'Câu chuyện',
+            sourcePath: '/goc-tam-ly?story=POST-1#cau-chuyen-POST-1',
+            createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+        },
+      } },
+    ] });
+    const service = TestBed.inject(MemberCommentStorageService);
+    const legacy = service.create('USER-A', {
+      authorName: 'Người dùng A', content: 'Bình luận cũ', sourceTitle: 'Câu chuyện',
+      sourcePath: '/goc-tam-ly?story=POST-1#cau-chuyen-POST-1',
+    });
+    await expect(service.migrateLegacyFor('USER-A')).resolves.toEqual({ migrated: 1, remaining: 0 });
+    expect(idempotencyKey).toBe(`legacy:${legacy.id}`);
+    expect(service.commentsFor('USER-A').map((comment) => comment.id)).toEqual(['REMOTE-1']);
+    expect(JSON.parse(localStorage.getItem('tram-k.member-comments') ?? '[]')).toHaveLength(0);
   });
 });

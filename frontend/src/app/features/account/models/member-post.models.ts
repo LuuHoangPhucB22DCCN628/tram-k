@@ -4,6 +4,7 @@ export interface MemberPost {
   readonly id: string;
   readonly userId: string;
   readonly authorName: string;
+  readonly profileVisibility?: 'PUBLIC' | 'MEMBERS' | 'PRIVATE';
   readonly title: string;
   readonly content: string;
   readonly status: MemberPostStatus;

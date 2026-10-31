@@ -37,10 +37,8 @@ describe('CommunityPage', () => {
     ]);
     expect(element.querySelectorAll('.community-donations')).toHaveLength(1);
     expect(stats).toHaveLength(3);
-    expect(donationRows).toHaveLength(8);
-    expect(new Set([...donationRows].map((row) => row.querySelector('td')?.textContent)).size).toBe(
-      8,
-    );
+    expect(donationRows).toHaveLength(1);
+    expect(donationRows[0].textContent).toMatch(/Đang tải giao dịch đã xác nhận|Chưa có giao dịch quyên góp được xác nhận/);
     expect(qrImages).toHaveLength(1);
     expect(qrImages[0].getAttribute('src')).toBe(
       '/assets/images/community/community-donation-qr.svg',

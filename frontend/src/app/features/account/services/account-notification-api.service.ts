@@ -32,10 +32,29 @@ export interface AccountNotificationPage {
   readonly nextCursor: string | null;
 }
 
+export interface NotificationPreferences {
+  readonly storyComments: boolean;
+  readonly storyReplies: boolean;
+  readonly storyReactions: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AccountNotificationApiService {
   private readonly http = inject(HttpClient, { optional: true });
   private readonly apiBaseUrl = (inject(API_BASE_URL, { optional: true }) ?? '').replace(/\/$/, '');
+
+  preferences(): Observable<NotificationPreferences | null> {
+    if (!this.http || !this.apiBaseUrl) return of(null);
+    return this.http.get<ApiSuccessResponse<NotificationPreferences>>(`${this.apiBaseUrl}/notifications/preferences`)
+      .pipe(map(({ data }) => data), catchError(() => of(null)));
+  }
+
+  updatePreferences(change: Partial<NotificationPreferences>): Observable<NotificationPreferences | null> {
+    if (!this.http || !this.apiBaseUrl) return of(null);
+    return this.http.patch<ApiSuccessResponse<NotificationPreferences>>(
+      `${this.apiBaseUrl}/notifications/preferences`, change,
+    ).pipe(map(({ data }) => data), catchError(() => of(null)));
+  }
 
   list(limit = 50): Observable<AccountNotificationPage | null> {
     if (!this.http || !this.apiBaseUrl) return of(null);

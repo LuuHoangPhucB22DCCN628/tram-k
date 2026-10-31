@@ -78,7 +78,14 @@ describe('CommunityDonationMapPage', () => {
     expect(element.querySelector('[role="dialog"]')?.textContent).toContain(
       'Điểm quyên góp đang được cập nhật',
     );
-    expect(element.querySelector('.donation-region-dialog__button--primary')).toBeNull();
+    expect(
+      element
+        .querySelector<HTMLAnchorElement>('.donation-region-dialog__button--primary')
+        ?.getAttribute('href'),
+    ).toBe('/cong-dong/diem-quyen-gop/da-nang');
+    expect(
+      element.querySelector<HTMLImageElement>('.donation-region-dialog__visual img')?.src,
+    ).toContain('community-region-da-nang.svg');
   });
 
   it('exposes a detail action when admin enables a location in another region', async () => {

@@ -75,10 +75,12 @@
               <p>{{ item.content }}</p>
               @if (item.sources?.length) {
                 <div class="widget-message__sources">
-                  <strong>Nguồn tham khảo</strong>
+                  <strong>Gợi ý để xem thêm</strong>
                   @for (source of item.sources; track source.link) {
                     @if (isInternalLink(source.link)) {
-                      <a [routerLink]="source.link">{{ source.title }} <span>→</span></a>
+                      <a [href]="source.link"
+                        >{{ source.title }} <span aria-hidden="true">→</span></a
+                      >
                     } @else {
                       <a [href]="source.link" target="_blank" rel="noopener noreferrer"
                         >{{ source.title }} <span>↗</span></a

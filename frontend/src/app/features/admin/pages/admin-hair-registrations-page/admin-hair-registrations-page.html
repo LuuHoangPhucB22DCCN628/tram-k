@@ -1,0 +1,320 @@
+<section class="hair-admin" aria-labelledby="hair-admin-title">
+  <header class="hair-admin__heading">
+    <div>
+      <p class="hair-admin__eyebrow">Thư viện tóc · Trạm K</p>
+      <h1 id="hair-admin-title">Quản lý hiến và nhận tóc</h1>
+      <p>Theo dõi hồ sơ, xác minh thông tin và cập nhật tiến độ hỗ trợ.</p>
+      <p>
+        Việc cập nhật trạng thái chưa tự gửi email cho người đăng ký; vui lòng liên hệ trực tiếp khi
+        xử lý.
+      </p>
+    </div>
+    <button type="button" class="hair-admin__reload" (click)="reload()" [disabled]="loading()">
+      Tải lại danh sách
+    </button>
+  </header>
+
+  @if (result(); as data) {
+    <div class="hair-admin__stats" aria-label="Tổng hợp trạng thái">
+      <div>
+        <strong>{{ data.summary.PENDING }}</strong
+        ><span>Chờ xử lý</span>
+      </div>
+      <div>
+        <strong>{{ data.summary.APPROVED }}</strong
+        ><span>Đã duyệt</span>
+      </div>
+      <div>
+        <strong>{{ data.summary.COMPLETED }}</strong
+        ><span>Hoàn tất</span>
+      </div>
+      <div>
+        <strong>{{ data.summary.REJECTED }}</strong
+        ><span>Đã từ chối</span>
+      </div>
+    </div>
+  }
+
+  <form class="hair-admin__filters" (submit)="submitSearch($event)">
+    <label>
+      <span>Tìm hồ sơ</span>
+      <input
+        type="search"
+        [value]="search()"
+        (input)="setSearch($event)"
+        placeholder="Mã hồ sơ, tên, số điện thoại, địa điểm"
+      />
+    </label>
+    <button type="submit">Tìm kiếm</button>
+    <label>
+      <span>Hình thức</span>
+      <select [value]="mode()" (change)="setMode($event)">
+        <option value="ALL">Tất cả</option>
+        <option value="DONATE">Hiến tóc</option>
+        <option value="RECEIVE">Nhận tóc</option>
+      </select>
+    </label>
+    <label>
+      <span>Trạng thái</span>
+      <select [value]="status()" (change)="setStatus($event)">
+        <option value="ALL">Tất cả</option>
+        <option value="PENDING">Chờ xử lý</option>
+        <option value="APPROVED">Đã duyệt</option>
+        <option value="COMPLETED">Hoàn tất</option>
+        <option value="REJECTED">Đã từ chối</option>
+      </select>
+    </label>
+  </form>
+
+  @if (feedback()) {
+    <p class="hair-admin__feedback" role="status">{{ feedback() }}</p>
+  }
+  @if (error()) {
+    <p class="hair-admin__error" role="alert">{{ error() }}</p>
+  }
+  @if (loading()) {
+    <p class="hair-admin__loading" role="status">Đang tải hồ sơ...</p>
+  }
+
+  <div class="hair-admin__content" [class.hair-admin__content--detail]="selected()">
+    <div
+      class="hair-admin__table-wrap"
+      role="region"
+      tabindex="0"
+      aria-label="Danh sách hồ sơ hiến và nhận tóc"
+    >
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Hồ sơ</th>
+            <th scope="col">Người đăng ký</th>
+            <th scope="col">Địa điểm</th>
+            <th scope="col">Ngày gửi</th>
+            <th scope="col">Trạng thái</th>
+            <th scope="col"><span class="visually-hidden">Thao tác</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of result()?.items ?? []; track item.id) {
+            <tr [class.hair-admin__row--selected]="selected()?.id === item.id">
+              <td>
+                <strong>{{ item.reference }}</strong
+                ><small>{{ modeLabel(item.mode) }}</small>
+              </td>
+              <td>
+                <strong>{{ item.fullName }}</strong
+                ><small>{{ item.phone }}</small>
+              </td>
+              <td>{{ item.district }}, {{ item.province }}</td>
+              <td>{{ item.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <span class="hair-admin__status" [attr.data-status]="item.status">{{
+                  statusLabel(item.status)
+                }}</span>
+              </td>
+              <td>
+                <button type="button" class="hair-admin__view" (click)="openDetail(item.id)">
+                  Xem hồ sơ
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            @if (!loading()) {
+              <tr>
+                <td colspan="6" class="hair-admin__empty">Không có hồ sơ phù hợp với bộ lọc.</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (selected(); as detail) {
+      <aside class="hair-admin__detail" aria-labelledby="hair-detail-title">
+        <header>
+          <div>
+            <span class="hair-admin__mode">{{ modeLabel(detail.mode) }}</span>
+            <h2 id="hair-detail-title">{{ detail.fullName }}</h2>
+            <p>{{ detail.reference }}</p>
+          </div>
+          <button
+            type="button"
+            class="hair-admin__close"
+            (click)="closeDetail()"
+            aria-label="Đóng chi tiết"
+          >
+            ×
+          </button>
+        </header>
+        @if (detailLoading()) {
+          <p role="status">Đang cập nhật chi tiết...</p>
+        }
+        <span class="hair-admin__status" [attr.data-status]="detail.status">{{
+          statusLabel(detail.status)
+        }}</span>
+
+        <dl class="hair-admin__details-list">
+          <div>
+            <dt>Số điện thoại</dt>
+            <dd>
+              <a [href]="'tel:' + detail.phone">{{ detail.phone }}</a>
+            </dd>
+          </div>
+          @if (detail.email) {
+            <div>
+              <dt>Email</dt>
+              <dd>
+                <a [href]="'mailto:' + detail.email">{{ detail.email }}</a>
+              </dd>
+            </div>
+          }
+          <div>
+            <dt>Địa chỉ</dt>
+            <dd>{{ detail.address }}, {{ detail.district }}, {{ detail.province }}</dd>
+          </div>
+          <div>
+            <dt>Giới tính</dt>
+            <dd>{{ detail.gender }}</dd>
+          </div>
+          @if (detail.relativeName) {
+            <div>
+              <dt>Người thân</dt>
+              <dd>{{ detail.relativeName }}</dd>
+            </div>
+          }
+          @if (detail.relativePhone) {
+            <div>
+              <dt>SĐT người thân</dt>
+              <dd>{{ detail.relativePhone }}</dd>
+            </div>
+          }
+          @if (detail.hospital) {
+            <div>
+              <dt>Bệnh viện</dt>
+              <dd>{{ detail.hospital }}</dd>
+            </div>
+          }
+          @if (detail.diagnosis) {
+            <div>
+              <dt>Thông tin bệnh</dt>
+              <dd>{{ detail.diagnosis }}</dd>
+            </div>
+          }
+          @if (detail.duration) {
+            <div>
+              <dt>Thời gian điều trị</dt>
+              <dd>{{ detail.duration }}</dd>
+            </div>
+          }
+          @if (detail.borrowDate) {
+            <div>
+              <dt>Ngày mong muốn nhận</dt>
+              <dd>{{ detail.borrowDate | date: 'dd/MM/yyyy' }}</dd>
+            </div>
+          }
+          @if (detail.desiredLength) {
+            <div>
+              <dt>Độ dài mong muốn</dt>
+              <dd>{{ detail.desiredLength }}</dd>
+            </div>
+          }
+          @if (detail.transparency) {
+            <div>
+              <dt>Thông tin bổ sung</dt>
+              <dd>{{ detail.transparency }}</dd>
+            </div>
+          }
+          @if (detail.donationLocation) {
+            <div>
+              <dt>Nơi hiến</dt>
+              <dd>{{ detail.donationLocation }}</dd>
+            </div>
+          }
+          @if (detail.donatedLength) {
+            <div>
+              <dt>Độ dài tóc hiến</dt>
+              <dd>{{ detail.donatedLength }}</dd>
+            </div>
+          }
+        </dl>
+
+        @if (detail.status === 'PENDING') {
+          <div class="hair-admin__actions">
+            <button
+              type="button"
+              class="hair-admin__primary"
+              [disabled]="actionBusy()"
+              (click)="review('APPROVED')"
+            >
+              Duyệt hồ sơ
+            </button>
+            <label>
+              <span>Lý do từ chối (ít nhất 10 ký tự)</span>
+              <textarea
+                rows="3"
+                maxlength="500"
+                [value]="rejectionReason()"
+                (input)="updateReason($event)"
+              ></textarea>
+            </label>
+            <button
+              type="button"
+              class="hair-admin__reject"
+              [disabled]="actionBusy() || rejectionReason().trim().length < 10"
+              (click)="review('REJECTED')"
+            >
+              Từ chối hồ sơ
+            </button>
+          </div>
+        } @else if (detail.status === 'APPROVED') {
+          <div class="hair-admin__actions">
+            <p>Chỉ đánh dấu hoàn tất sau khi việc hiến/nhận tóc đã được xác nhận thực tế.</p>
+            <button
+              type="button"
+              class="hair-admin__primary"
+              [disabled]="actionBusy()"
+              (click)="review('COMPLETED')"
+            >
+              Xác nhận hoàn tất
+            </button>
+          </div>
+        }
+
+        @if (detail.history.length) {
+          <section class="hair-admin__history" aria-label="Lịch sử xử lý">
+            <h3>Lịch sử xử lý</h3>
+            @for (entry of detail.history; track entry.id) {
+              <div>
+                <strong>{{
+                  entry.after?.status ? statusLabel(entry.after!.status!) : entry.action
+                }}</strong
+                ><time>{{ entry.occurredAt | date: 'dd/MM/yyyy HH:mm' }}</time>
+                @if (entry.reason) {
+                  <p>{{ entry.reason }}</p>
+                }
+              </div>
+            }
+          </section>
+        }
+      </aside>
+    }
+  </div>
+
+  @if (result(); as data) {
+    @if (data.total > data.limit) {
+      <nav class="hair-admin__pagination" aria-label="Phân trang hồ sơ">
+        <button type="button" [disabled]="page() === 1 || loading()" (click)="goToPage(page() - 1)">
+          Trước
+        </button>
+        <span>Trang {{ page() }} / {{ totalPages() }} · {{ data.total }} hồ sơ</span>
+        <button
+          type="button"
+          [disabled]="page() === totalPages() || loading()"
+          (click)="goToPage(page() + 1)"
+        >
+          Sau
+        </button>
+      </nav>
+    }
+  }
+</section>

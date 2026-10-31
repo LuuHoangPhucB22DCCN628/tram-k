@@ -26,6 +26,10 @@ describe('MemberLayout', () => {
 
   it('should render member navigation', () => {
     expect(fixture.nativeElement.textContent).toContain('Bài viết');
+    const sidebar = fixture.nativeElement.querySelector('.member-shell__sidebar') as HTMLElement;
+    expect(sidebar.textContent).toContain('Tra cứu mã đăng ký');
+    expect(sidebar.textContent).not.toContain('Tổng quan');
+    expect(sidebar.querySelector('a[href="/thanh-vien/tra-cuu-ma"]')).not.toBeNull();
   });
 
   it('should keep the public header and footer around private member pages', () => {
@@ -49,6 +53,7 @@ describe('MemberLayout', () => {
     expect(sidebar.textContent).toContain('Đăng ký hỗ trợ');
     expect(sidebar.textContent).toContain('Quản lý chương trình từ thiện');
     expect(sidebar.querySelector('a[href="/doi-tac/ho-so"]')).not.toBeNull();
+    expect(sidebar.querySelector('a[href="/doi-tac/tra-cuu-ma"]')).not.toBeNull();
   });
 
   it('should toggle the compact account navigation and close it with Escape', () => {

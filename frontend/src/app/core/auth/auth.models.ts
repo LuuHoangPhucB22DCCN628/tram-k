@@ -5,6 +5,7 @@ export interface AuthUser {
   readonly displayName: string;
   readonly email: string;
   readonly role: UserRole;
+  readonly status?: 'PENDING_VERIFY' | 'ACTIVE' | 'LOCKED' | 'DISABLED';
   readonly avatarUrl?: string;
 }
 

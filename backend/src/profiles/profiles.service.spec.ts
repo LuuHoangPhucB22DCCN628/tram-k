@@ -1,5 +1,9 @@
-import { ConflictException } from "@nestjs/common";
-import { ProfileVisibility, RoleName } from "@prisma/client";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { ProfileVisibility, RoleName, UserStatus } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
 import { ProfilesService } from "./profiles.service";
@@ -114,5 +118,87 @@ describe("ProfilesService", () => {
       service.updateOwnProfile("user-1", update),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(transaction.user.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects avatar data larger than 1 MB before writing the profile", async () => {
+    const oversizedAvatar = `data:image/png;base64,${Buffer.alloc(1024 * 1024 + 1).toString("base64")}`;
+
+    await expect(
+      service.updateOwnProfile("user-1", {
+        ...update,
+        avatarDataUrl: oversizedAvatar,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(transaction.user.update).not.toHaveBeenCalled();
+  });
+
+  it("shares only non-contact fields when the profile is public", async () => {
+    prismaMock.user.findFirst.mockResolvedValue({
+      ...user,
+      status: UserStatus.ACTIVE,
+      partnerMembership: null,
+      profile: {
+        ...update,
+        visibility: ProfileVisibility.PUBLIC,
+        showEmail: true,
+      },
+    });
+
+    const shared = await service.getSharedProfile("user-1", null);
+
+    expect(shared).toEqual({
+      id: "user-1",
+      displayName: "Nguyễn An",
+      role: RoleName.PATIENT,
+      city: "Hà Nội",
+      bio: "Thành viên Trạm K",
+      hasAvatar: false,
+    });
+    expect(shared).not.toHaveProperty("email");
+    expect(shared).not.toHaveProperty("phone");
+  });
+
+  it("restricts member and private profiles, including their avatar", async () => {
+    const avatarDataUrl = `data:image/png;base64,${Buffer.from("avatar").toString("base64")}`;
+    prismaMock.user.findFirst.mockResolvedValue({
+      ...user,
+      status: UserStatus.ACTIVE,
+      partnerMembership: null,
+      profile: {
+        ...update,
+        visibility: ProfileVisibility.MEMBERS,
+        avatarDataUrl,
+      },
+    });
+    await expect(
+      service.getSharedProfile("user-1", null),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      service.getSharedAvatar("user-1", null),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(await service.getSharedAvatar("user-1", "other-user")).toEqual({
+      mimeType: "image/png",
+      bytes: Buffer.from("avatar"),
+    });
+
+    prismaMock.user.findFirst.mockResolvedValue({
+      ...user,
+      status: UserStatus.ACTIVE,
+      partnerMembership: null,
+      profile: {
+        ...update,
+        visibility: ProfileVisibility.PRIVATE,
+        avatarDataUrl,
+      },
+    });
+    await expect(
+      service.getSharedProfile("user-1", "other-user"),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      service.getSharedAvatar("user-1", "other-user"),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect((await service.getSharedProfile("user-1", "user-1")).hasAvatar).toBe(
+      true,
+    );
   });
 });

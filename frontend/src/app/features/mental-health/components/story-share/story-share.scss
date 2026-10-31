@@ -81,6 +81,20 @@ blockquote {
   color: #5e4dcb;
   text-transform: uppercase;
 }
+.member-profile-link {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+.member-profile-link:hover,
+.member-profile-link:focus-visible {
+  color: #5e4dcb;
+  text-decoration: underline;
+}
+.member-profile-link--name {
+  font-weight: 700;
+}
 .author strong {
   overflow-wrap: anywhere;
 }
@@ -305,6 +319,9 @@ h3 {
 .shared-story__author strong {
   font-size: 14px;
 }
+.shared-story__author .member-profile-link--name {
+  font-size: 14px;
+}
 .shared-story__author div > span,
 .shared-story__author time {
   margin-top: 3px;
@@ -468,6 +485,10 @@ h3 {
   border-radius: 11px;
   background: #fff;
 }
+.story-comment--targeted {
+  border-color: #6752d3;
+  background: #f4f1ff;
+}
 .story-comment__reply {
   margin-left: 28px;
   padding-left: 10px;
@@ -488,6 +509,9 @@ h3 {
   display: block;
 }
 .story-comment__meta strong {
+  font-size: 12px;
+}
+.story-comment__meta .member-profile-link--name {
   font-size: 12px;
 }
 .story-comment__meta time {

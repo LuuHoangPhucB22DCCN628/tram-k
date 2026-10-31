@@ -131,10 +131,10 @@
                 <p>{{ item.content }}</p>
                 @if (item.sources?.length) {
                   <div class="chat-message__sources">
-                    <strong>Nguồn tham khảo tại Trạm K</strong>
+                    <strong>Gợi ý để xem thêm tại Trạm K</strong>
                     @for (source of item.sources; track source.link) {
                       @if (isInternalLink(source.link)) {
-                        <a [routerLink]="source.link"
+                        <a [href]="source.link"
                           >{{ source.title }} <span aria-hidden="true">→</span></a
                         >
                       } @else {

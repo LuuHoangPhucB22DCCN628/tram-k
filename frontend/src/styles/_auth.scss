@@ -16,6 +16,17 @@
     box-shadow: var(--shadow-card);
   }
 
+  &--register {
+    .auth-page__card {
+      width: min(100%, 46rem);
+    }
+
+    .auth-form__field input,
+    .auth-form__field select {
+      min-height: 3.25rem;
+    }
+  }
+
   &__eyebrow {
     margin: 0 0 var(--space-2);
     color: var(--color-brand-primary);
@@ -59,11 +70,13 @@
   &__row {
     display: grid;
     grid-template-columns: 1fr;
+    align-items: start;
     gap: var(--space-4);
   }
 
   &__field {
     display: grid;
+    align-content: start;
     gap: var(--space-2);
 
     label,
@@ -174,7 +187,7 @@
   }
 }
 
-@media (min-width: 40rem) {
+@media (min-width: 44rem) {
   .auth-form__row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

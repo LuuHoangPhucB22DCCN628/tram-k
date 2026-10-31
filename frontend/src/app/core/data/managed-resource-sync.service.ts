@@ -1,10 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { catchError, EMPTY, map, Observable, of } from 'rxjs';
+import { catchError, map, Observable, of } from 'rxjs';
 
 import { API_BASE_URL } from '@core/config/api-base-url.token';
 
-export type ManagedResourceType = 'GUIDE' | 'CANCER_TYPE' | 'STORY' | 'PODCAST' | 'SUPPORT_PROGRAM';
+export type ManagedResourceType =
+  'GUIDE' | 'CANCER_TYPE' | 'STORY' | 'PODCAST' | 'SUPPORT_PROGRAM' | 'DONATION_LOCATION';
 export type ManagedResourceStatus = 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'REJECTED' | 'ARCHIVED';
 
 export interface ManagedResourceSyncInput {
@@ -67,16 +68,25 @@ export class ManagedResourceSyncService {
   }
 
   remove(type: ManagedResourceType, sourceId: string): void {
-    if (!this.http || !this.apiBaseUrl) return;
-    this.http
-      .delete(`${this.apiBaseUrl}/managed-resources/${type}/${encodeURIComponent(sourceId)}`)
-      .pipe(
-        catchError(() => {
-          this.errorState.set('Đã xóa bản cục bộ nhưng chưa đồng bộ được với máy chủ.');
-          return EMPTY;
-        }),
+    this.removeResult(type, sourceId).subscribe();
+  }
+
+  removeResult(type: ManagedResourceType, sourceId: string): Observable<number | null> {
+    if (!this.http || !this.apiBaseUrl) return of(null);
+    return this.http
+      .delete<{ readonly success: true; readonly data: { readonly deletedRegistrations: number } }>(
+        `${this.apiBaseUrl}/managed-resources/${type}/${encodeURIComponent(sourceId)}`,
       )
-      .subscribe(() => this.errorState.set(''));
+      .pipe(
+        map((response) => {
+          this.errorState.set('');
+          return response.data.deletedRegistrations;
+        }),
+        catchError(() => {
+          this.errorState.set('Chưa xóa được chương trình trên máy chủ.');
+          return of(null);
+        }),
+      );
   }
 
   private externalUrl(value?: string): string | undefined {

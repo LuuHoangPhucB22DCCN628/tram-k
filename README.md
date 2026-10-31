@@ -1,9 +1,12 @@
 # Trạm K
 
-Ứng dụng gồm hai phần độc lập:
+Ứng dụng gồm hai phần chạy riêng và một gói dữ liệu dùng chung:
 
 - `frontend/`: Angular.
 - `backend/`: NestJS, Prisma và PostgreSQL.
+- `shared/support-data/`: dữ liệu tỉnh và điểm tiếp nhận mặc định dùng chung cho frontend/backend.
+
+Khi cài đặt hoặc triển khai riêng frontend/backend, vẫn cần giữ thư mục `shared/support-data/` cùng cấp để `npm ci` cài được package nội bộ.
 
 ## Yêu cầu môi trường
 

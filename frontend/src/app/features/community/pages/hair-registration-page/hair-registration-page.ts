@@ -8,7 +8,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize, take } from 'rxjs';
 
 import { RevealDirective } from '../../../../shared/directives/reveal.directive';
@@ -16,6 +16,7 @@ import {
   HairRegistrationApiError,
   type HairRegistrationGender,
   type HairRegistrationMode,
+  type HairRegistrationReceipt,
   type HairRegistrationRequest,
 } from '../../models/hair-registration.models';
 import { HairRegistrationService } from '../../services/hair-registration.service';
@@ -92,7 +93,7 @@ const donatedHairLength: ValidatorFn = (control: AbstractControl): ValidationErr
 @Component({
   selector: 'app-hair-registration-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RevealDirective],
+  imports: [ReactiveFormsModule, RevealDirective, RouterLink],
   templateUrl: './hair-registration-page.html',
   styleUrl: './hair-registration-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -104,7 +105,7 @@ export class HairRegistrationPage {
 
   protected readonly submitted = signal(false);
   protected readonly isSubmitting = signal(false);
-  protected readonly successMessage = signal('');
+  protected readonly receipt = signal<HairRegistrationReceipt | null>(null);
   protected readonly submitError = signal('');
 
   protected readonly copy =
@@ -221,10 +222,9 @@ export class HairRegistrationPage {
   }
 
   protected submit(): void {
-    if (this.isSubmitting()) return;
+    if (this.isSubmitting() || this.receipt()) return;
 
     this.submitted.set(true);
-    this.successMessage.set('');
     this.submitError.set('');
 
     if (this.form.invalid) {
@@ -245,11 +245,7 @@ export class HairRegistrationPage {
         finalize(() => this.isSubmitting.set(false)),
       )
       .subscribe({
-        next: (receipt) => {
-          this.successMessage.set(
-            `Đăng ký đã được tiếp nhận. Mã đăng ký của bạn là ${receipt.id}.`,
-          );
-        },
+        next: (receipt) => this.receipt.set(receipt),
         error: (error: unknown) => {
           this.submitError.set(
             error instanceof HairRegistrationApiError

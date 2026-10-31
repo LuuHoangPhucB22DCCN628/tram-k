@@ -51,6 +51,11 @@ export class AdminDashboardPage {
   private readonly contentStorage = inject(ContentAdminStorageService);
   private readonly locationsStorage = inject(CommunityLocationAdminStorageService);
 
+  constructor() {
+    this.postsStorage.initializeAdmin();
+    this.commentsStorage.initializeAdmin();
+  }
+
   private readonly dashboardData = computed(() => {
     const users = this.usersService.list();
     const posts = this.postsStorage.posts();

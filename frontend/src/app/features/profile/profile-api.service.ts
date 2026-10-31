@@ -5,7 +5,7 @@ import { catchError, map, Observable, of, throwError } from 'rxjs';
 import type { AuthMode, AuthUser } from '@core/auth/auth.models';
 import { API_BASE_URL } from '@core/config/api-base-url.token';
 
-import { ProfileApiError, type MemberProfile } from './profile.models';
+import { ProfileApiError, type MemberProfile, type SharedMemberProfile } from './profile.models';
 import { ProfileStorageService } from './profile-storage.service';
 
 interface ApiSuccessResponse<T> {
@@ -33,6 +33,14 @@ export class ProfileApiService {
       map(({ data }) => this.fromRemote(data)),
       catchError((error: HttpErrorResponse) => throwError(() => this.mapError(error))),
     );
+  }
+
+  getSharedProfile(userId: string): Observable<SharedMemberProfile> {
+    return this.http
+      .get<ApiSuccessResponse<SharedMemberProfile>>(
+        `${this.apiBaseUrl}/profile/public/${encodeURIComponent(userId)}`,
+      )
+      .pipe(map(({ data }) => data));
   }
 
   updateOwnProfile(
@@ -72,6 +80,12 @@ export class ProfileApiService {
   }
 
   private mapError(error: HttpErrorResponse): ProfileApiError {
+    if (error.status === 413) {
+      return new ProfileApiError(
+        'VALIDATION',
+        'Ảnh sau khi xử lý vẫn quá lớn để gửi. Vui lòng chọn ảnh khác.',
+      );
+    }
     const rawMessage = (error.error as ApiErrorResponse | null)?.error?.message;
     const message =
       typeof rawMessage === 'string'

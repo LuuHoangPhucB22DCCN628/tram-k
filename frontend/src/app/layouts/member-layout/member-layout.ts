@@ -36,6 +36,7 @@ export class MemberLayout {
           { label: 'Hồ sơ', path: '/doi-tac/ho-so' },
           { label: 'Bài viết', path: '/doi-tac/bai-viet' },
           { label: 'Bình luận', path: '/doi-tac/binh-luan' },
+          { label: 'Tra cứu mã đăng ký', path: '/doi-tac/tra-cuu-ma' },
           {
             label: 'Các chương trình đã đăng ký',
             path: '/doi-tac/chuong-trinh-da-dang-ky',
@@ -47,10 +48,10 @@ export class MemberLayout {
           },
         ]
       : [
-          { label: 'Tổng quan', path: '/thanh-vien', exact: true },
           { label: 'Hồ sơ', path: '/thanh-vien/ho-so' },
           { label: 'Bài viết', path: '/thanh-vien/bai-viet' },
           { label: 'Bình luận', path: '/thanh-vien/binh-luan' },
+          { label: 'Tra cứu mã đăng ký', path: '/thanh-vien/tra-cuu-ma' },
           {
             label: 'Đăng ký trở thành đối tác',
             path: '/thanh-vien/dang-ky-doi-tac',

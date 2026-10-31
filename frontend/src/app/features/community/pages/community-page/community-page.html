@@ -73,7 +73,7 @@
     <div class="donation-layout">
       <div class="donation-main" appReveal="left">
         <div class="donation-stats" aria-label="Số liệu đóng góp">
-          @for (stat of donationStats; track stat.label) {
+          @for (stat of donationStats(); track stat.label) {
             <article class="donation-stat">
               <img [src]="stat.icon" alt="" aria-hidden="true" width="86" height="86" />
               <div>
@@ -87,10 +87,10 @@
         <section class="recent-donations" aria-labelledby="recent-donations-title">
           <header class="recent-donations__header">
             <h3 id="recent-donations-title">Danh sách quyên góp gần đây</h3>
-            <button class="community-button community-button--outlined" type="button">
+            <a class="community-button community-button--outlined" routerLink="/cong-dong/sao-ke">
               <span>Chi tiết sao kê</span>
               <span aria-hidden="true">↗</span>
-            </button>
+            </a>
           </header>
 
           <div class="donation-table-scroll">
@@ -104,13 +104,15 @@
                 </tr>
               </thead>
               <tbody>
-                @for (donation of donations; track donation.id) {
+                @for (donation of donations(); track donation.id) {
                   <tr>
                     <td>{{ donation.id }}</td>
                     <td>{{ donation.name }}</td>
                     <td>{{ donation.time }}</td>
                     <td>{{ donation.amount }}</td>
                   </tr>
+                } @empty {
+                  <tr><td colspan="4">@if (donationsLoading()) { Đang tải giao dịch đã xác nhận... } @else if (donationsError()) { Chưa tải được dữ liệu quyên góp. } @else { Chưa có giao dịch quyên góp được xác nhận. }</td></tr>
                 }
               </tbody>
             </table>

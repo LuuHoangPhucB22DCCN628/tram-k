@@ -34,7 +34,8 @@ export class RevealObserverService {
           this.observer?.unobserve(entry.target);
         }
       },
-      { rootMargin: '0px 0px -8% 0px', threshold: 0.14 },
+      // A tall section may never occupy 14% of the viewport at once; reveal as soon as it enters.
+      { rootMargin: '0px 0px -8% 0px', threshold: 0 },
     );
     return this.observer;
   }

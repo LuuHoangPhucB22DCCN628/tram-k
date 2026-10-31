@@ -11,6 +11,8 @@
         <option value="ALL">Tất cả</option>
         <option value="PENDING">Chờ duyệt</option>
         <option value="PUBLISHED">Đã xuất bản</option>
+        <option value="COMPLETED">Đã hoàn thành</option>
+        <option value="NEEDS_SCHEDULE">Cần cập nhật lịch</option>
         <option value="REJECTED">Cần chỉnh sửa</option>
       </select>
     </label>
@@ -25,7 +27,7 @@
       @for (proposal of proposals(); track proposal.id) {
         <article class="admin-program-card">
           <div class="admin-program-card__meta">
-            <span [attr.data-status]="proposal.status">{{ statusLabel(proposal.status) }}</span>
+            <span [attr.data-status]="programStatus(proposal)">{{ statusLabel(programStatus(proposal)) }}</span>
             <time [attr.datetime]="proposal.createdAt">
               Gửi {{ proposal.createdAt | date: 'dd/MM/yyyy, HH:mm' }}
             </time>
@@ -47,10 +49,12 @@
             </div>
           </dl>
           <div class="admin-program-card__actions">
-            <button type="button" (click)="openDetails(proposal)">Xem chi tiết</button>
+            <button type="button" (click)="openDetails(proposal)">
+              {{ proposal.status === 'PUBLISHED' ? 'Xem và cập nhật' : 'Xem chi tiết' }}
+            </button>
             @if (proposal.status === 'PENDING') {
-              <button class="admin-program-card__approve" type="button" (click)="approve(proposal)">
-                Duyệt
+              <button class="admin-program-card__approve" type="button" (click)="openDetails(proposal)">
+                Kiểm tra và duyệt
               </button>
               <button
                 class="admin-program-card__reject"
@@ -60,6 +64,9 @@
                 Từ chối
               </button>
             }
+            <button class="admin-program-card__reject" type="button" (click)="openDelete(proposal)">
+              Xóa chương trình
+            </button>
           </div>
         </article>
       }
@@ -90,8 +97,8 @@
         >
           ×
         </button>
-        <span class="admin-dialog__status" [attr.data-status]="proposal.status">
-          {{ statusLabel(proposal.status) }}
+        <span class="admin-dialog__status" [attr.data-status]="programStatus(proposal)">
+          {{ statusLabel(programStatus(proposal)) }}
         </span>
         <h2 id="admin-program-dialog-title">{{ proposal.title }}</h2>
         <p>{{ proposal.description }}</p>
@@ -114,13 +121,114 @@
           </div>
           <div>
             <dt>Quy mô</dt>
-            <dd>{{ proposal.capacity }} người/suất mỗi đợt</dd>
+            <dd>{{ proposal.capacity }} chỗ đăng ký cho cả chương trình</dd>
+          </div>
+          <div>
+            <dt>Đối tượng / điều kiện</dt>
+            <dd>{{ eligibilityLabel(proposal) }}</dd>
           </div>
           <div>
             <dt>Liên hệ</dt>
             <dd>{{ proposal.contactName }} · {{ proposal.phone }} · {{ proposal.email }}</dd>
           </div>
         </dl>
+        @if (proposal.status === 'PENDING' && !addressIsUsable()) {
+          <p class="admin-dialog__warning">Địa chỉ này chưa đủ rõ để bệnh nhân tìm đến. Hãy yêu cầu đối tác sửa trước khi duyệt.</p>
+        }
+        @if (proposal.status === 'PUBLISHED') {
+          <div class="admin-dialog__eligibility">
+            <h3>Cập nhật thông tin công khai</h3>
+            <label>
+              Địa chỉ cụ thể <span aria-hidden="true">*</span>
+              <input type="text" maxlength="300" [value]="editingAddress()" (input)="updateAddress($event)" />
+            </label>
+            @if (!addressIsUsable()) {
+              <small>Nhập địa chỉ rõ ràng, có ít nhất hai từ; không dùng ký tự lặp hoặc nội dung thử nghiệm.</small>
+            }
+            @if (programStatus(proposal) === 'PUBLISHED') {
+              <p>Lịch đã xác nhận: {{ proposal.schedule }}. Nếu cần đổi lịch, hãy yêu cầu nhà hảo tâm gửi lại chương trình.</p>
+            } @else {
+              <p class="admin-dialog__warning">
+                @if (programStatus(proposal) === 'COMPLETED') {
+                  Lịch “{{ editingSchedule() }}” đã kết thúc. Chọn lịch mới để mở lại đăng ký; các hồ sơ trước đây vẫn được giữ.
+                } @else {
+                  Lịch cũ “{{ editingSchedule() }}” chỉ là văn bản. Bổ sung ngày giờ chính xác trước khi mở lại đăng ký.
+                }
+              </p>
+              <label>
+                Kiểu lịch <span aria-hidden="true">*</span>
+                <select [value]="repairType()" (change)="updateRepairType($event)">
+                  <option value="ONE_TIME">Một ngày cụ thể</option>
+                  <option value="WEEKLY">Hằng tuần trong khoảng thời gian</option>
+                </select>
+              </label>
+              <label>
+                {{ repairType() === 'ONE_TIME' ? 'Ngày tổ chức' : 'Ngày bắt đầu' }} <span aria-hidden="true">*</span>
+                <input type="date" [min]="today" [value]="repairStartsOn()" (input)="updateRepairField('startsOn', $event)" />
+              </label>
+              @if (repairType() === 'WEEKLY') {
+                <label>
+                  Ngày kết thúc <span aria-hidden="true">*</span>
+                  <input type="date" [min]="repairStartsOn() || today" [value]="repairEndsOn()" (input)="updateRepairField('endsOn', $event)" />
+                </label>
+                <fieldset class="admin-dialog__weekdays">
+                  <legend>Các thứ trong tuần <span aria-hidden="true">*</span></legend>
+                  @for (day of weekdays; track day.value) {
+                    <label><input type="checkbox" [checked]="repairWeekdays().includes(day.value)" (change)="toggleRepairWeekday(day.value, $event)" />{{ day.label }}</label>
+                  }
+                </fieldset>
+              }
+              <div class="admin-dialog__time-row">
+                <label>Giờ bắt đầu <span aria-hidden="true">*</span>
+                  <input type="time" [value]="repairStartTime()" (input)="updateRepairField('startTime', $event)" />
+                </label>
+                <label>Giờ kết thúc <span aria-hidden="true">*</span>
+                  <input type="time" [value]="repairEndTime()" (input)="updateRepairField('endTime', $event)" />
+                </label>
+              </div>
+              @if (!scheduleIsUsable()) {
+                <small>Chọn ngày trong tương lai, giờ kết thúc sau giờ bắt đầu; với lịch hằng tuần cần ngày kết thúc và ít nhất một thứ.</small>
+              }
+            }
+          </div>
+        }
+        @if (proposal.status === 'PENDING' || proposal.status === 'PUBLISHED') {
+          <div class="admin-dialog__eligibility">
+            <h3>Điều kiện công khai cho người nhận</h3>
+            <label>
+              Đối tượng nhận hỗ trợ <span aria-hidden="true">*</span>
+              <select [value]="eligibleAudience()" (change)="updateAudience($event)">
+                <option value="">{{ proposal.status === 'PENDING' ? 'Chọn đối tượng' : 'Chưa cập nhật' }}</option>
+                <option value="PATIENT">Chỉ bệnh nhân</option>
+                <option value="PATIENT_AND_CAREGIVER">Bệnh nhân và người chăm sóc</option>
+                <option value="ANYONE">Mọi người cần hỗ trợ</option>
+              </select>
+            </label>
+            <label class="admin-dialog__check">
+              <input type="checkbox" [checked]="financialNeedRequired()" (change)="updateFinancialNeed($event)" />
+              Chỉ dành cho người có hoàn cảnh khó khăn
+            </label>
+            <label>
+              Điều kiện bổ sung (nếu có)
+              <textarea rows="3" maxlength="500" [value]="eligibilityNote()"
+                (input)="updateEligibilityNote($event)"></textarea>
+            </label>
+          </div>
+          @if (detailFeedback()) {
+            <p class="admin-dialog__message" aria-live="polite">{{ detailFeedback() }}</p>
+          }
+          <div class="admin-dialog__actions">
+            <button type="button" (click)="closeDetails()">Đóng</button>
+            @if (proposal.status === 'PENDING') {
+              <button type="button" class="admin-program-card__approve"
+                [disabled]="!eligibleAudience() || !addressIsUsable() || reviewBusy()" (click)="approve(proposal)">{{ reviewBusy() ? 'Đang duyệt...' : 'Duyệt và công khai' }}</button>
+            } @else {
+              <button type="button" class="admin-program-card__approve"
+                [disabled]="!addressIsUsable() || !scheduleIsUsable() || savingPublished()"
+                (click)="savePublished(proposal)">{{ savingPublished() ? 'Đang lưu...' : 'Lưu thay đổi' }}</button>
+            }
+          </div>
+        }
       </section>
     </div>
   }
@@ -158,11 +266,30 @@
           <button
             type="button"
             class="admin-program-card__reject"
-            [disabled]="rejectionReason().trim().length < 10"
+            [disabled]="rejectionReason().trim().length < 10 || reviewBusy()"
             (click)="reject()"
           >
-            Gửi yêu cầu chỉnh sửa
+            {{ reviewBusy() ? 'Đang gửi...' : 'Gửi yêu cầu chỉnh sửa' }}
           </button>
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (deleting(); as proposal) {
+    <div class="admin-dialog-backdrop" (click)="closeDelete()">
+      <section class="admin-dialog admin-dialog--reject" role="alertdialog" aria-modal="true"
+        aria-labelledby="delete-program-dialog-title" appEscapeClose (escapeClose)="closeDelete()"
+        (click)="$event.stopPropagation()">
+        <button type="button" class="admin-dialog__close" aria-label="Đóng" [disabled]="deleteBusy()"
+          (click)="closeDelete()">×</button>
+        <h2 id="delete-program-dialog-title">Xóa vĩnh viễn chương trình?</h2>
+        <p><strong>{{ proposal.title }}</strong> · {{ proposal.city }}</p>
+        <p>Chương trình sẽ biến mất khỏi trang công khai và gợi ý chat. Mọi hồ sơ đăng ký liên quan cũng bị xóa. Thao tác này không thể hoàn tác.</p>
+        <div class="admin-dialog__actions">
+          <button type="button" [disabled]="deleteBusy()" (click)="closeDelete()">Giữ chương trình</button>
+          <button type="button" class="admin-program-card__reject" [disabled]="deleteBusy()"
+            (click)="confirmDelete()">{{ deleteBusy() ? 'Đang xóa...' : 'Xóa vĩnh viễn' }}</button>
         </div>
       </section>
     </div>

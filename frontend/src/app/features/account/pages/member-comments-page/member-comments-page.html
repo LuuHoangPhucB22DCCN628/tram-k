@@ -5,6 +5,15 @@
     <span>Xem lại, chỉnh sửa hoặc xóa những bình luận bạn đã gửi trong cộng đồng.</span>
   </header>
 
+  @if (canSync() && legacyCount()) {
+    <div class="comments-page__sync">
+      <p>Còn {{ legacyCount() }} bình luận/cảm xúc cũ chỉ lưu trên trình duyệt này. Chỉ nội dung gắn với câu chuyện đã công khai mới chuyển được.</p>
+      <button type="button" [disabled]="syncing()" (click)="syncLegacy()">
+        {{ syncing() ? 'Đang đồng bộ...' : 'Đồng bộ dữ liệu cũ' }}
+      </button>
+    </div>
+  }
+
   @if (feedback(); as notice) {
     <p
       class="comments-page__feedback"
@@ -52,6 +61,9 @@
               </div>
             </form>
           } @else {
+            @if (comment.id.startsWith('COMMENT-')) {
+              <small class="comment-card__error">Bình luận cũ chỉ lưu trên trình duyệt này; chưa được đồng bộ lên máy chủ.</small>
+            }
             <p class="comment-card__content">{{ comment.content }}</p>
             <div class="comment-card__actions">
               <button type="button" class="comment-card__secondary" (click)="startEditing(comment)">

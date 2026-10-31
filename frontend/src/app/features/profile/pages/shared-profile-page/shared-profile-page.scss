@@ -1,0 +1,59 @@
+.shared-profile {
+  min-height: 50vh;
+  padding: clamp(32px, 6vw, 80px) max(24px, calc((100vw - 1100px) / 2));
+  background: #f8f7ff;
+  color: #24294b;
+}
+
+.shared-profile__back {
+  color: #5e4dcb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.shared-profile__card {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-top: 24px;
+  padding: clamp(24px, 4vw, 40px);
+  border: 1px solid #e3def4;
+  border-radius: 20px;
+  background: white;
+}
+
+.shared-profile__card app-member-avatar {
+  width: 96px;
+  height: 96px;
+  font-size: 32px;
+}
+
+.shared-profile__card h1 {
+  margin: 4px 0 8px;
+  font-size: clamp(28px, 4vw, 40px);
+}
+
+.shared-profile__card h2 {
+  margin: 24px 0 8px;
+  font-size: 18px;
+}
+
+.shared-profile__card p {
+  margin: 8px 0;
+  color: #596180;
+}
+
+.shared-profile__eyebrow {
+  color: #5e4dcb !important;
+  font-weight: 700;
+}
+
+.shared-profile__bio {
+  white-space: pre-wrap;
+}
+
+@media (max-width: 560px) {
+  .shared-profile__card {
+    flex-direction: column;
+  }
+}

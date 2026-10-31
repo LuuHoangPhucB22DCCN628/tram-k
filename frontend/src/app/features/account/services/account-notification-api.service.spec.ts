@@ -71,4 +71,25 @@ describe('AccountNotificationApiService', () => {
     allRequest.flush({ success: true, data: { updatedCount: 3 } });
     await expect(allPromise).resolves.toBe(3);
   });
+
+  it('loads and updates social notification preferences', async () => {
+    const service = TestBed.inject(AccountNotificationApiService);
+    const preferences = { storyComments: true, storyReplies: true, storyReactions: false };
+    const read = firstValueFrom(service.preferences());
+    const getRequest = TestBed.inject(HttpTestingController).expectOne(
+      'http://localhost:3000/notifications/preferences',
+    );
+    expect(getRequest.request.method).toBe('GET');
+    getRequest.flush({ success: true, data: preferences });
+    await expect(read).resolves.toEqual(preferences);
+
+    const update = firstValueFrom(service.updatePreferences({ storyComments: false }));
+    const patchRequest = TestBed.inject(HttpTestingController).expectOne(
+      'http://localhost:3000/notifications/preferences',
+    );
+    expect(patchRequest.request.method).toBe('PATCH');
+    expect(patchRequest.request.body).toEqual({ storyComments: false });
+    patchRequest.flush({ success: true, data: { ...preferences, storyComments: false } });
+    await expect(update).resolves.toEqual({ ...preferences, storyComments: false });
+  });
 });

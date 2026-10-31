@@ -137,9 +137,27 @@
         data-ui-card
       >
         <div class="shared-story__author">
-          <span class="avatar" aria-hidden="true">{{ story.authorName.slice(0, 1) }}</span>
+          @if (canViewProfile(story.userId, story.profileVisibility)) {
+            <a
+              class="member-profile-link"
+              [routerLink]="['/ho-so', story.userId]"
+              [attr.aria-label]="'Xem hồ sơ ' + story.authorName"
+            >
+              <app-member-avatar class="avatar" [userId]="story.userId" [name]="story.authorName" />
+            </a>
+          } @else {
+            <app-member-avatar class="avatar" [name]="story.authorName" />
+          }
           <div>
-            <strong>{{ story.authorName }}</strong>
+            @if (canViewProfile(story.userId, story.profileVisibility)) {
+              <a
+                class="member-profile-link member-profile-link--name"
+                [routerLink]="['/ho-so', story.userId]"
+                >{{ story.authorName }}</a
+              >
+            } @else {
+              <strong>{{ story.authorName }}</strong>
+            }
             <span>{{ story.authorRole }}</span>
           </div>
           <time [attr.datetime]="story.publishedAt">{{ formatDate(story.publishedAt) }}</time>
@@ -257,14 +275,39 @@
             </div>
 
             <ng-template #commentItem let-comment let-currentStory="story">
-              <article class="story-comment" [class.story-comment--deleted]="comment.deletedAt">
+              <article
+                class="story-comment"
+                [id]="'comment-' + comment.id"
+                [class.story-comment--deleted]="comment.deletedAt"
+                [class.story-comment--targeted]="targetCommentId() === comment.id"
+              >
                 <div class="story-comment__meta">
-                  <span class="avatar" aria-hidden="true">{{
-                    comment.authorName.slice(0, 1)
-                  }}</span>
+                  @if (canViewProfile(comment.userId, comment.profileVisibility)) {
+                    <a
+                      class="member-profile-link"
+                      [routerLink]="['/ho-so', comment.userId]"
+                      [attr.aria-label]="'Xem hồ sơ ' + comment.authorName"
+                    >
+                      <app-member-avatar
+                        class="avatar"
+                        [userId]="comment.userId"
+                        [name]="comment.authorName"
+                      />
+                    </a>
+                  } @else {
+                    <app-member-avatar class="avatar" [name]="comment.authorName" />
+                  }
                   <div>
-                    <strong>{{ comment.authorName }}</strong
-                    ><time [attr.datetime]="comment.updatedAt"
+                    @if (canViewProfile(comment.userId, comment.profileVisibility)) {
+                      <a
+                        class="member-profile-link member-profile-link--name"
+                        [routerLink]="['/ho-so', comment.userId]"
+                        >{{ comment.authorName }}</a
+                      >
+                    } @else {
+                      <strong>{{ comment.authorName }}</strong>
+                    }
+                    <time [attr.datetime]="comment.updatedAt"
                       >{{ formatDate(comment.updatedAt)
                       }}{{ comment.updatedAt !== comment.createdAt ? ' · đã sửa' : '' }}</time
                     >

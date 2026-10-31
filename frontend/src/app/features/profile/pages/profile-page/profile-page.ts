@@ -7,6 +7,7 @@ import { UiButton } from '@shared/ui';
 
 import { ProfileApiService } from '../../profile-api.service';
 import { ProfileApiError, type MemberProfile, type ProfileVisibility } from '../../profile.models';
+import { AvatarImageError, prepareAvatarImage } from './avatar-image';
 
 type ProfileFeedback = { readonly type: 'success' | 'error'; readonly message: string };
 
@@ -30,6 +31,9 @@ export class ProfilePage implements OnInit {
   protected readonly accountEmail = this.user?.email ?? '';
   protected readonly accountRole = this.roleLabel(this.user?.role);
   protected readonly avatarDataUrl = signal<string | null>(null);
+  protected readonly avatarPending = signal(false);
+  protected readonly avatarProcessing = signal(false);
+  protected readonly avatarFeedback = signal<ProfileFeedback | null>(null);
   protected readonly submitted = signal(false);
   protected readonly isLoading = signal(true);
   protected readonly isSaving = signal(false);
@@ -82,50 +86,68 @@ export class ProfilePage implements OnInit {
     return control.hasError(errorName) && (control.touched || this.submitted());
   }
 
-  protected selectAvatar(event: Event): void {
-    this.feedback.set(null);
+  protected async selectAvatar(event: Event): Promise<void> {
+    this.avatarFeedback.set(null);
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      this.feedback.set({ type: 'error', message: 'Avatar chỉ nhận tệp JPG, PNG hoặc WebP.' });
+    this.avatarProcessing.set(true);
+    this.avatarFeedback.set({ type: 'success', message: 'Đang xử lý ảnh...' });
+    try {
+      const dataUrl = await prepareAvatarImage(file);
+      this.avatarDataUrl.set(dataUrl);
+      this.avatarPending.set(true);
+      this.avatarFeedback.set({
+        type: 'success',
+        message: 'Ảnh đã chọn nhưng chưa lưu. Bấm “Lưu ảnh” để hoàn tất.',
+      });
+    } catch (error) {
+      this.avatarFeedback.set({
+        type: 'error',
+        message:
+          error instanceof AvatarImageError
+            ? error.message
+            : 'Không thể xử lý ảnh. Vui lòng thử lại.',
+      });
+    } finally {
+      this.avatarProcessing.set(false);
       input.value = '';
-      return;
     }
-
-    if (file.size > 1024 * 1024) {
-      this.feedback.set({ type: 'error', message: 'Dung lượng avatar không được vượt quá 1 MB.' });
-      input.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => this.avatarDataUrl.set(String(reader.result));
-    reader.onerror = () =>
-      this.feedback.set({ type: 'error', message: 'Không thể đọc ảnh. Vui lòng thử tệp khác.' });
-    reader.readAsDataURL(file);
   }
 
   protected removeAvatar(): void {
     this.avatarDataUrl.set(null);
-    this.feedback.set(null);
+    this.avatarPending.set(this.savedProfile?.avatarDataUrl != null);
+    this.avatarFeedback.set(
+      this.avatarPending()
+        ? { type: 'success', message: 'Ảnh sẽ được xóa sau khi bạn bấm “Lưu ảnh”.' }
+        : null,
+    );
   }
 
   protected resetForm(): void {
     if (!this.savedProfile) return;
     this.profileForm.reset(this.savedProfile);
     this.avatarDataUrl.set(this.savedProfile.avatarDataUrl);
+    this.avatarPending.set(false);
+    this.avatarFeedback.set(null);
     this.submitted.set(false);
     this.feedback.set(null);
   }
 
   protected save(): void {
+    if (this.avatarProcessing() || this.isSaving()) return;
     this.submitted.set(true);
     this.feedback.set(null);
 
     if (!this.user || this.profileForm.invalid) {
       this.profileForm.markAllAsTouched();
+      if (this.avatarPending()) {
+        this.avatarFeedback.set({
+          type: 'error',
+          message: 'Vui lòng sửa các thông tin chưa hợp lệ trước khi lưu ảnh.',
+        });
+      }
       return;
     }
 
@@ -133,6 +155,12 @@ export class ProfilePage implements OnInit {
     const birthYear = values.birthYear ? Number(values.birthYear) : null;
     if (birthYear !== null && birthYear > this.currentYear) {
       this.profileForm.controls.birthYear.setErrors({ futureYear: true });
+      if (this.avatarPending()) {
+        this.avatarFeedback.set({
+          type: 'error',
+          message: 'Vui lòng sửa năm sinh trước khi lưu ảnh.',
+        });
+      }
       return;
     }
 
@@ -145,14 +173,18 @@ export class ProfilePage implements OnInit {
       birthYear: values.birthYear.trim(),
       bio: values.bio.trim(),
       avatarDataUrl: this.avatarDataUrl(),
+      showEmail: false,
     };
 
     this.isSaving.set(true);
+    const avatarWasPending = this.avatarPending();
     this.profileApi.updateOwnProfile(this.user, this.auth.authMode(), profile).subscribe({
       next: (saved) => {
         this.isSaving.set(false);
         this.applyProfile(saved);
-        this.auth.updateDisplayName(saved.displayName);
+        if (avatarWasPending) {
+          this.avatarFeedback.set({ type: 'success', message: 'Đã lưu ảnh đại diện.' });
+        }
         this.submitted.set(false);
         this.feedback.set({ type: 'success', message: 'Đã lưu hồ sơ của bạn.' });
       },
@@ -162,13 +194,15 @@ export class ProfilePage implements OnInit {
           this.loadProfile('Hồ sơ đã thay đổi ở nơi khác. Dữ liệu mới nhất đã được tải lại.');
           return;
         }
-        this.feedback.set({
+        const result: ProfileFeedback = {
           type: 'error',
           message:
             error instanceof ProfileApiError
               ? error.message
               : 'Không thể lưu hồ sơ. Vui lòng thử lại.',
-        });
+        };
+        this.feedback.set(result);
+        if (avatarWasPending) this.avatarFeedback.set(result);
       },
     });
   }
@@ -259,7 +293,10 @@ export class ProfilePage implements OnInit {
 
   private applyProfile(profile: MemberProfile): void {
     this.savedProfile = profile;
-    this.profileForm.reset(profile);
+    this.profileForm.reset({ ...profile, showEmail: false });
     this.avatarDataUrl.set(profile.avatarDataUrl);
+    this.avatarPending.set(false);
+    this.avatarFeedback.set(null);
+    this.auth.updateProfileSummary(profile.displayName, profile.avatarDataUrl);
   }
 }

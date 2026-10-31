@@ -1,4 +1,8 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+
+import { AuthService } from '@core/auth/auth.service';
+import { CommunityEngagementApiService } from './community-engagement-api.service';
 
 import type {
   CommunityReaction,
@@ -9,11 +13,44 @@ import type {
 @Injectable({ providedIn: 'root' })
 export class CommunityReactionStorageService {
   private readonly storageKey = 'tram-k.community-reactions';
+  private readonly auth = inject(AuthService);
+  private readonly api = inject(CommunityEngagementApiService);
   private readonly reactionsState = signal<readonly CommunityReaction[]>(this.read());
+  private readonly remoteCounts = signal<Record<string, CommunityReactionCounts>>({});
+  private readonly remoteMine = signal<Record<string, CommunityReactionType | null>>({});
+  private readonly loadedSources = new Set<string>();
 
   readonly reactions = this.reactionsState.asReadonly();
 
+  legacyCountFor(userId: string): number {
+    return this.reactionsState().filter((reaction) => reaction.userId === userId).length;
+  }
+
+  async migrateLegacyFor(userId: string): Promise<{ migrated: number; remaining: number }> {
+    if (!this.api.available || this.auth.authMode() !== 'REMOTE' || this.auth.currentUser()?.id !== userId) {
+      return { migrated: 0, remaining: this.legacyCountFor(userId) };
+    }
+    let migrated = 0;
+    for (const reaction of this.reactionsState().filter((item) => item.userId === userId)) {
+      let sourceKey: string | null = null;
+      try {
+        const url = new URL(reaction.sourcePath, 'http://localhost');
+        if (url.pathname === '/goc-tam-ly') sourceKey = url.searchParams.get('story');
+      } catch { /* Keep invalid legacy records local. */ }
+      if (!sourceKey) continue;
+      const restored = await firstValueFrom(this.api.importReaction(sourceKey, reaction.type));
+      if (!restored) continue;
+      this.remoteMine.update((state) => ({ ...state, [reaction.sourcePath]: restored }));
+      const counts = await firstValueFrom(this.api.reactionSummary(sourceKey));
+      if (counts) this.remoteCounts.update((state) => ({ ...state, [reaction.sourcePath]: counts }));
+      this.persist(this.reactionsState().filter((item) => item.id !== reaction.id));
+      migrated += 1;
+    }
+    return { migrated, remaining: this.legacyCountFor(userId) };
+  }
+
   reactionFor(userId: string, sourcePath: string): CommunityReactionType | null {
+    if (this.api.available) return this.remoteMine()[sourcePath] ?? null;
     return (
       this.reactionsState().find(
         (reaction) => reaction.userId === userId && reaction.sourcePath === sourcePath,
@@ -22,11 +59,39 @@ export class CommunityReactionStorageService {
   }
 
   countsFor(sourcePath: string): CommunityReactionCounts {
+    if (this.api.available) return this.remoteCounts()[sourcePath] ?? { LIKE: 0, LOVE: 0, SUPPORT: 0 };
     const counts: Record<CommunityReactionType, number> = { LIKE: 0, LOVE: 0, SUPPORT: 0 };
     this.reactionsState().forEach((reaction) => {
       if (reaction.sourcePath === sourcePath) counts[reaction.type] += 1;
     });
     return counts;
+  }
+
+  initializeForSource(sourceKey: string, sourcePath: string, force = false): void {
+    if (!this.api.available || (this.loadedSources.has(sourceKey) && !force)) return;
+    this.loadedSources.add(sourceKey);
+    this.api.reactionSummary(sourceKey).subscribe((counts) => {
+      if (counts) this.remoteCounts.update((state) => ({ ...state, [sourcePath]: counts }));
+      else this.loadedSources.delete(sourceKey);
+    });
+    if (this.auth.authMode() === 'REMOTE') {
+      this.api.myReaction(sourceKey).subscribe((type) => {
+        this.remoteMine.update((state) => ({ ...state, [sourcePath]: type }));
+      });
+    }
+  }
+
+  async toggleConfirmed(userId: string, sourceKey: string, sourcePath: string, type: CommunityReactionType): Promise<boolean> {
+    if (!this.api.available || this.auth.authMode() !== 'REMOTE') {
+      this.toggle(userId, sourcePath, type);
+      return true;
+    }
+    const selected = await firstValueFrom(this.api.toggleReaction(sourceKey, type));
+    if (selected === false) return false;
+    this.remoteMine.update((state) => ({ ...state, [sourcePath]: selected }));
+    const counts = await firstValueFrom(this.api.reactionSummary(sourceKey));
+    if (counts) this.remoteCounts.update((state) => ({ ...state, [sourcePath]: counts }));
+    return true;
   }
 
   toggle(

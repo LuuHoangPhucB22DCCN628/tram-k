@@ -1,13 +1,24 @@
 import { Routes } from '@angular/router';
 
-import { guestGuard, roleGuard } from '@core/auth/auth.guard';
+import { authGuard, guestGuard, roleGuard } from '@core/auth/auth.guard';
 
 const loadSectionPlaceholder = () =>
   import('@features/shell/pages/section-placeholder-page/section-placeholder-page').then(
     (component) => component.SectionPlaceholderPage,
   );
 
+const loadHairRegistrationLookup = () =>
+  import('@features/account/pages/hair-registration-lookup-page/hair-registration-lookup-page').then(
+    (component) => component.HairRegistrationLookupPage,
+  );
+
 const publicSectionRoutes: Routes = [
+  {
+    path: 'tra-cuu-ma',
+    title: 'Tra cứu mã đăng ký | Trạm K',
+    canActivate: [authGuard],
+    loadComponent: loadHairRegistrationLookup,
+  },
   {
     path: 'dang-nhap',
     title: 'Đăng nhập | Trạm K',
@@ -27,7 +38,6 @@ const publicSectionRoutes: Routes = [
   {
     path: 'xac-minh-email',
     title: 'Xác minh email | Trạm K',
-    canActivate: [guestGuard],
     loadComponent: () =>
       import('@features/auth/pages/verify-email-page/verify-email-page').then(
         (component) => component.VerifyEmailPage,
@@ -110,6 +120,14 @@ const publicSectionRoutes: Routes = [
       ),
   },
   {
+    path: 'cau-chuyen/bep-an-yen',
+    title: 'Bếp An Yên - Cho đi là còn mãi | Trạm K',
+    loadComponent: () =>
+      import('@features/stories/pages/kitchen-story-page/kitchen-story-page').then(
+        (component) => component.KitchenStoryPage,
+      ),
+  },
+  {
     path: 'cau-chuyen/la-bai-dinh-menh',
     title: 'Lá bài định mệnh | Trạm K',
     loadComponent: () =>
@@ -157,6 +175,7 @@ const publicSectionRoutes: Routes = [
   {
     path: 'cong-dong/thu-vien-toc/nhan-toc',
     title: 'Đăng ký nhận tóc | Trạm K',
+    canActivate: [authGuard],
     data: { mode: 'receive' },
     loadComponent: () =>
       import('@features/community/pages/hair-registration-page/hair-registration-page').then(
@@ -166,6 +185,7 @@ const publicSectionRoutes: Routes = [
   {
     path: 'cong-dong/thu-vien-toc/hien-toc',
     title: 'Đăng ký hiến tóc | Trạm K',
+    canActivate: [authGuard],
     data: { mode: 'donate' },
     loadComponent: () =>
       import('@features/community/pages/hair-registration-page/hair-registration-page').then(
@@ -197,6 +217,14 @@ const publicSectionRoutes: Routes = [
       ),
   },
   {
+    path: 'cong-dong/sao-ke',
+    title: 'Chi tiết sao kê quyên góp | Trạm K',
+    loadComponent: () =>
+      import('@features/community/pages/donation-statement-page/donation-statement-page').then(
+        (component) => component.DonationStatementPage,
+      ),
+  },
+  {
     path: 'cong-dong',
     title: 'Cộng đồng | Trạm K',
     loadComponent: () =>
@@ -213,13 +241,20 @@ const publicSectionRoutes: Routes = [
       ),
   },
   {
+    path: 'ho-so/:userId',
+    title: 'Hồ sơ thành viên | Trạm K',
+    loadComponent: () =>
+      import('@features/profile/pages/shared-profile-page/shared-profile-page').then(
+        (component) => component.SharedProfilePage,
+      ),
+  },
+  {
     path: 've-chung-toi',
     title: 'Về chúng tôi | Trạm K',
-    data: {
-      heading: 'Về Trạm K',
-      description: 'Giới thiệu mục tiêu, giá trị và đội ngũ phát triển dự án Trạm K.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    loadComponent: () =>
+      import('@features/about/pages/about-page/about-page').then(
+        (component) => component.AboutPage,
+      ),
   },
   {
     path: 'tim-kiem',
@@ -242,13 +277,8 @@ const publicSectionRoutes: Routes = [
 const memberSectionRoutes: Routes = [
   {
     path: '',
-    title: 'Tổng quan thành viên | Trạm K',
-    data: {
-      area: 'member',
-      heading: 'Tổng quan thành viên',
-      description: 'Theo dõi hồ sơ, bài viết, bình luận và các đăng ký hỗ trợ của bạn.',
-    },
-    loadComponent: loadSectionPlaceholder,
+    pathMatch: 'full',
+    redirectTo: 'ho-so',
   },
   {
     path: 'ho-so',
@@ -273,6 +303,11 @@ const memberSectionRoutes: Routes = [
       import('@features/account/pages/member-comments-page/member-comments-page').then(
         (component) => component.MemberCommentsPage,
       ),
+  },
+  {
+    path: 'tra-cuu-ma',
+    title: 'Tra cứu mã đăng ký | Trạm K',
+    loadComponent: loadHairRegistrationLookup,
   },
   {
     path: 'dang-ky-doi-tac',
@@ -321,6 +356,11 @@ const partnerSectionRoutes: Routes = [
       import('@features/account/pages/member-comments-page/member-comments-page').then(
         (component) => component.MemberCommentsPage,
       ),
+  },
+  {
+    path: 'tra-cuu-ma',
+    title: 'Tra cứu mã đăng ký | Trạm K',
+    loadComponent: loadHairRegistrationLookup,
   },
   {
     path: 'chuong-trinh-da-dang-ky',
@@ -403,11 +443,27 @@ const adminSectionRoutes: Routes = [
       ),
   },
   {
+    path: 'hien-nhan-toc',
+    title: 'Quản lý hiến và nhận tóc | Trạm K',
+    loadComponent: () =>
+      import('@features/admin/pages/admin-hair-registrations-page/admin-hair-registrations-page').then(
+        (component) => component.AdminHairRegistrationsPage,
+      ),
+  },
+  {
     path: 'diem-phat-com',
     title: 'Điểm tiếp nhận quyên góp | Trạm K',
     loadComponent: () =>
       import('@features/admin/pages/admin-community-locations-page/admin-community-locations-page').then(
         (component) => component.AdminCommunityLocationsPage,
+      ),
+  },
+  {
+    path: 'quyen-gop',
+    title: 'Quyên góp và sao kê | Trạm K',
+    loadComponent: () =>
+      import('@features/admin/pages/admin-donations-page/admin-donations-page').then(
+        (component) => component.AdminDonationsPage,
       ),
   },
 ];

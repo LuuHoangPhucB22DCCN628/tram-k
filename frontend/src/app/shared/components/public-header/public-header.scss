@@ -1,4 +1,7 @@
-// Giữ nguyên menu và đăng nhập/đăng ký, thu gọn khoảng cách để không tràn màn hình laptop.
+.public-desktop-nav {
+  max-width: 1020px;
+}
+
 .account-menu {
   position: relative;
 }
@@ -239,14 +242,14 @@
 }
 
 @media (min-width: 1280px) and (max-width: 1535px) {
-  header > div {
+  .public-header-bar {
     padding-inline: 24px;
     gap: 12px;
   }
-  header > div > a {
+  .public-header-bar > a {
     width: 145px;
   }
-  nav a {
+  .public-desktop-nav a {
     padding-inline: 8px;
     font-size: 14px;
   }
