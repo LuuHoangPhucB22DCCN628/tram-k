@@ -1053,7 +1053,7 @@ export class AuthService {
     authVersion: number;
     role: { name: RoleName };
     partnerMembership: unknown;
-    profile?: { avatarDataUrl: string | null } | null;
+    profile?: { avatarUrl: string | null } | null;
   }) {
     const role = user.partnerMembership ? RoleName.PARTNER : user.role.name;
     return {
@@ -1063,7 +1063,7 @@ export class AuthService {
         email: user.email,
         role,
         status: user.status,
-        avatarUrl: user.profile?.avatarDataUrl ?? undefined,
+        avatarUrl: user.profile?.avatarUrl ?? undefined,
       },
       accessToken: this.signToken({
         id: user.id,

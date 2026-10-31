@@ -182,7 +182,7 @@ export class SearchService {
         by: ["programId"],
         where: {
           programId: { in: programIds },
-          status: { not: SupportProgramRegistrationStatus.REJECTED },
+           status: { in: [SupportProgramRegistrationStatus.CONFIRMED, SupportProgramRegistrationStatus.WAITLISTED] },
         },
         _count: { _all: true },
       })

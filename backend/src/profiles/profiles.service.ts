@@ -44,7 +44,7 @@ export class ProfilesService {
       role: user.partnerMembership ? "PARTNER" : user.role.name,
       city: user.profile?.city ?? "",
       bio: user.profile?.bio ?? "",
-      hasAvatar: Boolean(user.profile?.avatarDataUrl),
+      hasAvatar: Boolean(user.profile?.avatarUrl),
     };
   }
 
@@ -52,7 +52,7 @@ export class ProfilesService {
     const user = await this.findVisibleProfile(userId, viewerId);
     const match =
       /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(
-        user.profile?.avatarDataUrl ?? "",
+        user.profile?.avatarUrl ?? "",
       );
     if (!match) throw new NotFoundException("Không tìm thấy ảnh đại diện.");
     return { mimeType: match[1], bytes: Buffer.from(match[2], "base64") };
