@@ -3,8 +3,10 @@ import { ConfigService } from "@nestjs/config";
 import { SearchDocumentType } from "@prisma/client";
 
 import { PublicSupportOption, SearchService } from "../search/search.service";
-import { recurringLocationMatchesDate, requestedSupportDate, scheduleMatchesDate,
-  vietnamDateAndTime } from "../search/support-schedule";
+import {
+  recurringLocationMatchesDate, requestedSupportDate, scheduleMatchesDate,
+  vietnamDateAndTime
+} from "../search/support-schedule";
 import { AskAiAssistantDto } from "./dto/ask-ai-assistant.dto";
 import { AiAssistantReply, AiAssistantSource } from "./ai-assistant.types";
 import { SUPPORT_REGIONS } from "./support-regions";
@@ -55,7 +57,7 @@ export class AiAssistantService {
   constructor(
     private readonly config: ConfigService,
     private readonly searchService: SearchService,
-  ) {}
+  ) { }
 
   async ask(input: AskAiAssistantDto): Promise<AiAssistantReply> {
     const message = input.message.trim();
@@ -212,9 +214,11 @@ export class AiAssistantService {
     const region = matchingRegions.length === 1 ? matchingRegions[0] : null;
     const hasPlaceHint = /\b(tai|o|gan|khu vuc|tinh|thanh pho)\s+[a-z]/.test(normalized);
     const fallbackSources: AiAssistantSource[] = [
-      { title: "Bản đồ điểm tiếp nhận", link: region
-        ? `/cong-dong/diem-quyen-gop/${encodeURIComponent(region.id)}`
-        : "/cong-dong/diem-quyen-gop", type: "DONATION_LOCATION" },
+      {
+        title: "Bản đồ điểm tiếp nhận", link: region
+          ? `/cong-dong/diem-quyen-gop/${encodeURIComponent(region.id)}`
+          : "/cong-dong/diem-quyen-gop", type: "DONATION_LOCATION"
+      },
       { title: "Các chương trình hỗ trợ", link: "/cong-dong/chuong-trinh-ho-tro", type: "SUPPORT_PROGRAM" },
     ];
     if (!region) {
@@ -222,8 +226,8 @@ export class AiAssistantService {
         answer: matchingRegions.length > 1
           ? "Bạn vừa nhắc tới nhiều tỉnh/thành. Bạn muốn tìm nơi phát cơm hoặc chương trình tại địa điểm nào? Hãy cho tôi biết nơi bạn sẽ đến nhận hỗ trợ để không gợi ý nhầm khu vực."
           : hasPlaceHint
-          ? "Tôi chưa thấy điểm phát cơm hoặc chương trình còn nhận đăng ký phù hợp ở khu vực bạn nêu. Bạn có thể kiểm tra bản đồ và danh sách chương trình mới nhất; nếu muốn, hãy cho tôi biết tỉnh/thành và loại hỗ trợ cần tìm để tra lại."
-          : "Bạn cần tìm ở tỉnh/thành nào và đang cần suất ăn, hỗ trợ chi phí hay di chuyển? Tôi sẽ chỉ gợi ý điểm tiếp nhận hoặc chương trình đã công khai, phù hợp với nhu cầu bạn nêu; lịch phát và số suất có thể thay đổi, nên hãy kiểm tra trước khi đến.",
+            ? "Tôi chưa thấy điểm phát cơm hoặc chương trình còn nhận đăng ký phù hợp ở khu vực bạn nêu. Bạn có thể kiểm tra bản đồ và danh sách chương trình mới nhất; nếu muốn, hãy cho tôi biết tỉnh/thành và loại hỗ trợ cần tìm để tra lại."
+            : "Bạn cần tìm ở tỉnh/thành nào và đang cần suất ăn, hỗ trợ chi phí hay di chuyển? Tôi sẽ chỉ gợi ý điểm tiếp nhận hoặc chương trình đã công khai, phù hợp với nhu cầu bạn nêu; lịch phát và số suất có thể thay đổi, nên hãy kiểm tra trước khi đến.",
         mode: "LOCAL",
         disclaimer: DISCLAIMER,
         sources: fallbackSources,
@@ -514,9 +518,11 @@ export class AiAssistantService {
       disclaimer: DISCLAIMER,
       sources: sources.length
         ? sources.map(({ title, link, type }) => ({ title, link, type }))
-        : intent === "SUPPORT_PROGRAM"
-          ? [{ title: "Các chương trình hỗ trợ", link: "/cong-dong/chuong-trinh-ho-tro", type: "SUPPORT_PROGRAM" }]
-          : [],
+        : intent === "MENTAL_HEALTH"
+          ? this.fallbackSources(intent)
+          : intent === "SUPPORT_PROGRAM"
+            ? [{ title: "Các chương trình hỗ trợ", link: "/cong-dong/chuong-trinh-ho-tro", type: "SUPPORT_PROGRAM" }]
+            : [],
       suggestedQuestions: DEFAULT_SUGGESTIONS,
     };
   }

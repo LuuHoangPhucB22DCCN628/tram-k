@@ -37,7 +37,7 @@ describe("ManagedResourcesController", () => {
             );
             expect(result).toEqual({
                 success: true,
-                data: null,
+                data: undefined,
             });
         });
 

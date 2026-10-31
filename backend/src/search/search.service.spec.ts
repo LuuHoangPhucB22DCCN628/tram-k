@@ -10,8 +10,12 @@ describe("SearchService", () => {
     updateMany: jest.fn(),
   };
   const queryRaw = jest.fn();
+  const managedResource = {
+    findMany: jest.fn(),
+  };
   const prisma = {
     searchDocument,
+    managedResource,
     $queryRaw: queryRaw,
   } as unknown as PrismaService;
   let service: SearchService;
@@ -21,6 +25,7 @@ describe("SearchService", () => {
     service = new SearchService(prisma);
     searchDocument.count.mockResolvedValue(0);
     queryRaw.mockResolvedValue([]);
+    managedResource.findMany.mockResolvedValue([]);
   });
 
   it("normalizes accented and unaccented Vietnamese queries before searching", async () => {

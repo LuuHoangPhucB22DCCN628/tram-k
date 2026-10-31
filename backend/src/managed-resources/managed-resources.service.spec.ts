@@ -19,7 +19,13 @@ describe("ManagedResourcesService", () => {
     delete: jest.fn(),
   };
   const user = { findUnique: jest.fn() };
-  const transaction = { managedResource };
+  const transaction = {
+    managedResource,
+    supportProgramRegistration: {
+      findMany: jest.fn().mockResolvedValue([]),
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+    }
+  };
   const prisma = {
     managedResource,
     user,
@@ -47,7 +53,7 @@ describe("ManagedResourcesService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new ManagedResourcesService(prisma, search);
+    service = new ManagedResourcesService(prisma, search, {} as any);
     user.findUnique.mockResolvedValue({
       id: "ADMIN-1",
       deletedAt: null,
@@ -158,17 +164,29 @@ describe("ManagedResourcesService", () => {
       {
         ...dto,
         status: ManagedResourceStatus.DRAFT,
-        payload: { ownerId: "PARTNER-1", capacity: 10 },
+        payload: {
+          ownerId: "PARTNER-1",
+          capacity: 10,
+          address: "123 Đường ABC, Quận 1, TP.HCM"
+        },
       },
     );
 
     expect(managedResource.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
-          payload: { ownerId: "PARTNER-1", capacity: 10 },
+          payload: {
+            ownerId: "PARTNER-1",
+            capacity: 10,
+            address: "123 Đường ABC, Quận 1, TP.HCM"
+          },
         }),
         update: expect.objectContaining({
-          payload: { ownerId: "PARTNER-1", capacity: 10 },
+          payload: {
+            ownerId: "PARTNER-1",
+            capacity: 10,
+            address: "123 Đường ABC, Quận 1, TP.HCM"
+          },
         }),
       }),
     );
@@ -261,6 +279,7 @@ describe("ManagedResourcesService", () => {
     managedResource.findUnique.mockResolvedValue({
       id: "RESOURCE-1",
       type: SearchDocumentType.SUPPORT_PROGRAM,
+      status: ManagedResourceStatus.PENDING,
       payload: { ownerId: "PARTNER-1" },
     });
     managedResource.delete.mockResolvedValue({});

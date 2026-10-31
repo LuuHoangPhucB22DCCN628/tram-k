@@ -76,7 +76,10 @@ describe("AuthService", () => {
     getOrThrow: jest.fn(
       (key: string) => `${key}-test-secret-with-at-least-32-characters`,
     ),
-    get: jest.fn(() => "2026-10-03"),
+    get: jest.fn((key: string) => {
+      if (key === "EMAIL_DELIVERY_MODE") return "log"; // Trả về log để pass test
+      return "2026-10-03";
+    }),
   } as unknown as ConfigService;
   const outboxCrypto = {
     encrypt: jest.fn((value: string) => `encrypted:${value.length}`),

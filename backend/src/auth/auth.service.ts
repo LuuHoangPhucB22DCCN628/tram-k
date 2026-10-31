@@ -326,11 +326,7 @@ export class AuthService {
   }
 
   async resendVerification(emailValue: string) {
-    if (!this.verificationEmailAvailable) {
-      throw new ServiceUnavailableException(
-        "Dịch vụ gửi email xác minh chưa được cấu hình. Vui lòng liên hệ quản trị viên.",
-      );
-    }
+
     const email = this.normalizeEmail(emailValue);
     const user = await this.prisma.user.findUnique({ where: { email } });
 
@@ -883,7 +879,10 @@ export class AuthService {
       }
       throw new UnauthorizedException("Email hoặc mật khẩu không đúng.");
     }
-    if (user.deletedAt || !canSignIn(user.status)) {
+    if (user.deletedAt || user.status !== UserStatus.ACTIVE) {
+      if (user.status === UserStatus.PENDING_VERIFY && !user.deletedAt) {
+        throw new ForbiddenException("Vui lòng xác minh email trước khi đăng nhập.");
+      }
       throw new ForbiddenException("Tài khoản hiện không thể đăng nhập.");
     }
 
