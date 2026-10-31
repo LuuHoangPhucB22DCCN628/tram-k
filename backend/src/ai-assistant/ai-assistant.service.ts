@@ -724,6 +724,43 @@ export class AiAssistantService {
     return labels[intent];
   }
 
+  private fallbackSources(intent: AiAssistantIntent): AiAssistantSource[] {
+    if (intent === "SUPPORT_PROGRAM") {
+      return [
+        {
+          title: "Các chương trình hỗ trợ",
+          link: "/cong-dong/chuong-trinh-ho-tro",
+          type: "SUPPORT_PROGRAM",
+        },
+      ];
+    }
+    if (intent === "MENTAL_HEALTH") {
+      return [
+        {
+          title: "Góc tâm lý và tinh thần",
+          link: "/goc-tam-ly",
+          type: "STORY",
+        },
+      ];
+    }
+    if (intent === "NUTRITION") {
+      return [
+        {
+          title: "Cẩm nang dinh dưỡng",
+          link: "/cam-nang",
+          type: "GUIDE",
+        },
+      ];
+    }
+    return [
+      { title: "Cẩm nang đồng hành", link: "/cam-nang", type: "GUIDE" },
+      {
+        title: "Thông tin các loại ung thư",
+        link: "/loai-ung-thu",
+        type: "CANCER_TYPE",
+      },
+    ];
+  }
   private normalize(value: string): string {
     return value
       .normalize("NFD")

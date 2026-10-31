@@ -22,21 +22,51 @@ export class HttpExceptionFilter implements ExceptionFilter {
         : payloadTooLarge
           ? HttpStatus.PAYLOAD_TOO_LARGE
           : HttpStatus.INTERNAL_SERVER_ERROR;
+    const correlationId = (request.headers["x-correlation-id"] as string) || undefined;
+    const exceptionResponse = exception instanceof HttpException ? exception.getResponse() : null;
+    let message: string | string[] = "Hệ thống đang gặp lỗi. Vui lòng thử lại sau."
+    let code = `Http_${status}`;
+    let details = undefined;
+
+    if (exceptionResponse) {
+      if (typeof exceptionResponse === "string") {
+        message = exceptionResponse;
+      } else if (typeof exceptionResponse === "object") {
+        const resp = exceptionResponse as any;
+        if (resp.message) message = resp.message;
+        if (resp.error) code = resp.error;
+        if (resp.details) details = resp.details;
+
+        if (Array.isArray(resp.message) && status === 400) {
+          code = "VALIDATION_ERROR";
+        }
+      }
+    }
+
+    if (payloadTooLarge) {
+      message = "Ảnh hoặc dữ liệu gửi lên quá lớn.";
+      code = `HTTP_${HttpStatus.PAYLOAD_TOO_LARGE}`;
+    }
+
+    if (status === 500) {
+      console.error(`[${correlationId || "NO_CORR_ID"}]`, exception);
+      message = "Hệ thống đang gặp lỗi. Vui lòng thử lại sau.";
+    }
+
     const body: ApiErrorResponse = {
       success: false,
       error: {
-        code: `HTTP_${status}`,
-        message: payloadTooLarge
-          ? "Ảnh hoặc dữ liệu gửi lên quá lớn."
-          : this.getMessage(exception),
+        code,
+        message,
+        details,
       },
       timestamp: new Date().toISOString(),
       path: request.url,
+      correlationId,
     };
 
     const retryAfterSeconds = this.getRetryAfterSeconds(exception);
-    if (retryAfterSeconds !== null)
-      response.setHeader("Retry-After", retryAfterSeconds);
+    if (retryAfterSeconds !== null) response.setHeader("Retry-After", retryAfterSeconds);
 
     response.status(status).json(body);
   }

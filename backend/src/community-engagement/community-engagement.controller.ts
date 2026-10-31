@@ -7,6 +7,9 @@ import {
   Patch,
   Post,
   UseGuards,
+  Query,
+  Res,
+  HttpException
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
@@ -19,11 +22,14 @@ import { CommunitySourceKeyParamDto } from "./dto/community-source-key-param.dto
 import { CreateCommunityCommentBodyDto } from "./dto/create-community-comment-body.dto";
 import { ToggleCommunityReactionBodyDto } from "./dto/toggle-community-reaction-body.dto";
 import { UpdateCommunityCommentDto } from "./dto/update-community-comment.dto";
+import { ListCommunityCommentsQueryDto } from "./dto/list-community-comments-query.dto";
+import { Response } from "express";
+import { Idempotent } from "../common/idempotency.interceptor";
 
 @ApiTags("community engagement")
 @Controller("community/stories")
 export class CommunityEngagementController {
-  constructor(private readonly engagement: CommunityEngagementService) {}
+  constructor(private readonly engagement: CommunityEngagementService) { }
 
   @Get("mine/comments")
   @UseGuards(JwtAuthGuard)
@@ -52,8 +58,33 @@ export class CommunityEngagementController {
   @Get(":sourceKey/comments")
   async listComments(
     @Param() params: CommunitySourceKeyParamDto,
+    @Query() query: ListCommunityCommentsQueryDto
   ): Promise<ApiSuccessResponse<unknown>> {
-    return { success: true, data: await this.engagement.listComments(params.sourceKey) };
+    return {
+      success: true,
+      data: await this.engagement.listComments(
+        params.sourceKey,
+        query.page,
+        query.limit
+      )
+    };
+  }
+
+  @Get(":sourceKey/comments/:commentId/replies")
+  async listReplies(
+    @Param() param: CommunitySourceKeyParamDto,
+    @Param("commentId") commentId: string,
+    @Query() query: ListCommunityCommentsQueryDto,
+  ): Promise<ApiSuccessResponse<unknown>> {
+    return {
+      success: true,
+      data: await this.engagement.listReplies(
+        param.sourceKey,
+        commentId,
+        query.page,
+        query.limit
+      )
+    };
   }
 
   @Get(":sourceKey/reactions")
@@ -76,23 +107,33 @@ export class CommunityEngagementController {
   @Post(":sourceKey/comments")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Idempotent("CREATE_COMMENT")
   async createComment(
     @CurrentUser() user: AuthenticatedUser,
     @Param() params: CommunitySourceKeyParamDto,
     @Body() dto: CreateCommunityCommentBodyDto,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<ApiSuccessResponse<unknown>> {
-    return {
-      success: true,
-      data: await this.engagement.createComment(user.id, {
-        ...dto,
-        sourceKey: params.sourceKey,
-      }),
-    };
+    try {
+      return {
+        success: true,
+        data: await this.engagement.createComment(user, {
+          ...dto,
+          sourceKey: params.sourceKey,
+        }),
+      };
+    } catch (error) {
+      if (error instanceof HttpException && error.getStatus() == 429) {
+        res.setHeader("Retry-After", "60");
+      }
+      throw error;
+    }
   }
 
   @Patch("comments/:commentId")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Idempotent("UPDATE_COMMENT")
   async updateComment(
     @CurrentUser() user: AuthenticatedUser,
     @Param("commentId") commentId: string,
@@ -107,6 +148,7 @@ export class CommunityEngagementController {
   @Delete("comments/:commentId")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Idempotent("DELETE_COMMENT")
   async deleteComment(
     @CurrentUser() user: AuthenticatedUser,
     @Param("commentId") commentId: string,
@@ -120,6 +162,7 @@ export class CommunityEngagementController {
   @Post(":sourceKey/reactions/toggle")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Idempotent("TOGGLE_REACTION")
   async toggleReaction(
     @CurrentUser() user: AuthenticatedUser,
     @Param() params: CommunitySourceKeyParamDto,

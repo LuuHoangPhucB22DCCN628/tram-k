@@ -30,10 +30,11 @@ export class ManagedResourceAdminApiService {
 
   state(type?: ManagedResourceType): Observable<AdminManagedResourceState | null> {
     if (!this.http || !this.apiBaseUrl) return of(null);
-    const query = type ? `?type=${type}` : '';
+    const params = new URLSearchParams({ page: '1', limit: '100' });
+    if (type) params.set('type', type);
     return this.http
       .get<AdminManagedResourceStateResponse>(
-        `${this.apiBaseUrl}/managed-resources/admin-state${query}`,
+        `${this.apiBaseUrl}/managed-resources/admin-state?${params.toString()}`,
       )
       .pipe(
         map((response) => response.data),

@@ -18,6 +18,7 @@ import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { ApiSuccessResponse } from "../common/interfaces/api-response.interface";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { ProfilesService } from "./profiles.service";
+import { Idempotent } from "../common/idempotency.interceptor";
 
 @ApiTags("profiles")
 @ApiBearerAuth()
@@ -73,6 +74,7 @@ export class ProfilesController {
 
   @Patch("me")
   @UseGuards(JwtAuthGuard)
+  @Idempotent("UPDATE_PROFILE")
   async updateOwnProfile(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: UpdateProfileDto,

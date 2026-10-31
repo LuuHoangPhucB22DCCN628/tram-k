@@ -6,14 +6,15 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import {
-  ManagedResourceStatus,
   NotificationKind,
   Prisma,
+  ProgramStatus,
   RoleName,
-  SearchDocumentType,
   SupportProgramRegistrationStatus,
   UserStatus,
+  PartnerStatus,
 } from "@prisma/client";
+import { randomUUID } from 'node:crypto';
 
 import { AuthenticatedUser } from "../auth/auth-user.interface";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -26,12 +27,13 @@ export class SupportProgramRegistrationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
-  ) {}
+  ) { }
 
   async mine(actor: AuthenticatedUser) {
     await this.activeUser(actor.id);
     return this.prisma.supportProgramRegistration.findMany({
       where: { userId: actor.id },
+      include: { program: true },
       orderBy: [{ registeredAt: "desc" }],
     });
   }
@@ -49,75 +51,182 @@ export class SupportProgramRegistrationsService {
     if (user.role.name !== RoleName.PATIENT && user.role.name !== RoleName.CARER) {
       throw new ForbiddenException("Chỉ bệnh nhân và người nhà bệnh nhân có thể đăng ký.");
     }
-    const program = await this.publishedProgram(programId);
-    const payload = this.programPayload(program.payload);
-    const schedule = program.payload && typeof program.payload === "object" && !Array.isArray(program.payload)
-      ? parseStructuredSupportSchedule(program.payload as Record<string, unknown>)
-      : null;
-    if (!schedule || !scheduleHasUpcomingOccurrence(schedule)) {
-      throw new BadRequestException("Chương trình chưa có lịch ngày giờ hợp lệ hoặc đã kết thúc; hiện không nhận đăng ký.");
-    }
+    const now = new Date();
 
     return this.prisma.$transaction(async (transaction) => {
-      const duplicate = await transaction.supportProgramRegistration.findUnique({
-        where: { programId_userId: { programId, userId: actor.id } },
-      });
-      if (duplicate) throw new ConflictException("Bạn đã đăng ký chương trình này.");
+      // 1. Khóa bảng Program để chống tranh chấp (Race Condition)
+      const programs = await transaction.$queryRaw<any[]>`
+        SELECT * FROM "programs"
+        WHERE id = ${programId}
+        FOR UPDATE
+      `;
+      const program = programs[0];
 
-      const occupied = await transaction.supportProgramRegistration.count({
-        where: {
-          programId,
-          status: { not: SupportProgramRegistrationStatus.REJECTED },
-        },
-      });
-      if (occupied >= payload.capacity) {
-        throw new ConflictException("Chương trình đã đủ số lượng đăng ký.");
+      if (!program || program.status !== ProgramStatus.PUBLISHED || program.deleted_at !== null) {
+        throw new NotFoundException("Chương trình không còn tiếp nhận đăng ký.");
+      }
+      if (now < new Date(program.registration_open_at) || now >= new Date(program.registration_close_at)) {
+        throw new BadRequestException("Chương trình không trong thời gian đăng ký");
       }
 
-      const registration = await transaction.supportProgramRegistration.create({
+      const existing = await transaction.supportProgramRegistration.findUnique({
+        where: { programId_userId: { programId, userId: actor.id } },
+      });
+      if (existing && existing.status !== SupportProgramRegistrationStatus.CANCELLED) {
+        throw new ConflictException("Bạn đã đăng ký chương trình này.");
+      }
+
+      // 2. Đếm số lượng CONFIRMED hiện tại
+      const occupied = await transaction.supportProgramRegistration.count({
+        where: { programId, status: SupportProgramRegistrationStatus.CONFIRMED },
+      });
+
+      const isFull = occupied >= program.capacity;
+      const newStatus = isFull
+        ? SupportProgramRegistrationStatus.WAITLISTED
+        : SupportProgramRegistrationStatus.CONFIRMED;
+
+      const registration = existing
+        ? await transaction.supportProgramRegistration.update({
+          where: { id: existing.id },
+          data: {
+            status: newStatus,
+            registeredAt: now,
+            confirmedAt: isFull ? null : now,
+            waitlistedAt: isFull ? now : null,
+            cancelledAt: null,
+            cancelReason: null,
+            version: { increment: 1 },
+          },
+        })
+        : await transaction.supportProgramRegistration.create({
+          data: {
+            programId,
+            userId: actor.id,
+            applicantName: user.fullName,
+            applicantEmail: user.email,
+            status: newStatus,
+            confirmedAt: isFull ? null : now,
+            waitlistedAt: isFull ? now : null,
+          },
+        });
+
+      await transaction.registrationStatusHistory.create({
         data: {
-          programId,
-          userId: actor.id,
-          applicantName: user.fullName,
-          applicantEmail: user.email,
+          registrationId: registration.id,
+          fromStatus: existing ? SupportProgramRegistrationStatus.CANCELLED : null,
+          toStatus: newStatus,
+          reason: existing ? "Đăng ký lại sau khi hủy" : "Đăng ký mới",
+          actorId: actor.id,
         },
       });
-      await this.notifications.create(
-        {
-          recipientId: actor.id,
-          kind: NotificationKind.PROGRAM_REGISTRATION_SENT,
-          title: "Đã gửi đăng ký hỗ trợ",
-          message: `Đăng ký chương trình “${program.title}” đang chờ nhà hảo tâm xác nhận.`,
-          link: `/thanh-vien/chuong-trinh-da-dang-ky?program=${encodeURIComponent(programId)}`,
-          dedupeKey: `program-registration:${programId}:${actor.id}:sent`,
+
+      await transaction.outboxEvent.create({
+        data: {
+          eventId: randomUUID(),
+          type: "PROGRAM_REGISTRATION_SENT",
+          aggregateType: "SupportProgramRegistration",
+          aggregateId: registration.id,
+          payload: {
+            recipientId: actor.id,
+            programId: programId,
+            programTitle: program.title,
+            status: newStatus,
+            registrationVersion: registration.version,
+          },
         },
-        transaction,
-      );
-      await this.notifications.create(
-        {
-          recipientId: payload.ownerId,
-          kind: NotificationKind.PROGRAM_REGISTRATION_RECEIVED,
-          title: "Có đăng ký hỗ trợ mới",
-          message: `${user.fullName} vừa đăng ký chương trình “${program.title}”.`,
-          link: `/doi-tac/quan-ly-chuong-trinh?program=${encodeURIComponent(programId)}&registration=${encodeURIComponent(actor.id)}`,
-          dedupeKey: `program-registration:${programId}:${actor.id}:received`,
-        },
-        transaction,
-      );
+      });
+
       return registration;
     });
   }
 
   async cancel(actor: AuthenticatedUser, programId: string) {
-    const registration = await this.prisma.supportProgramRegistration.findUnique({
-      where: { programId_userId: { programId, userId: actor.id } },
+    const now = new Date();
+
+    return this.prisma.$transaction(async (transaction) => {
+      const registration = await transaction.supportProgramRegistration.findUnique({
+        where: { programId_userId: { programId, userId: actor.id } },
+      });
+      if (!registration) throw new NotFoundException("Không tìm thấy đăng ký.");
+
+      const program = await transaction.program.findUnique({ where: { id: programId } });
+      if (!program) throw new NotFoundException("Không tìm thấy chương trình.");
+
+      if (now >= program.startAt) {
+        throw new BadRequestException("Không thể hủy đăng ký sau khi chương trình đã bắt đầu.")
+      }
+
+      const updated = await transaction.supportProgramRegistration.update({
+        where: { id: registration.id, version: registration.version },
+        data: {
+          status: SupportProgramRegistrationStatus.CANCELLED,
+          cancelledAt: now,
+          cancelReason: "Người dùng tự hủy",
+          version: { increment: 1 },
+        },
+      });
+
+      await transaction.registrationStatusHistory.create({
+        data: {
+          registrationId: registration.id,
+          fromStatus: registration.status,
+          toStatus: SupportProgramRegistrationStatus.CANCELLED,
+          reason: "Người dùng tự hủy",
+          actorId: actor.id,
+        },
+      });
+
+      // Đôn người từ Waitlist lên nếu còn chỗ và trước giờ đóng đăng ký
+      if (
+        registration.status === SupportProgramRegistrationStatus.CONFIRMED &&
+        now < program.registrationCloseAt
+      ) {
+        const waitlisted = await transaction.supportProgramRegistration.findFirst({
+          where: { programId, status: SupportProgramRegistrationStatus.WAITLISTED },
+          orderBy: [{ waitlistedAt: "asc" }, { id: "asc" }],
+        });
+
+        if (waitlisted) {
+          const updatedWaitlisted = await transaction.supportProgramRegistration.update({
+            where: { id: waitlisted.id },
+            data: {
+              status: SupportProgramRegistrationStatus.CONFIRMED,
+              confirmedAt: now,
+              waitlistedAt: null,
+              version: { increment: 1 },
+            },
+          });
+
+          await transaction.registrationStatusHistory.create({
+            data: {
+              registrationId: waitlisted.id,
+              fromStatus: SupportProgramRegistrationStatus.WAITLISTED,
+              toStatus: SupportProgramRegistrationStatus.CONFIRMED,
+              reason: "Tự động đôn từ danh sách chờ do có người hủy.",
+              actorId: null,
+            },
+          });
+
+          await transaction.outboxEvent.create({
+            data: {
+              eventId: randomUUID(),
+              type: "PROGRAM_REGISTRATION_CONFIRMED",
+              aggregateType: "SupportProgramRegistration",
+              aggregateId: waitlisted.id,
+              payload: {
+                recipientId: waitlisted.userId,
+                programId: programId,
+                programTitle: program.title,
+                registrationVersion: updatedWaitlisted.version,
+              },
+            },
+          });
+        }
+      }
+
+      return updated;
     });
-    if (!registration) throw new NotFoundException("Không tìm thấy đăng ký.");
-    if (registration.status === SupportProgramRegistrationStatus.COMPLETED) {
-      throw new BadRequestException("Không thể hủy chương trình đã hoàn thành.");
-    }
-    await this.prisma.supportProgramRegistration.delete({ where: { id: registration.id } });
-    return { cancelled: true };
   }
 
   async update(
@@ -132,100 +241,85 @@ export class SupportProgramRegistrationsService {
     });
     if (!registration) throw new NotFoundException("Không tìm thấy đăng ký.");
 
-    const reason = dto.decisionReason?.trim();
-    if (dto.status === SupportProgramRegistrationStatus.REJECTED && (!reason || reason.length < 10)) {
-      throw new BadRequestException("Lý do từ chối phải có ít nhất 10 ký tự.");
+    const now = new Date();
+
+    if (program.status !== ProgramStatus.COMPLETED) {
+      if (now < program.startAt) {
+        throw new BadRequestException("Chương trình chưa bắt đầu, không thể điểm danh");
+      }
+      if (registration.status !== SupportProgramRegistrationStatus.CONFIRMED) {
+        throw new BadRequestException("Chỉ có thể điểm danh người đã CONFIRMED");
+      }
+    } else {
+      if (
+        (registration.status !== SupportProgramRegistrationStatus.ATTENDED &&
+          registration.status !== SupportProgramRegistrationStatus.NO_SHOW) ||
+        (dto.status !== SupportProgramRegistrationStatus.ATTENDED &&
+          dto.status !== SupportProgramRegistrationStatus.NO_SHOW)
+      ) {
+        throw new BadRequestException("Chỉ được sửa qua lại giữa ATTENDED và NO_SHOW sau khi chương trình kết thúc.");
+      }
     }
-    const allowed =
-      (registration.status === SupportProgramRegistrationStatus.PENDING_CONFIRMATION &&
-        (dto.status === SupportProgramRegistrationStatus.CONFIRMED ||
-          dto.status === SupportProgramRegistrationStatus.REJECTED)) ||
-      (registration.status === SupportProgramRegistrationStatus.CONFIRMED &&
-        dto.status === SupportProgramRegistrationStatus.COMPLETED);
-    if (!allowed) throw new BadRequestException("Chuyển trạng thái đăng ký không hợp lệ.");
+
+    if (dto.status === SupportProgramRegistrationStatus.NO_SHOW && !dto.decisionReason) {
+      throw new BadRequestException("Vui lòng nhập lý do vắng mặt");
+    }
 
     return this.prisma.$transaction(async (transaction) => {
       const updated = await transaction.supportProgramRegistration.update({
-        where: { id: registration.id },
+        where: { id: registration.id, version: registration.version },
         data: {
           status: dto.status,
-          decisionReason:
-            dto.status === SupportProgramRegistrationStatus.REJECTED ? reason : null,
+          attendedAt: dto.status === SupportProgramRegistrationStatus.ATTENDED ? now : null,
+          decisionReason: dto.decisionReason,
+          version: { increment: 1 },
         },
       });
-      const notification = this.statusNotification(program.title, programId, userId, dto.status, reason);
-      await this.notifications.create(notification, transaction);
+
+      await transaction.registrationStatusHistory.create({
+        data: {
+          registrationId: registration.id,
+          fromStatus: registration.status,
+          toStatus: dto.status,
+          reason: dto.decisionReason || "Điểm danh",
+          actorId: actor.id,
+        },
+      });
+
+      await transaction.auditLog.create({
+        data: {
+          actorType: "USER",
+          actorId: actor.id,
+          action: "UPDATE_REGISTRATION_ATTENDANCE",
+          entityType: "SUPPORT_PROGRAM_REGISTRATION",
+          entityId: registration.id,
+          before: { status: registration.status },
+          after: { status: dto.status },
+          reason: dto.decisionReason || "Điểm danh",
+          correlationId: randomUUID(),
+        },
+      });
       return updated;
     });
   }
 
-  private statusNotification(
-    title: string,
-    programId: string,
-    userId: string,
-    status: SupportProgramRegistrationStatus,
-    reason?: string,
-  ) {
-    const values = {
-      CONFIRMED: {
-        kind: NotificationKind.PROGRAM_REGISTRATION_CONFIRMED,
-        title: "Đăng ký đã được xác nhận",
-        message: `Bạn đã được xác nhận tham gia chương trình “${title}”.`,
-      },
-      REJECTED: {
-        kind: NotificationKind.PROGRAM_REGISTRATION_REJECTED,
-        title: "Đăng ký chưa được chấp thuận",
-        message: `Chương trình “${title}” chưa thể tiếp nhận đăng ký của bạn. Lý do: ${reason}`,
-      },
-      COMPLETED: {
-        kind: NotificationKind.PROGRAM_REGISTRATION_COMPLETED,
-        title: "Chương trình hỗ trợ đã hoàn thành",
-        message: `Trạng thái tham gia chương trình “${title}” đã được cập nhật hoàn thành.`,
-      },
-    } as const;
-    const value = values[status as keyof typeof values];
-    if (!value) throw new BadRequestException("Trạng thái không được hỗ trợ.");
-    return {
-      recipientId: userId,
-      ...value,
-      link: `/thanh-vien/chuong-trinh-da-dang-ky?program=${encodeURIComponent(programId)}`,
-      dedupeKey: `program-registration:${programId}:${userId}:${status.toLowerCase()}`,
-    };
-  }
-
   private async assertProgramManager(actor: AuthenticatedUser, programId: string) {
     const user = await this.activeUser(actor.id);
-    const program = await this.prisma.managedResource.findUnique({
-      where: { type_sourceId: { type: SearchDocumentType.SUPPORT_PROGRAM, sourceId: programId } },
+    const program = await this.prisma.program.findUnique({
+      where: { id: programId },
     });
     if (!program) throw new NotFoundException("Không tìm thấy chương trình.");
-    const payload = this.programPayload(program.payload);
-    if (user.role.name !== RoleName.ADMIN && payload.ownerId !== actor.id) {
+
+    if (user.role.name === RoleName.ADMIN) return program;
+
+    if (
+      !user.partnerMembership ||
+      user.partnerMembership.status !== PartnerStatus.ACTIVE ||
+      program.ownerPartnerId !== user.partnerMembership.id
+    ) {
       throw new ForbiddenException("Bạn không có quyền quản lý đăng ký của chương trình này.");
     }
     return program;
-  }
-
-  private async publishedProgram(programId: string) {
-    const program = await this.prisma.managedResource.findUnique({
-      where: { type_sourceId: { type: SearchDocumentType.SUPPORT_PROGRAM, sourceId: programId } },
-    });
-    if (!program || program.status !== ManagedResourceStatus.PUBLISHED) {
-      throw new NotFoundException("Chương trình không còn tiếp nhận đăng ký.");
-    }
-    return program;
-  }
-
-  private programPayload(payload: Prisma.JsonValue): { ownerId: string; capacity: number } {
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      throw new BadRequestException("Dữ liệu chương trình không hợp lệ.");
-    }
-    const ownerId = payload["ownerId"];
-    const capacity = payload["capacity"];
-    if (typeof ownerId !== "string" || typeof capacity !== "number" || capacity < 1) {
-      throw new BadRequestException("Dữ liệu chương trình không hợp lệ.");
-    }
-    return { ownerId, capacity };
   }
 
   private async activeUser(userId: string) {

@@ -1,4 +1,4 @@
-import { ForbiddenException } from "@nestjs/common";
+import { ConflictException, ForbiddenException } from "@nestjs/common";
 import { RoleName, UserStatus } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
@@ -78,6 +78,64 @@ describe("AdminUsersService", () => {
         authVersion: 3,
       }),
     );
+  });
+
+  it("applies search, status, role and pagination filters to the account list", async () => {
+    await service.list("admin-1", {
+      search: "  member@example.com ",
+      status: UserStatus.ACTIVE,
+      role: RoleName.PARTNER,
+      page: 3,
+      limit: 10,
+    });
+
+    expect(prismaMock.user.findMany).toHaveBeenCalledWith({
+      where: {
+        deletedAt: null,
+        status: UserStatus.ACTIVE,
+        partnerMembership: { isNot: null },
+        OR: [
+          { id: { contains: "member@example.com", mode: "insensitive" } },
+          {
+            email: {
+              contains: "member@example.com",
+              mode: "insensitive",
+            },
+          },
+          {
+            fullName: {
+              contains: "member@example.com",
+              mode: "insensitive",
+            },
+          },
+        ],
+      },
+      include: { role: true, partnerMembership: true },
+      orderBy: { createdAt: "desc" },
+      skip: 20,
+      take: 10,
+    });
+  });
+
+  it("denies account listing to a non-Admin", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(activePatient);
+
+    await expect(
+      service.list("user-1", { page: 1, limit: 20 }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prismaMock.user.findMany).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["locked", { ...activeAdmin, status: UserStatus.LOCKED }],
+    ["deleted", { ...activeAdmin, deletedAt: new Date() }],
+  ])("denies account listing to a %s Admin", async (_description, admin) => {
+    prismaMock.user.findUnique.mockResolvedValue(admin);
+
+    await expect(
+      service.list("admin-1", { page: 1, limit: 20 }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prismaMock.user.findMany).not.toHaveBeenCalled();
   });
 
   it("locks an account, increments authVersion and revokes every refresh session", async () => {
@@ -176,5 +234,40 @@ describe("AdminUsersService", () => {
         reason: "Vô hiệu hóa tài khoản quản trị không còn sử dụng.",
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it("rejects a stale expected status or auth version before changing an account", async () => {
+    transaction.user.findUnique
+      .mockResolvedValueOnce(activeAdmin)
+      .mockResolvedValueOnce({ ...activePatient, authVersion: 4 });
+
+    await expect(
+      service.updateStatus("admin-1", "user-1", {
+        expectedStatus: UserStatus.ACTIVE,
+        expectedAuthVersion: 3,
+        status: UserStatus.LOCKED,
+        reason: "Thay đổi trạng thái sau khi thông tin đã cũ.",
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(transaction.user.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects a concurrent account status update", async () => {
+    transaction.user.findUnique
+      .mockResolvedValueOnce(activeAdmin)
+      .mockResolvedValueOnce(activePatient);
+    transaction.user.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.updateStatus("admin-1", "user-1", {
+        expectedStatus: UserStatus.ACTIVE,
+        expectedAuthVersion: 3,
+        status: UserStatus.LOCKED,
+        reason: "Khóa tài khoản sau khi xác minh yêu cầu.",
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(transaction.authSession.updateMany).not.toHaveBeenCalled();
+    expect(transaction.auditLog.create).not.toHaveBeenCalled();
+    expect(transaction.outboxEvent.create).not.toHaveBeenCalled();
   });
 });

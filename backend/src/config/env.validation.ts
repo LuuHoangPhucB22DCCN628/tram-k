@@ -45,7 +45,7 @@ const environmentSchema = Joi.object({
     .integer()
     .min(60000)
     .default(3600000),
-  EMAIL_DELIVERY_MODE: Joi.string().valid("log", "webhook").default("log"),
+  EMAIL_DELIVERY_MODE: Joi.string().valid("log", "webhook", "smtp").default("log"),
   EMAIL_WEBHOOK_URL: Joi.string().uri().when("EMAIL_DELIVERY_MODE", {
     is: "webhook",
     then: Joi.required(),
@@ -53,6 +53,27 @@ const environmentSchema = Joi.object({
   }),
   EMAIL_WEBHOOK_TOKEN: Joi.string().min(16).when("EMAIL_DELIVERY_MODE", {
     is: "webhook",
+    then: Joi.required(),
+    otherwise: Joi.optional(),
+  }),
+  SMTP_HOST: Joi.string().hostname().when("EMAIL_DELIVERY_MODE", {
+    is: "smtp",
+    then: Joi.required(),
+    otherwise: Joi.optional(),
+  }),
+  SMTP_PORT: Joi.number().port().when("EMAIL_DELIVERY_MODE", {
+    is: "smtp",
+    then: Joi.required(),
+    otherwise: Joi.optional(),
+  }),
+  SMTP_SECURE: Joi.boolean().truthy("true").falsy("false").default(true),
+  SMTP_USER: Joi.string().email().when("EMAIL_DELIVERY_MODE", {
+    is: "smtp",
+    then: Joi.required(),
+    otherwise: Joi.optional(),
+  }),
+  SMTP_PASS: Joi.string().min(1).when("EMAIL_DELIVERY_MODE", {
+    is: "smtp",
     then: Joi.required(),
     otherwise: Joi.optional(),
   }),

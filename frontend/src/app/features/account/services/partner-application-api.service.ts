@@ -14,6 +14,13 @@ interface ApiResponse<T> {
   readonly data: T;
 }
 
+interface PaginatedResponse<T> {
+  readonly items: readonly T[];
+  readonly total: number;
+  readonly page: number;
+  readonly limit: number;
+}
+
 interface UploadedDocument {
   readonly storageKey: string;
   readonly originalName: string;
@@ -63,13 +70,14 @@ export class PartnerApplicationApiService {
 
   list(status?: PartnerApplicationStatus): Observable<readonly PartnerApplication[] | null> {
     if (!this.http || !this.apiBaseUrl) return of(null);
-    const query = status ? `?status=${status}` : '';
+    const params = new URLSearchParams({ page: '1', limit: '100' });
+    if (status) params.set('status', status);
     return this.http
-      .get<ApiResponse<readonly RawPartnerApplication[]>>(
-        `${this.apiBaseUrl}/partner-applications/admin${query}`,
+      .get<ApiResponse<PaginatedResponse<RawPartnerApplication>>>(
+        `${this.apiBaseUrl}/partner-applications/admin?${params.toString()}`,
       )
       .pipe(
-        map((response) => response.data.map((item) => this.mapApplication(item))),
+        map((response) => response.data.items.map((item) => this.mapApplication(item))),
         catchError(() => of(null)),
       );
   }

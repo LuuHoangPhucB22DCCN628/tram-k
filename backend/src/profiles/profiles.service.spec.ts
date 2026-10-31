@@ -1,9 +1,9 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
+  NotFoundException,
 } from "@nestjs/common";
-import { ProfileVisibility, RoleName, UserStatus } from "@prisma/client";
+import { ProfileVisibility, RoleName } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
 import { ProfilesService } from "./profiles.service";
@@ -24,7 +24,7 @@ const update = {
   city: "Hà Nội",
   birthYear: 1994,
   bio: "Thành viên Trạm K",
-  avatarDataUrl: null,
+  avatarUrl: null,
   visibility: ProfileVisibility.MEMBERS,
   showEmail: false,
   allowComments: true,
@@ -76,6 +76,14 @@ describe("ProfilesService", () => {
     );
   });
 
+  it("does not return a deleted user's profile", async () => {
+    prismaMock.user.findFirst.mockResolvedValue(null);
+
+    await expect(service.getOwnProfile("user-1")).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
   it("creates the owned profile, increments its version and writes a compact audit", async () => {
     transaction.user.findUnique.mockResolvedValue({
       ...user,
@@ -108,6 +116,58 @@ describe("ProfilesService", () => {
     });
   });
 
+  it("updates an existing profile only when its expected version still matches", async () => {
+    const existingProfile = { ...user, profile: { version: 3 } };
+    transaction.user.findFirst.mockResolvedValue(existingProfile);
+    transaction.user.findUnique.mockResolvedValue({
+      ...existingProfile,
+      fullName: update.displayName,
+      profile: { ...update, version: 4 },
+    });
+
+    const result = await service.updateOwnProfile("user-1", {
+      ...update,
+      expectedVersion: 3,
+    });
+
+    expect(result.version).toBe(4);
+    expect(transaction.userProfile.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", version: 3 },
+      data: expect.objectContaining({ version: { increment: 1 } }),
+    });
+    expect(transaction.user.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { fullName: update.displayName },
+    });
+    expect(transaction.userProfile.create).not.toHaveBeenCalled();
+  });
+
+  it("accepts and returns an avatar URL, and records its presence in the audit", async () => {
+    const avatarUrl = "https://cdn.example.com/avatars/user-1.jpg";
+    const profileUser = { ...user, profile: null };
+    transaction.user.findFirst.mockResolvedValue(profileUser);
+    transaction.user.findUnique.mockResolvedValue({
+      ...profileUser,
+      fullName: update.displayName,
+      profile: { ...update, avatarUrl, version: 2 },
+    });
+
+    const result = await service.updateOwnProfile("user-1", {
+      ...update,
+      avatarUrl,
+    });
+
+    expect(result).toEqual(expect.objectContaining({ avatarUrl }));
+    expect(transaction.userProfile.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ avatarUrl }),
+    });
+    expect(transaction.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        after: expect.objectContaining({ hasAvatar: true }),
+      }),
+    });
+  });
+
   it("rejects a stale expectedVersion without updating data", async () => {
     transaction.user.findFirst.mockResolvedValue({
       ...user,
@@ -120,85 +180,26 @@ describe("ProfilesService", () => {
     expect(transaction.user.update).not.toHaveBeenCalled();
   });
 
-  it("rejects avatar data larger than 1 MB before writing the profile", async () => {
-    const oversizedAvatar = `data:image/png;base64,${Buffer.alloc(1024 * 1024 + 1).toString("base64")}`;
+  it("rolls back profile changes when the version changes during the update", async () => {
+    transaction.user.findFirst.mockResolvedValue({
+      ...user,
+      profile: { version: update.expectedVersion },
+    });
+    transaction.userProfile.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(
-      service.updateOwnProfile("user-1", {
-        ...update,
-        avatarDataUrl: oversizedAvatar,
-      }),
+      service.updateOwnProfile("user-1", update),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(transaction.user.update).toHaveBeenCalled();
+    expect(transaction.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["a future birth year", { birthYear: new Date().getFullYear() + 1 }],
+  ])("rejects %s before opening a transaction", async (_description, changes) => {
+    await expect(
+      service.updateOwnProfile("user-1", { ...update, ...changes }),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(transaction.user.update).not.toHaveBeenCalled();
-  });
-
-  it("shares only non-contact fields when the profile is public", async () => {
-    prismaMock.user.findFirst.mockResolvedValue({
-      ...user,
-      status: UserStatus.ACTIVE,
-      partnerMembership: null,
-      profile: {
-        ...update,
-        visibility: ProfileVisibility.PUBLIC,
-        showEmail: true,
-      },
-    });
-
-    const shared = await service.getSharedProfile("user-1", null);
-
-    expect(shared).toEqual({
-      id: "user-1",
-      displayName: "Nguyễn An",
-      role: RoleName.PATIENT,
-      city: "Hà Nội",
-      bio: "Thành viên Trạm K",
-      hasAvatar: false,
-    });
-    expect(shared).not.toHaveProperty("email");
-    expect(shared).not.toHaveProperty("phone");
-  });
-
-  it("restricts member and private profiles, including their avatar", async () => {
-    const avatarDataUrl = `data:image/png;base64,${Buffer.from("avatar").toString("base64")}`;
-    prismaMock.user.findFirst.mockResolvedValue({
-      ...user,
-      status: UserStatus.ACTIVE,
-      partnerMembership: null,
-      profile: {
-        ...update,
-        visibility: ProfileVisibility.MEMBERS,
-        avatarDataUrl,
-      },
-    });
-    await expect(
-      service.getSharedProfile("user-1", null),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-    await expect(
-      service.getSharedAvatar("user-1", null),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-    expect(await service.getSharedAvatar("user-1", "other-user")).toEqual({
-      mimeType: "image/png",
-      bytes: Buffer.from("avatar"),
-    });
-
-    prismaMock.user.findFirst.mockResolvedValue({
-      ...user,
-      status: UserStatus.ACTIVE,
-      partnerMembership: null,
-      profile: {
-        ...update,
-        visibility: ProfileVisibility.PRIVATE,
-        avatarDataUrl,
-      },
-    });
-    await expect(
-      service.getSharedProfile("user-1", "other-user"),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-    await expect(
-      service.getSharedAvatar("user-1", "other-user"),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-    expect((await service.getSharedProfile("user-1", "user-1")).hasAvatar).toBe(
-      true,
-    );
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 });

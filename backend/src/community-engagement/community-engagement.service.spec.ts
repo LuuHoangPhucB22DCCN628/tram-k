@@ -1,12 +1,13 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   HttpException,
 } from "@nestjs/common";
-import { CommunityReactionType, MemberPostStatus, NotificationKind, RoleName, UserStatus } from "@prisma/client";
+import { CommunityReactionType, RoleName, UserStatus } from "@prisma/client";
+import { AuthenticatedUser } from "../auth/auth-user.interface";
 
 import { PrismaService } from "../prisma/prisma.service";
-import { NotificationsService } from "../notifications/notifications.service";
 import { CommunityEngagementService } from "./community-engagement.service";
 
 const commentDto = {
@@ -16,12 +17,15 @@ const commentDto = {
   content: "Cảm ơn bạn đã chia sẻ.",
   idempotencyKey: "request-0001",
 };
+const actor: AuthenticatedUser = {
+  id: "user-1",
+  role: RoleName.PATIENT,
+  authVersion: 1,
+};
 
 describe("CommunityEngagementService", () => {
   const transaction = {
     user: { findUnique: jest.fn() },
-    memberPost: { findUnique: jest.fn() },
-    notification: { upsert: jest.fn() },
     communityComment: {
       count: jest.fn(),
       create: jest.fn(),
@@ -32,21 +36,44 @@ describe("CommunityEngagementService", () => {
       delete: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
-      count: jest.fn(),
-      upsert: jest.fn(),
     },
   };
   const prisma = {
-    $transaction: jest.fn((callback: (client: typeof transaction) => unknown) => callback(transaction)),
+    $transaction: jest.fn((arg: unknown) => {
+      if (Array.isArray(arg)) {
+        return Promise.all(arg);
+      }
+      return (arg as (client: typeof prisma) => unknown)(prisma);
+    }),
+    user: { findUnique: jest.fn() },
     communityComment: {
+      count: jest.fn(),
+      create: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
     },
-    communityReaction: { groupBy: jest.fn(), findUnique: jest.fn() },
+    communityReaction: {
+      create: jest.fn(),
+      delete: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      groupBy: jest.fn(),
+    },
+    auditLog: { create: jest.fn() },
+    outboxEvent: { create: jest.fn() },
   } as unknown as PrismaService;
-  const notificationCreate = jest.fn();
-  const service = new CommunityEngagementService(prisma, { create: notificationCreate } as unknown as NotificationsService);
+
+  const communityCommentMock = (
+    prisma as unknown as {
+      communityComment: {
+        count: jest.Mock;
+        create: jest.Mock;
+        findUnique: jest.Mock;
+      };
+    }
+  ).communityComment;
+  const service = new CommunityEngagementService(prisma);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -58,53 +85,218 @@ describe("CommunityEngagementService", () => {
     });
     transaction.communityComment.findUnique.mockResolvedValue(null);
     transaction.communityComment.count.mockResolvedValue(0);
-    transaction.memberPost.findUnique.mockResolvedValue(null);
-    transaction.communityReaction.count.mockResolvedValue(1);
-    transaction.communityComment.create.mockResolvedValue({ id: "comment-created" });
+    (prisma as unknown as { user: { findUnique: jest.Mock } }).user.findUnique.mockResolvedValue({
+      id: actor.id,
+      status: UserStatus.ACTIVE,
+      deletedAt: null,
+      role: { name: RoleName.PATIENT },
+    });
+    communityCommentMock.findUnique.mockResolvedValue(null);
+    communityCommentMock.count.mockResolvedValue(0);
+    communityCommentMock.create.mockResolvedValue({
+      id: "comment-new",
+      userId: actor.id,
+      content: commentDto.content,
+      deletedAt: null,
+      status: "PUBLISHED",
+    });
   });
 
-  it("lists only root comments and nests replies to avoid duplicate rendering", async () => {
-    const database = prisma as unknown as {
-      communityComment: { findMany: jest.Mock };
-    };
-    database.communityComment.findMany.mockResolvedValue([]);
+  afterEach(() => {
+    jest.useRealTimers();
+    communityCommentMock.findUnique.mockReset();
+    communityCommentMock.count.mockReset();
+    communityCommentMock.create.mockReset();
+  });
 
-    await service.listComments(commentDto.sourceKey);
+  it("paginates root comments and returns pagination metadata", async () => {
+    const database = prisma as unknown as {
+      communityComment: {
+        findMany: jest.Mock;
+        count: jest.Mock;
+      };
+    };
+
+    const createdAt = new Date("2026-10-20T00:00:00.000Z");
+    const items = [{
+      id: "comment-21",
+      content: "Bình luận công khai.",
+      createdAt,
+      deletedAt: null,
+      status: "PUBLISHED",
+      user: { id: "user-1", fullName: "Thành viên" },
+    }];
+
+    database.communityComment.findMany
+      .mockResolvedValueOnce(items as any)
+      .mockResolvedValueOnce([] as any);
+
+    database.communityComment.count.mockResolvedValue(45);
+
+    await expect(
+      service.listComments(commentDto.sourceKey, 2, 20),
+    ).resolves.toEqual({
+      items: [
+        {
+          id: items[0].id,
+          content: items[0].content,
+          createdAt,
+          user: items[0].user,
+          status: items[0].status,
+          replies: [],
+          hasMoreReplies: false,
+        },
+      ],
+      total: 45,
+      page: 2,
+      limit: 20,
+    });
+
     expect(database.communityComment.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { sourceKey: commentDto.sourceKey, parentId: null },
+        where: {
+          sourceKey: commentDto.sourceKey,
+          parentId: null,
+        },
+        orderBy: { createdAt: "desc" },
+        skip: 20,
+        take: 20,
+      }),
+    );
+
+    expect(database.communityComment.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: {
+          sourceKey: commentDto.sourceKey,
+          parentId: "comment-21",
+        },
+        orderBy: { createdAt: "asc" },
+        take: 6,
       }),
     );
   });
+  it("enforces the five-comments-per-minute limit", async () => {
+    const now = new Date("2026-10-22T00:00:00.000Z");
+    jest.useFakeTimers().setSystemTime(now);
+    communityCommentMock.count.mockResolvedValueOnce(5);
 
-  it("returns the first comment when an idempotency key is retried", async () => {
-    const existing = { id: "comment-1", ...commentDto };
-    transaction.communityComment.findUnique.mockResolvedValue(existing);
-
-    await expect(service.createComment("user-1", commentDto)).resolves.toBe(existing);
-    expect(transaction.communityComment.create).not.toHaveBeenCalled();
+    await expect(
+      service.createComment(actor, commentDto),
+    ).rejects.toMatchObject({ status: 429 });
+    expect(communityCommentMock.count).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        createdAt: { gte: new Date(now.getTime() - 60_000) },
+      },
+    });
   });
 
-  it("limits excessive comments in a five-minute window", async () => {
-    transaction.communityComment.count.mockResolvedValue(10);
+  it("enforces the thirty-comments-per-hour limit independently of the minute limit", async () => {
+    const now = new Date("2026-10-22T00:00:00.000Z");
+    jest.useFakeTimers().setSystemTime(now);
+    communityCommentMock.count
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(30);
 
-    const error = service.createComment("user-1", commentDto);
-    await expect(error).rejects.toBeInstanceOf(HttpException);
-    await expect(error).rejects.toMatchObject({ status: 429 });
+    await expect(
+      service.createComment(actor, commentDto),
+    ).rejects.toMatchObject({ status: 429 });
+    expect(communityCommentMock.count).toHaveBeenNthCalledWith(1, {
+      where: {
+        userId: "user-1",
+        createdAt: { gte: new Date(now.getTime() - 60_000) },
+      },
+    });
+    expect(communityCommentMock.count).toHaveBeenNthCalledWith(2, {
+      where: {
+        userId: "user-1",
+        createdAt: { gte: new Date(now.getTime() - 60 * 60 * 1000) },
+      },
+    });
+  });
+
+  it("rejects reusing an idempotency key with a different comment payload", async () => {
+    communityCommentMock.findUnique.mockResolvedValue({
+      id: "comment-existing",
+      userId: "user-1",
+      idempotencyKey: commentDto.idempotencyKey,
+      content: "Nội dung ban đầu.",
+      sourceKey: commentDto.sourceKey,
+    });
+
+    await expect(
+      service.createComment(actor, {
+        ...commentDto,
+        content: "Nội dung khác.",
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(communityCommentMock.create).not.toHaveBeenCalled();
+  });
+
+  it("replays the existing comment when the idempotency key and payload match", async () => {
+    const existing = {
+      id: "comment-existing",
+      userId: actor.id,
+      ...commentDto,
+      parentId: null,
+      deletedAt: null,
+      status: "PUBLISHED",
+      createdAt: new Date("2026-10-20T00:00:00.000Z"),
+      user: { id: actor.id, fullName: "Thành viên" },
+    };
+    communityCommentMock.findUnique.mockResolvedValue(existing);
+
+    await expect(service.createComment(actor, commentDto)).resolves.toEqual({
+      id: existing.id,
+      content: existing.content,
+      createdAt: existing.createdAt,
+      user: existing.user,
+      status: existing.status,
+    });
+    expect(communityCommentMock.create).not.toHaveBeenCalled();
+    expect(communityCommentMock.count).not.toHaveBeenCalled();
+  });
+
+  it("does not expose deleted comment content or author in the public thread", async () => {
+    const database = prisma as unknown as {
+      communityComment: {
+        findMany: jest.Mock;
+        count: jest.Mock;
+      };
+    };
+    const deletedComment = {
+      id: "comment-deleted",
+      userId: "user-private",
+      content: "Nội dung riêng tư đã xóa.",
+      deletedAt: new Date("2026-10-20T00:00:00.000Z"),
+      parentId: null,
+      user: { id: "user-private", fullName: "Tên người đã xóa" },
+    };
+    database.communityComment.findMany
+      .mockResolvedValueOnce([deletedComment])
+      .mockResolvedValueOnce([{ id: "reply-visible", content: "Một phản hồi." }]);
+    database.communityComment.count.mockResolvedValue(1);
+
+    const result = await service.listComments(commentDto.sourceKey, 1, 20);
+
+    expect(JSON.stringify(result)).not.toContain("Nội dung riêng tư đã xóa.");
+    expect(JSON.stringify(result)).not.toContain("Tên người đã xóa");
   });
 
   it("rejects a second-level reply", async () => {
-    transaction.communityComment.findUnique
+    communityCommentMock.findUnique
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({
         id: "reply-1",
         sourceKey: commentDto.sourceKey,
         parentId: "comment-1",
         deletedAt: null,
+        status: "PUBLISHED",
       });
 
     await expect(
-      service.createComment("user-1", { ...commentDto, parentId: "reply-1" }),
+      service.createComment(actor, { ...commentDto, parentId: "reply-1" }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -122,8 +314,69 @@ describe("CommunityEngagementService", () => {
     await service.softDeleteComment("user-1", "comment-1");
     expect(database.communityComment.update).toHaveBeenCalledWith({
       where: { id: "comment-1" },
-      data: { content: "", deletedAt: expect.any(Date) },
+      data: {
+        content: "",
+        deletedAt: expect.any(Date),
+        deletedById: "user-1",
+        version: { increment: 1 },
+      },
     });
+  });
+
+  it("updates an owned published comment and writes audit in the same transaction", async () => {
+    const database = prisma as unknown as {
+      communityComment: { findUnique: jest.Mock; update: jest.Mock };
+      auditLog: { create: jest.Mock };
+    };
+    database.communityComment.findUnique.mockResolvedValue({
+      id: "comment-1",
+      userId: "user-1",
+      content: "Nội dung cũ",
+      status: "PUBLISHED",
+      deletedAt: null,
+      createdAt: new Date("2026-10-20T00:00:00.000Z"),
+      user: { id: "user-1" },
+    });
+    database.communityComment.update.mockResolvedValue({
+      id: "comment-1",
+      userId: "user-1",
+      content: "Nội dung mới",
+      status: "PUBLISHED",
+      deletedAt: null,
+      createdAt: new Date("2026-10-20T00:00:00.000Z"),
+      user: { id: "user-1" },
+    });
+
+    const result = await service.updateComment("user-1", "comment-1", {
+      content: "Nội dung mới",
+    });
+
+    expect(result.content).toBe("Nội dung mới");
+    expect(prisma.$transaction).toHaveBeenCalled();
+    expect(database.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: "UPDATE_COMMENT",
+        entityType: "COMMUNITY_COMMENT",
+        before: { content: "Nội dung cũ" },
+        after: { content: "Nội dung mới" },
+      }),
+    });
+  });
+
+  it("rejects editing a hidden comment", async () => {
+    const database = prisma as unknown as {
+      communityComment: { findUnique: jest.Mock };
+    };
+    database.communityComment.findUnique.mockResolvedValue({
+      id: "comment-1",
+      userId: "user-1",
+      status: "HIDDEN",
+      deletedAt: null,
+    });
+
+    await expect(
+      service.updateComment("user-1", "comment-1", { content: "Nội dung mới" }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it("prevents another member from editing a comment", async () => {
@@ -142,8 +395,8 @@ describe("CommunityEngagementService", () => {
   });
 
   it("creates, changes, then removes the single reaction for a story", async () => {
-    transaction.communityReaction.findUnique.mockResolvedValueOnce(null);
-    transaction.communityReaction.create.mockResolvedValue({
+    (prisma as any).communityReaction.findUnique.mockResolvedValueOnce(null);
+    (prisma as any).communityReaction.create.mockResolvedValue({
       id: "reaction-1",
       type: CommunityReactionType.LIKE,
     });
@@ -152,11 +405,11 @@ describe("CommunityEngagementService", () => {
       type: CommunityReactionType.LIKE,
     });
 
-    transaction.communityReaction.findUnique.mockResolvedValueOnce({
+    (prisma as any).communityReaction.findUnique.mockResolvedValueOnce({
       id: "reaction-1",
       type: CommunityReactionType.LIKE,
     });
-    transaction.communityReaction.update.mockResolvedValue({
+    (prisma as any).communityReaction.update.mockResolvedValue({
       id: "reaction-1",
       type: CommunityReactionType.LOVE,
     });
@@ -165,7 +418,7 @@ describe("CommunityEngagementService", () => {
       type: CommunityReactionType.LOVE,
     });
 
-    transaction.communityReaction.findUnique.mockResolvedValueOnce({
+    (prisma as any).communityReaction.findUnique.mockResolvedValueOnce({
       id: "reaction-1",
       type: CommunityReactionType.LOVE,
     });
@@ -174,9 +427,9 @@ describe("CommunityEngagementService", () => {
       type: CommunityReactionType.LOVE,
     });
 
-    expect(transaction.communityReaction.create).toHaveBeenCalledTimes(1);
-    expect(transaction.communityReaction.update).toHaveBeenCalledTimes(1);
-    expect(transaction.communityReaction.delete).toHaveBeenCalledTimes(1);
+    expect((prisma as any).communityReaction.create).toHaveBeenCalledTimes(1);
+    expect((prisma as any).communityReaction.update).toHaveBeenCalledTimes(1);
+    expect((prisma as any).communityReaction.delete).toHaveBeenCalledTimes(1);
   });
 
   it("returns zero counts for reactions that have not been used", async () => {
@@ -193,85 +446,160 @@ describe("CommunityEngagementService", () => {
       SUPPORT: 3,
     });
   });
+  it("returns only five replies and sets hasMoreReplies when a root comment has six replies", async () => {
+    const database = prisma as unknown as {
+      communityComment: {
+        findMany: jest.Mock;
+        count: jest.Mock;
+      };
+    };
 
-  it("notifies the author only after a comment is saved on a published member story", async () => {
-    transaction.memberPost.findUnique.mockResolvedValue({
-      id: commentDto.sourceKey, userId: "AUTHOR-1", title: "Ngày mình học cách hy vọng",
-      status: MemberPostStatus.PUBLISHED,
-    });
-    await service.createComment("user-1", commentDto);
-    expect(notificationCreate).toHaveBeenCalledWith(expect.objectContaining({
-      recipientId: "AUTHOR-1", kind: NotificationKind.STORY_COMMENT,
-    }), transaction);
-  });
-
-  it("does not notify someone about their own comment", async () => {
-    transaction.memberPost.findUnique.mockResolvedValue({
-      id: commentDto.sourceKey, userId: "user-1", title: "Ngày mình học cách hy vọng",
-      status: MemberPostStatus.PUBLISHED,
-    });
-    await service.createComment("user-1", commentDto);
-    expect(notificationCreate).not.toHaveBeenCalled();
-  });
-
-  it("rejects interaction with a member story that is still pending", async () => {
-    transaction.memberPost.findUnique.mockResolvedValue({
-      id: "POST-1234567890123-abcdef", userId: "AUTHOR-1",
-      status: MemberPostStatus.PENDING,
-    });
-    await expect(service.createComment("user-1", {
-      ...commentDto, sourceKey: "POST-1234567890123-abcdef",
-    })).rejects.toThrow("Câu chuyện chưa được công khai.");
-    expect(notificationCreate).not.toHaveBeenCalled();
-  });
-
-  it("groups reactions to a published member story in an hourly notification", async () => {
-    transaction.memberPost.findUnique.mockResolvedValue({
-      id: commentDto.sourceKey, userId: "AUTHOR-1", title: "Ngày mình học cách hy vọng",
-      status: MemberPostStatus.PUBLISHED,
-    });
-    transaction.communityReaction.findUnique.mockResolvedValue(null);
-    transaction.communityReaction.create.mockResolvedValue({ type: CommunityReactionType.LOVE });
-    transaction.communityReaction.count.mockResolvedValue(3);
-    await service.toggleReaction("user-1", { sourceKey: commentDto.sourceKey, type: CommunityReactionType.LOVE });
-    expect(transaction.notification.upsert).toHaveBeenCalledWith(expect.objectContaining({
-      create: expect.objectContaining({ recipientId: "AUTHOR-1", kind: NotificationKind.STORY_REACTION }),
+    const rootComment = {
+      id: "comment-21",
+      content: "Bình luận gốc.",
+      createdAt: new Date("2026-10-20T00:00:00.000Z"),
+      deletedAt: null,
+      status: "PUBLISHED",
+      user: { id: "user-1", fullName: "Thành viên" },
+    };
+    const replies = Array.from({ length: 6 }, (_, index) => ({
+      id: `reply-${index + 1}`,
+      parentId: rootComment.id,
+      content: `Reply ${index + 1}`,
+      createdAt: new Date(`2026-10-20T00:0${index}:00.000Z`),
+      deletedAt: null,
+      status: "PUBLISHED",
+      user: { id: `user-${index + 2}`, fullName: `Thành viên ${index + 2}` },
     }));
+
+    database.communityComment.findMany
+      .mockResolvedValueOnce([rootComment] as any)
+      .mockResolvedValueOnce(replies as any);
+
+    database.communityComment.count.mockResolvedValue(1);
+
+    await expect(
+      service.listComments(commentDto.sourceKey, 1, 20),
+    ).resolves.toEqual({
+      items: [
+        {
+          id: rootComment.id,
+          content: rootComment.content,
+          createdAt: rootComment.createdAt,
+          user: rootComment.user,
+          status: rootComment.status,
+          replies: replies.slice(0, 5).map((reply) => ({
+            id: reply.id,
+            content: reply.content,
+            createdAt: reply.createdAt,
+            user: reply.user,
+            status: reply.status,
+          })),
+          hasMoreReplies: true,
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 20,
+    });
+
+    expect(database.communityComment.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: {
+          sourceKey: commentDto.sourceKey,
+          parentId: rootComment.id,
+        },
+        orderBy: { createdAt: "asc" },
+        take: 6,
+      }),
+    );
   });
 
-  it("respects an author's disabled comment notifications", async () => {
-    transaction.memberPost.findUnique.mockResolvedValue({
-      id: commentDto.sourceKey, userId: "AUTHOR-1", title: "Câu chuyện",
-      status: MemberPostStatus.PUBLISHED,
+  it("paginates replies for an existing root comment", async () => {
+    const database = prisma as unknown as {
+      communityComment: {
+        findUnique: jest.Mock;
+        findMany: jest.Mock;
+        count: jest.Mock;
+      };
+    };
+
+    const rootComment = {
+      id: "comment-21",
+      sourceKey: commentDto.sourceKey,
+      parentId: null,
+      deletedAt: null,
+    };
+    const replies = [{
+      id: "reply-21",
+      content: "Phản hồi công khai.",
+      createdAt: new Date("2026-10-20T00:01:00.000Z"),
+      deletedAt: null,
+      status: "PUBLISHED",
+      user: { id: "user-2", fullName: "Thành viên 2" },
+    }];
+
+    database.communityComment.findUnique.mockResolvedValue(rootComment);
+    database.communityComment.findMany.mockResolvedValue(replies);
+    database.communityComment.count.mockResolvedValue(37);
+
+    await expect(
+      service.listReplies(commentDto.sourceKey, "comment-21", 2, 20),
+    ).resolves.toEqual({
+      items: [{
+        id: replies[0].id,
+        content: replies[0].content,
+        createdAt: replies[0].createdAt,
+        user: replies[0].user,
+        status: replies[0].status,
+      }],
+      total: 37,
+      page: 2,
+      limit: 20,
     });
-    transaction.user.findUnique.mockImplementation(async ({ where }: { where: { id: string } }) =>
-      where.id === "AUTHOR-1" ? { notifyStoryComments: false } : {
-        id: "user-1", status: UserStatus.ACTIVE, deletedAt: null, role: { name: RoleName.PATIENT },
-      });
-    await service.createComment("user-1", commentDto);
-    expect(notificationCreate).not.toHaveBeenCalled();
-    expect(transaction.communityComment.create).toHaveBeenCalled();
+
+    expect(database.communityComment.findUnique).toHaveBeenCalledWith({
+      where: { id: "comment-21" },
+    });
+
+    expect(database.communityComment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          sourceKey: commentDto.sourceKey,
+          parentId: "comment-21",
+        },
+        orderBy: { createdAt: "asc" },
+        skip: 20,
+        take: 20,
+      }),
+    );
+
+    expect(database.communityComment.count).toHaveBeenCalledWith({
+      where: {
+        sourceKey: commentDto.sourceKey,
+        parentId: "comment-21",
+      },
+    });
   });
 
-  it("imports a legacy reaction without toggling it off or notifying the author", async () => {
-    transaction.memberPost.findUnique.mockResolvedValue({
-      id: commentDto.sourceKey, userId: "AUTHOR-1", status: MemberPostStatus.PUBLISHED,
+  it("rejects replies when the root comment does not belong to the story", async () => {
+    const database = prisma as unknown as {
+      communityComment: {
+        findUnique: jest.Mock;
+      };
+    };
+
+    database.communityComment.findUnique.mockResolvedValue({
+      id: "comment-21",
+      sourceKey: "another-story",
+      parentId: null,
+      deletedAt: null,
     });
-    transaction.communityReaction.upsert.mockResolvedValue({ type: CommunityReactionType.LOVE });
-    await expect(service.importReaction("user-1", {
-      sourceKey: commentDto.sourceKey, type: CommunityReactionType.LOVE,
-    })).resolves.toEqual({ type: CommunityReactionType.LOVE });
-    expect(transaction.communityReaction.upsert).toHaveBeenCalledWith(expect.objectContaining({ update: {} }));
-    expect(transaction.notification.upsert).not.toHaveBeenCalled();
+
+    await expect(
+      service.listReplies(commentDto.sourceKey, "comment-21", 1, 20),
+    ).rejects.toThrow();
   });
 
-  it("does not send a new alert when importing an old comment", async () => {
-    transaction.memberPost.findUnique.mockResolvedValue({
-      id: commentDto.sourceKey, userId: "AUTHOR-1", title: "Câu chuyện",
-      status: MemberPostStatus.PUBLISHED,
-    });
-    await service.createComment("user-1", { ...commentDto, idempotencyKey: "legacy:COMMENT-123456" });
-    expect(transaction.communityComment.create).toHaveBeenCalled();
-    expect(notificationCreate).not.toHaveBeenCalled();
-  });
 });

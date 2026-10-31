@@ -1,6 +1,7 @@
-export const CONTENT_PAGE_SIZES = [6, 9, 12, 16] as const;
+export const DEFAULT_CONTENT_PAGE_SIZE = 12;
+export const MAX_CONTENT_PAGE_SIZE = 48;
 
-export type ContentPageSize = (typeof CONTENT_PAGE_SIZES)[number];
+export type ContentPageSize = number;
 export type ContentKind = 'GUIDE' | 'STORY' | 'CANCER_TYPE';
 export type ContentPublicationStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 

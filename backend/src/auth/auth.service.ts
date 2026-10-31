@@ -11,6 +11,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import {
   AuthTokenPurpose,
+  AuthTokenSource,
   ConsentType,
   Prisma,
   RoleName,
@@ -124,33 +125,33 @@ export class AuthService {
         });
         const user = canRestore
           ? await transaction.user.update({
-              where: { id: existing.id },
-              data: {
-                fullName: dto.displayName.trim(),
-                passwordHash,
-                roleId: role.id,
-                status: UserStatus.PENDING_VERIFY,
-                emailVerifiedAt: null,
-                deletedAt: null,
-                deletedById: null,
-                authVersion: { increment: 1 },
-                verificationCleanupAt: new Date(
-                  now.getTime() + UNVERIFIED_ACCOUNT_TTL_MS,
-                ),
-              },
-            })
+            where: { id: existing.id },
+            data: {
+              fullName: dto.displayName.trim(),
+              passwordHash,
+              roleId: role.id,
+              status: UserStatus.PENDING_VERIFY,
+              emailVerifiedAt: null,
+              deletedAt: null,
+              deletedById: null,
+              authVersion: { increment: 1 },
+              verificationCleanupAt: new Date(
+                now.getTime() + UNVERIFIED_ACCOUNT_TTL_MS,
+              ),
+            },
+          })
           : await transaction.user.create({
-              data: {
-                email,
-                fullName: dto.displayName.trim(),
-                passwordHash,
-                roleId: role.id,
-                status: UserStatus.PENDING_VERIFY,
-                verificationCleanupAt: new Date(
-                  now.getTime() + UNVERIFIED_ACCOUNT_TTL_MS,
-                ),
-              },
-            });
+            data: {
+              email,
+              fullName: dto.displayName.trim(),
+              passwordHash,
+              roleId: role.id,
+              status: UserStatus.PENDING_VERIFY,
+              verificationCleanupAt: new Date(
+                now.getTime() + UNVERIFIED_ACCOUNT_TTL_MS,
+              ),
+            },
+          });
 
         await transaction.authToken.updateMany({
           where: {
@@ -165,6 +166,7 @@ export class AuthService {
           data: {
             userId: user.id,
             purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+            source: AuthTokenSource.SIGNUP,
             tokenHash: this.hashOpaqueToken(rawToken),
             expiresAt: new Date(now.getTime() + EMAIL_VERIFICATION_TTL_MS),
           },
@@ -260,12 +262,43 @@ export class AuthService {
       );
     }
 
-    await this.prisma.$transaction([
-      this.prisma.authToken.update({
-        where: { id: token.id },
+    await this.prisma.$transaction(async (transaction) => {
+      const consumed = await transaction.authToken.updateMany({
+        where: {
+          id: token.id,
+          purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+          usedAt: null,
+          revokedAt: null,
+          expiresAt: { gt: now },
+        },
         data: { usedAt: now },
-      }),
-      this.prisma.authToken.updateMany({
+      });
+      if (consumed.count !== 1) {
+        throw new UnauthorizedException(
+          "Liên kết xác minh không hợp lệ hoặc đã hết hạn.",
+        );
+      }
+
+      const activated = await transaction.user.updateMany({
+        where: {
+          id: token.userId,
+          status: UserStatus.PENDING_VERIFY,
+          deletedAt: null,
+        },
+        data: {
+          status: UserStatus.ACTIVE,
+          emailVerifiedAt: now,
+          verificationCleanupAt: null,
+          loginBlockedUntil: null,
+        },
+      });
+      if (activated.count !== 1) {
+        throw new UnauthorizedException(
+          "Liên kết xác minh không hợp lệ hoặc đã hết hạn.",
+        );
+      }
+
+      await transaction.authToken.updateMany({
         where: {
           userId: token.userId,
           purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
@@ -274,17 +307,8 @@ export class AuthService {
           revokedAt: null,
         },
         data: { revokedAt: now },
-      }),
-      this.prisma.user.update({
-        where: { id: token.userId },
-        data: {
-          status: UserStatus.ACTIVE,
-          emailVerifiedAt: now,
-          verificationCleanupAt: null,
-          loginBlockedUntil: null,
-        },
-      }),
-      this.prisma.auditLog.create({
+      });
+      await transaction.auditLog.create({
         data: {
           actorType: "USER",
           actorId: token.userId,
@@ -296,8 +320,8 @@ export class AuthService {
           ipHash: this.hashIp(context.ip),
           correlationId: context.correlationId ?? randomUUID(),
         },
-      }),
-    ]);
+      });
+    });
     return { verified: true, userId: token.userId };
   }
 
@@ -309,28 +333,34 @@ export class AuthService {
     }
     const email = this.normalizeEmail(emailValue);
     const user = await this.prisma.user.findUnique({ where: { email } });
+
     if (!user || user.status !== UserStatus.PENDING_VERIFY || user.deletedAt) {
       return { accepted: true };
     }
 
-    const since = new Date(Date.now() - 60 * 60 * 1000);
-    const recentCount = await this.prisma.authToken.count({
-      where: {
-        userId: user.id,
-        purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
-        createdAt: { gte: since },
-      },
-    });
-    if (recentCount >= MAX_VERIFICATION_RESENDS_PER_HOUR) {
-      throw new HttpException(
-        "Bạn đã yêu cầu quá nhiều email. Vui lòng thử lại sau.",
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
     const now = new Date();
     const rawToken = randomBytes(32).toString("base64url");
+
     await this.prisma.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT pg_advisory_xact_lock(42, hashtext(${user.id}))`;
+
+      const since = new Date(Date.now() - 60 * 60 * 1000);
+      const recentCount = await transaction.authToken.count({
+        where: {
+          userId: user.id,
+          purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+          source: AuthTokenSource.RESEND,
+          createdAt: { gte: since },
+        },
+      });
+      if (recentCount >= MAX_VERIFICATION_RESENDS_PER_HOUR) {
+        throw new HttpException(
+          "Bạn đã yêu cầu quá nhiều email. Vui lòng thử lại sau.",
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+
       await transaction.authToken.updateMany({
         where: {
           userId: user.id,
@@ -340,14 +370,17 @@ export class AuthService {
         },
         data: { revokedAt: now },
       });
+
       const token = await transaction.authToken.create({
         data: {
           userId: user.id,
           purpose: AuthTokenPurpose.EMAIL_VERIFICATION,
+          source: AuthTokenSource.RESEND,
           tokenHash: this.hashOpaqueToken(rawToken),
           expiresAt: new Date(now.getTime() + EMAIL_VERIFICATION_TTL_MS),
         },
       });
+
       await transaction.outboxEvent.create({
         data: {
           eventId: randomUUID(),
@@ -388,12 +421,12 @@ export class AuthService {
       }),
       eligible
         ? this.prisma.authToken.count({
-            where: {
-              userId: user.id,
-              purpose: AuthTokenPurpose.PASSWORD_RESET,
-              createdAt: { gte: since },
-            },
-          })
+          where: {
+            userId: user.id,
+            purpose: AuthTokenPurpose.PASSWORD_RESET,
+            createdAt: { gte: since },
+          },
+        })
         : Promise.resolve(0),
     ]);
     if (
@@ -902,6 +935,7 @@ export class AuthService {
       data: {
         userId,
         tokenHash: this.hashOpaqueToken(token),
+        familyId: randomUUID(),
         authVersion: user.authVersion,
         expiresAt: new Date(Date.now() + this.refreshTtlMs(role)),
       },
@@ -914,17 +948,29 @@ export class AuthService {
       where: { tokenHash: this.hashOpaqueToken(refreshToken) },
       include: { user: { include: { role: true, partnerMembership: true, profile: true } } },
     });
+
+    if (!session) {
+      throw new UnauthorizedException("Phiên đăng nhập không hợp lệ hoặc đã hết hạn.");
+    }
+
+    if (session.revokedAt !== null) {
+      await this.prisma.authSession.updateMany({
+        where: { familyId: session.familyId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      })
+
+      throw new UnauthorizedException(
+        "Phát hiện tái sử dụng token. Tất cả phiên đăng nhập đã bị thu hồi vì lý do bảo mật.",
+      );
+    }
+
     if (
-      !session ||
-      session.revokedAt ||
       session.expiresAt <= new Date() ||
       session.user.deletedAt ||
       !canSignIn(session.user.status) ||
       session.authVersion !== session.user.authVersion
     ) {
-      throw new UnauthorizedException(
-        "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
-      );
+      throw new UnauthorizedException("Phiên đăng nhập không hợp lệ hoặc đã hết hạn.");
     }
 
     const role = session.user.partnerMembership
@@ -932,20 +978,31 @@ export class AuthService {
       : session.user.role.name;
     const nextToken = randomBytes(32).toString("base64url");
     const now = new Date();
-    await this.prisma.$transaction([
-      this.prisma.authSession.update({
-        where: { id: session.id },
+
+    await this.prisma.$transaction(async (transaction) => {
+      const revoked = await transaction.authSession.updateMany({
+        where: {
+          id: session.id,
+          revokedAt: null,
+          authVersion: session.authVersion,
+        },
         data: { revokedAt: now },
-      }),
-      this.prisma.authSession.create({
+      });
+      if (revoked.count !== 1) {
+        throw new UnauthorizedException(
+          "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
+        );
+      }
+      await transaction.authSession.create({
         data: {
           userId: session.userId,
           tokenHash: this.hashOpaqueToken(nextToken),
+          familyId: session.familyId,
           authVersion: session.user.authVersion,
           expiresAt: new Date(now.getTime() + this.refreshTtlMs(role)),
         },
-      }),
-    ]);
+      });
+    });
     return { result: this.toResult(session.user), refreshToken: nextToken };
   }
 

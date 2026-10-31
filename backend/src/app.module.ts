@@ -18,6 +18,19 @@ import { ProfilesModule } from "./profiles/profiles.module";
 import { PartnerApplicationsModule } from "./partner-applications/partner-applications.module";
 import { SearchModule } from "./search/search.module";
 import { SupportProgramRegistrationsModule } from "./support-program-registrations/support-program-registrations.module";
+import { ScheduleModule } from '@nestjs/schedule';
+import { OutboxWorker } from "./outbox/outbox.worker";
+import { PostsModule } from "./posts/posts.module";
+import { ReportsModule } from "./reports/reports.module";
+import { ProgramsModule } from "./programs/programs.module";
+import { SupportPointsModule } from "./support-points/support-points.module";
+import { AuditLogsModule } from "./audit-logs/audit-logs.module";
+import { ExportsModule } from "./exports/exports.module";
+import { ContentsModule } from "./contents/contents.module";
+import { DashboardModule } from "./dashboard/dashboard.module";
+import { IdempotencyService } from "./common/idempotency.service";
+import { APP_INTERCEPTOR } from "@nestjs/core";
+import { IdempotencyInterceptor } from "./common/idempotency.interceptor";
 
 @Module({
   imports: [
@@ -42,6 +55,23 @@ import { SupportProgramRegistrationsModule } from "./support-program-registratio
     NotificationsModule,
     SearchModule,
     SupportProgramRegistrationsModule,
+    ScheduleModule.forRoot(),
+    PostsModule,
+    ReportsModule,
+    ProgramsModule,
+    SupportPointsModule,
+    AuditLogsModule,
+    ExportsModule,
+    ContentsModule,
+    DashboardModule,
+  ],
+  providers: [
+    OutboxWorker,
+    IdempotencyService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
+    },
   ],
 })
-export class AppModule {}
+export class AppModule { }

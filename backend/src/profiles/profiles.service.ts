@@ -1,3 +1,4 @@
+import { Length } from 'class-validator';
 import {
   BadRequestException,
   ConflictException,
@@ -24,7 +25,7 @@ interface RequestContext {
 export class ProfilesService {
   private readonly maxAvatarBytes = 1024 * 1024;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async getOwnProfile(userId: string) {
     const user = await this.prisma.user.findFirst({
@@ -83,7 +84,7 @@ export class ProfilesService {
     context: RequestContext = {},
   ) {
     this.validateBirthYear(dto.birthYear);
-    this.validateAvatar(dto.avatarDataUrl);
+    this.validateAvatar(dto.avatarUrl);
 
     try {
       return await this.prisma.$transaction(
@@ -174,7 +175,7 @@ export class ProfilesService {
         city: dto.city.trim() || null,
         birthYear: dto.birthYear,
         bio: dto.bio.trim() || null,
-        avatarDataUrl: dto.avatarDataUrl,
+        avatarUrl: dto.avatarUrl,
         visibility: dto.visibility,
         showEmail: dto.showEmail,
         allowComments: dto.allowComments,
@@ -191,7 +192,7 @@ export class ProfilesService {
       city: user.profile?.city ?? "",
       birthYear: user.profile?.birthYear ?? null,
       bio: user.profile?.bio ?? "",
-      avatarDataUrl: user.profile?.avatarDataUrl ?? null,
+      avatarUrl: user.profile?.avatarUrl ?? null,
       visibility: user.profile?.visibility ?? ProfileVisibility.MEMBERS,
       showEmail: user.profile?.showEmail ?? false,
       allowComments: user.profile?.allowComments ?? true,
@@ -206,7 +207,7 @@ export class ProfilesService {
       city: user.profile?.city ?? null,
       birthYear: user.profile?.birthYear ?? null,
       bio: user.profile?.bio ?? null,
-      hasAvatar: Boolean(user.profile?.avatarDataUrl),
+      hasAvatar: Boolean(user.profile?.avatarUrl),
       visibility: user.profile?.visibility ?? ProfileVisibility.MEMBERS,
       showEmail: user.profile?.showEmail ?? false,
       allowComments: user.profile?.allowComments ?? true,
@@ -220,19 +221,10 @@ export class ProfilesService {
     }
   }
 
-  private validateAvatar(value: string | null): void {
-    if (value === null) return;
-    const match =
-      /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(
-        value,
-      );
-    if (!match) {
-      throw new BadRequestException("Avatar chỉ nhận tệp JPG, PNG hoặc WebP.");
-    }
-    if (Buffer.byteLength(match[2], "base64") > this.maxAvatarBytes) {
-      throw new BadRequestException(
-        "Dung lượng avatar không được vượt quá 1 MB.",
-      );
+  private validateAvatar(url: string | null): void {
+    if (!url) return;
+    if (url.length > 500) {
+      throw new BadRequestException("Đường dẫn ảnh đại diện không hợp lệ.")
     }
   }
 

@@ -5,7 +5,8 @@ import { normalizeSearchText } from '@shared/utils/search-text';
 
 import { MOCK_CONTENT_ITEMS } from '../data/content.mock-data';
 import {
-  CONTENT_PAGE_SIZES,
+  DEFAULT_CONTENT_PAGE_SIZE,
+  MAX_CONTENT_PAGE_SIZE,
   ContentApiError,
   type ContentCategory,
   type ContentDetail,
@@ -17,7 +18,7 @@ import {
 } from '../models/content.models';
 import { ContentAdminStorageService } from './content-admin-storage.service';
 
-const DEFAULT_PAGE_SIZE: ContentPageSize = 6;
+const DEFAULT_PAGE_SIZE: ContentPageSize = DEFAULT_CONTENT_PAGE_SIZE;
 
 @Injectable({ providedIn: 'root' })
 export class ContentMockApiService {
@@ -127,7 +128,9 @@ export class ContentMockApiService {
   }
 
   private normalizePageSize(pageSize?: ContentPageSize): ContentPageSize {
-    return pageSize && CONTENT_PAGE_SIZES.includes(pageSize) ? pageSize : DEFAULT_PAGE_SIZE;
+    return Number.isInteger(pageSize) && Number(pageSize) > 0
+      ? Math.min(Number(pageSize), MAX_CONTENT_PAGE_SIZE)
+      : DEFAULT_PAGE_SIZE;
   }
 
   private toSummary(item: ContentDetail): ContentSummary {

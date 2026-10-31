@@ -22,6 +22,6 @@ export class SearchQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  pageSize = 24;
+  @Max(48)
+  pageSize = 12;
 }

@@ -14,7 +14,7 @@ import { NotificationsService } from "./notifications.service";
 @UseGuards(JwtAuthGuard)
 @Controller("notifications")
 export class NotificationsController {
-  constructor(private readonly notifications: NotificationsService) {}
+  constructor(private readonly notifications: NotificationsService) { }
 
   @Get("preferences")
   async preferences(@CurrentUser() user: AuthenticatedUser): Promise<ApiSuccessResponse<unknown>> {
@@ -41,7 +41,12 @@ export class NotificationsController {
   async markAllRead(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ApiSuccessResponse<unknown>> {
-    return { success: true, data: await this.notifications.markAllRead(user.id) };
+    const requestStartedAt = new Date();
+    const result = await this.notifications.markAllRead(user.id, requestStartedAt);
+
+    return {
+      success: true, data: result,
+    };
   }
 
   @Patch(":notificationId/read")

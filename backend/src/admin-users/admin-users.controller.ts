@@ -17,13 +17,14 @@ import { ApiSuccessResponse } from "../common/interfaces/api-response.interface"
 import { AdminUsersService } from "./admin-users.service";
 import { ListAdminUsersDto } from "./dto/list-admin-users.dto";
 import { UpdateUserStatusDto } from "./dto/update-user-status.dto";
+import { Idempotent } from "../common/idempotency.interceptor";
 
 @ApiTags("admin-users")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller("admin/users")
 export class AdminUsersController {
-  constructor(private readonly users: AdminUsersService) {}
+  constructor(private readonly users: AdminUsersService) { }
 
   @Get()
   async list(
@@ -34,6 +35,7 @@ export class AdminUsersController {
   }
 
   @Patch(":userId/status")
+  @Idempotent("UPDATE_USER_STATUS")
   async updateStatus(
     @CurrentUser() admin: AuthenticatedUser,
     @Param("userId") userId: string,

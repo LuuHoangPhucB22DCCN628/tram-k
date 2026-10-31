@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { ForbiddenException, Injectable } from "@nestjs/common";
 import { NotificationKind } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
@@ -18,7 +18,7 @@ type NotificationWriter = Pick<PrismaService, "notification">;
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private readonly preferenceSelect = {
     notifyStoryComments: true,
@@ -55,6 +55,15 @@ export class NotificationsService {
   }
 
   async listFor(recipientId: string, query: ListNotificationsQueryDto) {
+    if (query.cursor) {
+      const cursorNoti = await this.prisma.notification.findUnique({
+        where: { id: query.cursor },
+        select: { recipientId: true },
+      });
+      if (!cursorNoti || cursorNoti.recipientId !== recipientId) {
+        throw new ForbiddenException("Cursor khoong hợp lệ hoặc không thuộc quyền sở hữu của bạn.");
+      }
+    }
     const where = {
       recipientId,
       ...(query.unreadOnly ? { readAt: null } : {}),
@@ -85,9 +94,9 @@ export class NotificationsService {
     return { updated: result.count > 0 };
   }
 
-  async markAllRead(recipientId: string) {
+  async markAllRead(recipientId: string, requestStartedAt: Date = new Date()) {
     const result = await this.prisma.notification.updateMany({
-      where: { recipientId, readAt: null },
+      where: { recipientId, readAt: null, createdAt: { lte: requestStartedAt } },
       data: { readAt: new Date() },
     });
     return { updatedCount: result.count };
