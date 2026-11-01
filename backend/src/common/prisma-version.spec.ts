@@ -24,6 +24,7 @@ describe("Prisma pin and SearchDocumentType", () => {
       "CANCER_TYPE",
       "STORY",
       "SUPPORT_PROGRAM",
+      "DONATION_LOCATION",
     ]);
     expect(Object.values(SearchDocumentType)).not.toContain("PODCAST");
   });

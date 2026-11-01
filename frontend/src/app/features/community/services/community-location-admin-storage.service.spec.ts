@@ -106,7 +106,9 @@ describe('CommunityLocationAdminStorageService server sync', () => {
     const http = TestBed.inject(HttpTestingController);
     storage.initializeAdmin();
     http
-      .expectOne('http://localhost:3000/managed-resources/admin-state?type=DONATION_LOCATION')
+      .expectOne(
+        'http://localhost:3000/managed-resources/admin-state?page=1&limit=100&type=DONATION_LOCATION',
+      )
       .flush({ success: true, data: { initialized: false, items: [] } });
     await Promise.resolve();
 
@@ -138,7 +140,9 @@ describe('CommunityLocationAdminStorageService server sync', () => {
     const http = TestBed.inject(HttpTestingController);
     storage.initializeAdmin();
     http
-      .expectOne('http://localhost:3000/managed-resources/admin-state?type=DONATION_LOCATION')
+      .expectOne(
+        'http://localhost:3000/managed-resources/admin-state?page=1&limit=100&type=DONATION_LOCATION',
+      )
       .flush({ success: true, data: { initialized: false, items: [] } });
     const request = http.expectOne(
       'http://localhost:3000/managed-resources/DONATION_LOCATION/old-location',

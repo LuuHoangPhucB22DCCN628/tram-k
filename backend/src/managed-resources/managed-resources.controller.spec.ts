@@ -12,7 +12,7 @@ describe("ManagedResourcesController", () => {
 
     beforeEach(() => {
         resources = {
-            remove: jest.fn().mockResolvedValue(undefined),
+            remove: jest.fn().mockResolvedValue({ deletedRegistrations: 0 }),
         };
 
         controller = new ManagedResourcesController(
@@ -37,7 +37,7 @@ describe("ManagedResourcesController", () => {
             );
             expect(result).toEqual({
                 success: true,
-                data: null,
+                data: { deletedRegistrations: 0 },
             });
         });
 

@@ -8,6 +8,7 @@ import {
 
 import { PrismaService } from "../prisma/prisma.service";
 import { SearchService } from "../search/search.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { ManagedResourcesService } from "./managed-resources.service";
 
 describe("ManagedResourcesService", () => {
@@ -19,7 +20,11 @@ describe("ManagedResourcesService", () => {
     delete: jest.fn(),
   };
   const user = { findUnique: jest.fn() };
-  const transaction = { managedResource };
+  const supportProgramRegistration = {
+    findMany: jest.fn(),
+    deleteMany: jest.fn(),
+  };
+  const transaction = { managedResource, supportProgramRegistration };
   const prisma = {
     managedResource,
     user,
@@ -32,6 +37,9 @@ describe("ManagedResourcesService", () => {
     upsert: jest.fn(),
     deactivate: jest.fn(),
   } as unknown as SearchService;
+  const notifications = {
+    create: jest.fn(),
+  } as unknown as NotificationsService;
   let service: ManagedResourcesService;
 
   const dto = {
@@ -47,7 +55,9 @@ describe("ManagedResourcesService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new ManagedResourcesService(prisma, search);
+    service = new ManagedResourcesService(prisma, search, notifications);
+    supportProgramRegistration.findMany.mockResolvedValue([]);
+    supportProgramRegistration.deleteMany.mockResolvedValue({ count: 0 });
     user.findUnique.mockResolvedValue({
       id: "ADMIN-1",
       deletedAt: null,
@@ -158,17 +168,29 @@ describe("ManagedResourcesService", () => {
       {
         ...dto,
         status: ManagedResourceStatus.DRAFT,
-        payload: { ownerId: "PARTNER-1", capacity: 10 },
+        payload: {
+          ownerId: "PARTNER-1",
+          capacity: 10,
+          address: "Số 1 đường Trần Phú, Hà Nội",
+        },
       },
     );
 
     expect(managedResource.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
-          payload: { ownerId: "PARTNER-1", capacity: 10 },
+          payload: {
+            ownerId: "PARTNER-1",
+            capacity: 10,
+            address: "Số 1 đường Trần Phú, Hà Nội",
+          },
         }),
         update: expect.objectContaining({
-          payload: { ownerId: "PARTNER-1", capacity: 10 },
+          payload: {
+            ownerId: "PARTNER-1",
+            capacity: 10,
+            address: "Số 1 đường Trần Phú, Hà Nội",
+          },
         }),
       }),
     );
@@ -234,6 +256,7 @@ describe("ManagedResourcesService", () => {
     managedResource.findUnique.mockResolvedValue({
       id: "RESOURCE-1",
       type: SearchDocumentType.SUPPORT_PROGRAM,
+      status: ManagedResourceStatus.PENDING,
       payload: { ownerId: "PARTNER-1" },
     });
     await expect(
@@ -261,6 +284,7 @@ describe("ManagedResourcesService", () => {
     managedResource.findUnique.mockResolvedValue({
       id: "RESOURCE-1",
       type: SearchDocumentType.SUPPORT_PROGRAM,
+      status: ManagedResourceStatus.PENDING,
       payload: { ownerId: "PARTNER-1" },
     });
     managedResource.delete.mockResolvedValue({});

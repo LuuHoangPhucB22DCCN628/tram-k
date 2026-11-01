@@ -1,11 +1,11 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { ForbiddenException } from "@nestjs/common";
 import { RoleName, UserStatus } from "@prisma/client";
 
 import { DashboardService } from "./dashboard.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthenticatedUser } from "../auth/auth-user.interface";
+import { DASHBOARD_CACHE_MANAGER } from "./dashboard-cache.token";
 
 describe("DashboardService", () => {
   let service: DashboardService;
@@ -39,7 +39,7 @@ describe("DashboardService", () => {
       providers: [
         DashboardService,
         { provide: PrismaService, useValue: prisma },
-        { provide: CACHE_MANAGER, useValue: cacheManager },
+        { provide: DASHBOARD_CACHE_MANAGER, useValue: cacheManager },
       ],
     }).compile();
 

@@ -1,17 +1,17 @@
 import { ForbiddenException, Inject, Injectable } from "@nestjs/common";
-import { CACHE_MANAGER } from "@nestjs/cache-manager";
-import { Cache } from "cache-manager";
+import type { Cache } from "cache-manager";
 import { PartnerApplicationStatus, PostStatus, ProgramStatus, ReportStatus, RoleName, SupportProgramRegistrationStatus, UserStatus } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
 import { DashboardQueryDto } from "./dto/dashboard-query.dto";
 import { AuthenticatedUser } from "../auth/auth-user.interface";
+import { DASHBOARD_CACHE_MANAGER } from "./dashboard-cache.token";
 
 @Injectable()
 export class DashboardService {
     constructor(
         private readonly prisma: PrismaService,
-        @Inject(CACHE_MANAGER) private cacheManager: Cache,
+        @Inject(DASHBOARD_CACHE_MANAGER) private cacheManager: Cache,
     ) { }
 
     async getOverview(user: AuthenticatedUser, query: DashboardQueryDto) {
