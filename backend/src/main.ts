@@ -2,16 +2,16 @@ import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import { json } from "express";
 
 import { AppModule } from "./app.module";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
+import { json, urlencoded } from "express";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   // Parse JSON cho toàn bộ API; avatar base64 tối đa 1 MB (~1,4 MB payload).
-  // Nest không tự gắn parser khi chạy cùng cấu hình hiện tại, khiến @Body() nhận {}.
   app.use(json({ limit: "2mb" }));
+  app.use(urlencoded({ extended: true, limit: "2mb" }));
   const config = app.get(ConfigService);
   const port = config.get<number>("PORT", 3000);
   const configuredOrigins = config
@@ -22,13 +22,13 @@ async function bootstrap(): Promise<void> {
     config.get<string>("NODE_ENV", "development") === "production"
       ? []
       : [
-          "http://localhost:4200",
-          "http://127.0.0.1:4200",
-          "http://localhost:4201",
-          "http://127.0.0.1:4201",
-          "http://localhost:4203",
-          "http://127.0.0.1:4203",
-        ];
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+        "http://localhost:4201",
+        "http://127.0.0.1:4201",
+        "http://localhost:4203",
+        "http://127.0.0.1:4203",
+      ];
 
   app.enableCors({
     origin: [...new Set([...configuredOrigins, ...developmentOrigins])],

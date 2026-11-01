@@ -140,7 +140,7 @@ xác Prisma `6.12.0`. `package-lock.json` đã được đồng bộ lại với
 
 ### P0 – bắt buộc
 
-1. Phân loại và xử lý dependency audit hiện báo 2 critical, 5 high và các cảnh báo còn lại; không dùng `--force` khi chưa đánh giá breaking change.
+1. Phân loại và xử lý dependency audit hiện báo 33 cảnh báo (2 high, 30 moderate, 1 low); không còn critical sau khi đồng bộ lockfile và không dùng `--force` khi chưa đánh giá breaking change.
 2. Đổi toàn bộ secret đã từng xuất hiện trong ảnh/chat, đặc biệt mật khẩu ứng dụng Gmail; đưa secret vào secret manager.
 3. Cấu hình reverse proxy HTTPS cho `/api`, cookie `secure`, CORS production và domain thật.
 4. Xác nhận backup/restore PostgreSQL và chạy migration trên database staging trước production.

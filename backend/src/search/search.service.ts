@@ -183,10 +183,9 @@ export class SearchService {
         where: {
           programId: { in: programIds },
           status: {
-            notIn: [
-              SupportProgramRegistrationStatus.CANCELLED,
-              SupportProgramRegistrationStatus.EXPIRED,
-              SupportProgramRegistrationStatus.NO_SHOW,
+            in: [
+              SupportProgramRegistrationStatus.CONFIRMED,
+              SupportProgramRegistrationStatus.WAITLISTED,
             ],
           },
         },

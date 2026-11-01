@@ -18,8 +18,10 @@ import { AuthenticatedUser } from "../auth/auth-user.interface";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SearchService } from "../search/search.service";
-import { parseRecurringLocationSchedule, parseStructuredSupportSchedule,
-  scheduleHasUpcomingOccurrence } from "../search/support-schedule";
+import {
+  parseRecurringLocationSchedule, parseStructuredSupportSchedule,
+  scheduleHasUpcomingOccurrence
+} from "../search/support-schedule";
 import { UpsertManagedResourceDto } from "./dto/upsert-managed-resource.dto";
 
 @Injectable()
@@ -28,7 +30,7 @@ export class ManagedResourcesService {
     private readonly prisma: PrismaService,
     private readonly search: SearchService,
     private readonly notifications: NotificationsService,
-  ) {}
+  ) { }
 
   async listPublished(type?: SearchDocumentType, page = 1, pageSize = 12) {
     const where = {
@@ -353,24 +355,29 @@ export class ManagedResourcesService {
       },
     });
 
+    let existingPayload: Record<string, unknown> = {};
     if (existing) {
-      const existingPayload = existing.payload;
+      const rawPayload = existing.payload;
       const ownerId =
-        existingPayload !== null &&
-          typeof existingPayload === "object" &&
-          !Array.isArray(existingPayload) &&
-          "ownerId" in existingPayload
-          ? existingPayload.ownerId
+        rawPayload !== null &&
+          typeof rawPayload === "object" &&
+          !Array.isArray(rawPayload) &&
+          "ownerId" in rawPayload
+          ? rawPayload.ownerId
           : undefined;
 
       if (ownerId !== actor.id) {
         throw new ForbiddenException("Bạn không có quyền cập nhật chương trình này.");
+      }
+      if (rawPayload !== null && typeof rawPayload === "object" && !Array.isArray(rawPayload)) {
+        existingPayload = rawPayload as Record<string, unknown>;
       }
     } else if (dto.payload.ownerId !== actor.id) {
       throw new ForbiddenException("Bạn không có quyền cập nhật chương trình này.");
     }
 
     return {
+      ...existingPayload,
       ...dto.payload,
       ownerId: actor.id,
     };

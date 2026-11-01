@@ -336,11 +336,7 @@ export class AuthService {
   }
 
   async resendVerification(emailValue: string) {
-    if (!this.verificationEmailAvailable) {
-      throw new ServiceUnavailableException(
-        "Dịch vụ gửi email xác minh chưa được cấu hình. Vui lòng liên hệ quản trị viên.",
-      );
-    }
+
     const email = this.normalizeEmail(emailValue);
     const user = await this.prisma.user.findUnique({ where: { email } });
 

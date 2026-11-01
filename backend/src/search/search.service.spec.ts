@@ -24,6 +24,7 @@ describe("SearchService", () => {
     searchDocument.count.mockResolvedValue(0);
     managedResource.findMany.mockResolvedValue([]);
     queryRaw.mockResolvedValue([]);
+    managedResource.findMany.mockResolvedValue([]);
   });
 
   it("normalizes accented and unaccented Vietnamese queries before searching", async () => {

@@ -30,7 +30,7 @@ import { JwtAuthGuard } from "./jwt-auth.guard";
 export class AuthController {
   private readonly refreshCookieName = "tram_k_refresh";
 
-  constructor(private readonly auth: AuthService) {}
+  constructor(private readonly auth: AuthService) { }
 
   @Post("register")
   async register(

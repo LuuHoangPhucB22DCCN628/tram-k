@@ -153,10 +153,12 @@ describe("AiAssistantService", () => {
   });
 
   it("returns clickable published articles when asked for recommendations", async () => {
-    (searchService.search as jest.Mock).mockResolvedValue({ items: [
-      { id: "guide-1", title: "Dinh dưỡng trong hóa trị", link: "/cam-nang/dinh-duong", type: "GUIDE" },
-      { id: "guide-2", title: "Lưu ý ăn uống khi điều trị", link: "/cam-nang/an-uong", type: "GUIDE" },
-    ] });
+    (searchService.search as jest.Mock).mockResolvedValue({
+      items: [
+        { id: "guide-1", title: "Dinh dưỡng trong hóa trị", link: "/cam-nang/dinh-duong", type: "GUIDE" },
+        { id: "guide-2", title: "Lưu ý ăn uống khi điều trị", link: "/cam-nang/an-uong", type: "GUIDE" },
+      ]
+    });
     const service = new AiAssistantService(new ConfigService({ AI_PROVIDER: "ollama" }), searchService);
     const request = jest.spyOn(global, "fetch");
     try {
@@ -209,10 +211,14 @@ describe("AiAssistantService", () => {
 
   it("recommends only a program matching the requested date and time", async () => {
     (searchService.publishedSupportOptions as jest.Mock).mockResolvedValue([
-      { id: "morning", type: "SUPPORT_PROGRAM", title: "Bữa cơm sáng", regionId: "ha-noi", city: "Hà Nội", address: "Bệnh viện K Tân Triều", schedule: "09:00–11:00, ngày 24/10/2099", supportType: "MEAL", description: "", capacityRemaining: 10,
-        structuredSchedule: { scheduleType: "ONE_TIME", startsOn: "2099-10-24", startTime: "09:00", endTime: "11:00" } },
-      { id: "evening", type: "SUPPORT_PROGRAM", title: "Bữa cơm tối", regionId: "ha-noi", city: "Hà Nội", address: "Bệnh viện K Tân Triều", schedule: "18:00–20:00, ngày 24/10/2099", supportType: "MEAL", description: "", capacityRemaining: 10,
-        structuredSchedule: { scheduleType: "ONE_TIME", startsOn: "2099-10-24", startTime: "18:00", endTime: "20:00" } },
+      {
+        id: "morning", type: "SUPPORT_PROGRAM", title: "Bữa cơm sáng", regionId: "ha-noi", city: "Hà Nội", address: "Bệnh viện K Tân Triều", schedule: "09:00–11:00, ngày 24/10/2099", supportType: "MEAL", description: "", capacityRemaining: 10,
+        structuredSchedule: { scheduleType: "ONE_TIME", startsOn: "2099-10-24", startTime: "09:00", endTime: "11:00" }
+      },
+      {
+        id: "evening", type: "SUPPORT_PROGRAM", title: "Bữa cơm tối", regionId: "ha-noi", city: "Hà Nội", address: "Bệnh viện K Tân Triều", schedule: "18:00–20:00, ngày 24/10/2099", supportType: "MEAL", description: "", capacityRemaining: 10,
+        structuredSchedule: { scheduleType: "ONE_TIME", startsOn: "2099-10-24", startTime: "18:00", endTime: "20:00" }
+      },
     ]);
     const service = new AiAssistantService(new ConfigService({ AI_PROVIDER: "local" }), searchService);
 
@@ -311,10 +317,12 @@ describe("AiAssistantService", () => {
       { id: "tan-trieu", type: "DONATION_LOCATION", title: "Viện K Tân Triều", regionId: "ha-noi", city: "Hà Nội", address: "30 Cầu Bươu", schedule: "Thứ Tư", supportType: "MEAL", description: "" },
     ]);
     const service = new AiAssistantService(new ConfigService({ AI_PROVIDER: "local" }), searchService);
-    const response = await service.ask({ message: "Ninh Bình", history: [
-      { role: "user", content: "Tìm điểm hỗ trợ cho tôi" },
-      { role: "assistant", content: "Bạn cần tìm ở tỉnh/thành nào?" },
-    ] });
+    const response = await service.ask({
+      message: "Ninh Bình", history: [
+        { role: "user", content: "Tìm điểm hỗ trợ cho tôi" },
+        { role: "assistant", content: "Bạn cần tìm ở tỉnh/thành nào?" },
+      ]
+    });
 
     expect(response.answer).toContain("chưa thấy");
     expect(response.answer).toContain("Ninh Bình");
@@ -338,10 +346,12 @@ describe("AiAssistantService", () => {
   });
 
   it("answers from a relevant published passage instead of only returning an article link", async () => {
-    (searchService.search as jest.Mock).mockResolvedValue({ items: [{
-      id: "lung-1", title: "Ung thư phổi", description: "Thông tin chung về ung thư phổi.",
-      link: "/loai-ung-thu/ung-thu-phoi", type: "CANCER_TYPE",
-    }] });
+    (searchService.search as jest.Mock).mockResolvedValue({
+      items: [{
+        id: "lung-1", title: "Ung thư phổi", description: "Thông tin chung về ung thư phổi.",
+        link: "/loai-ung-thu/ung-thu-phoi", type: "CANCER_TYPE",
+      }]
+    });
     (searchService.publishedPassages as jest.Mock).mockResolvedValue([{
       sourceId: "lung-1", type: "CANCER_TYPE",
       passages: ["Dấu hiệu ung thư phổi có thể khác nhau giữa mỗi người; bài viết nêu các dấu hiệu cần trao đổi với bác sĩ."],
@@ -356,9 +366,11 @@ describe("AiAssistantService", () => {
   });
 
   it("does not present an unrelated article summary as an answer", async () => {
-    (searchService.search as jest.Mock).mockResolvedValue({ items: [{
-      id: "lung-1", title: "Ung thư phổi", link: "/loai-ung-thu/ung-thu-phoi", type: "CANCER_TYPE",
-    }] });
+    (searchService.search as jest.Mock).mockResolvedValue({
+      items: [{
+        id: "lung-1", title: "Ung thư phổi", link: "/loai-ung-thu/ung-thu-phoi", type: "CANCER_TYPE",
+      }]
+    });
     (searchService.publishedPassages as jest.Mock).mockResolvedValue([{
       sourceId: "lung-1", type: "CANCER_TYPE", passages: ["Các hoạt động hỗ trợ cộng đồng trong tháng này."],
     }]);
@@ -370,9 +382,11 @@ describe("AiAssistantService", () => {
   });
 
   it("does not use a community story as medical evidence", async () => {
-    (searchService.search as jest.Mock).mockResolvedValue({ items: [{
-      id: "story-1", title: "Câu chuyện về ung thư phổi", link: "/cau-chuyen/story-1", type: "STORY",
-    }] });
+    (searchService.search as jest.Mock).mockResolvedValue({
+      items: [{
+        id: "story-1", title: "Câu chuyện về ung thư phổi", link: "/cau-chuyen/story-1", type: "STORY",
+      }]
+    });
     const service = new AiAssistantService(new ConfigService({ AI_PROVIDER: "local" }), searchService);
 
     const response = await service.ask({ message: "Dấu hiệu ung thư phổi là gì?", history: [] });
@@ -471,10 +485,12 @@ describe("AiAssistantService", () => {
   });
 
   it("does not invent a Trạm K answer from an article with only a generic description", async () => {
-    (searchService.search as jest.Mock).mockResolvedValue({ items: [
-      { id: "breast", title: "Ung thư vú", link: "/loai-ung-thu/ung-thu-vu", type: "CANCER_TYPE" },
-      { id: "lung", title: "Ung thư phổi", link: "/loai-ung-thu/ung-thu-phoi", type: "CANCER_TYPE" },
-    ] });
+    (searchService.search as jest.Mock).mockResolvedValue({
+      items: [
+        { id: "breast", title: "Ung thư vú", link: "/loai-ung-thu/ung-thu-vu", type: "CANCER_TYPE" },
+        { id: "lung", title: "Ung thư phổi", link: "/loai-ung-thu/ung-thu-phoi", type: "CANCER_TYPE" },
+      ]
+    });
     (searchService.publishedPassages as jest.Mock).mockResolvedValue([{
       sourceId: "lung", type: "CANCER_TYPE",
       passages: ["Trang tra cứu tổng quan, dấu hiệu cần lưu ý và các câu hỏi nên trao đổi với nhân viên y tế."],
