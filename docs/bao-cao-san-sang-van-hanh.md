@@ -18,7 +18,7 @@ Mức đánh giá hiện tại:
 | Vận hành production thực tế | **Chưa đạt** |
 | Mức sẵn sàng ước tính | **Khoảng 75%** |
 
-Lý do chưa đạt production: chưa có E2E staging, cấu hình email/AI/Google Maps còn phụ thuộc bí mật hoặc dịch vụ ngoài, production cần reverse proxy `/api`, cần đánh giá dependency audit và còn một số phần đang dùng dữ liệu mock/local-storage.
+Lý do chưa đạt production: chưa có E2E staging, cấu hình email/AI/Google Maps còn phụ thuộc bí mật hoặc dịch vụ ngoài, production cần reverse proxy `/api`, backend còn advisory cần kế hoạch nâng major và một số phần vẫn dùng dữ liệu mock/local-storage.
 
 ## 2. Bằng chứng chạy hiện tại
 
@@ -136,11 +136,17 @@ Kết quả kiểm tra mới nhất ngày 01/11/2026: **60/60 test suites passed
 resources, đồng bộ hợp đồng xóa chương trình, AI fallback sources, enum tìm kiếm và pin chính
 xác Prisma `6.12.0`. `package-lock.json` đã được đồng bộ lại với `package.json`.
 
+### Dependency audit
+
+- Frontend đã nâng các bản patch Angular 21 và Vitest 4 trong cùng major. Audit production hiện **0 cảnh báo**; audit toàn bộ còn **16 moderate** chỉ thuộc toolchain phát triển.
+- Backend đã loại `@angular-devkit/core` không sử dụng và cập nhật các bản vá tương thích. Audit production còn **14 cảnh báo** gồm **2 high, 12 moderate**; audit toàn bộ còn **33 cảnh báo** gồm **2 high, 30 moderate, 1 low**.
+- Hai cảnh báo high backend đi qua `multer/@nestjs/platform-express`; npm chỉ cung cấp đường sửa bằng nâng NestJS 11 lên 12. Các cảnh báo CSV/Excel/Swagger còn lại cũng yêu cầu nâng major. Không dùng `npm audit fix --force` khi chưa có nhánh migration và regression test riêng.
+
 ## 7. Rủi ro và việc cần hoàn thành trước vận hành thật
 
 ### P0 – bắt buộc
 
-1. Phân loại và xử lý dependency audit hiện báo 33 cảnh báo (2 high, 30 moderate, 1 low); không còn critical sau khi đồng bộ lockfile và không dùng `--force` khi chưa đánh giá breaking change.
+1. Lập nhánh migration dependency backend: nâng NestJS 11 → 12 và đánh giá các major của Swagger, CSV, Excel; audit production backend hiện còn 2 high và 12 moderate. Không dùng `--force` khi chưa chạy regression test riêng.
 2. Đổi toàn bộ secret đã từng xuất hiện trong ảnh/chat, đặc biệt mật khẩu ứng dụng Gmail; đưa secret vào secret manager.
 3. Cấu hình reverse proxy HTTPS cho `/api`, cookie `secure`, CORS production và domain thật.
 4. Xác nhận backup/restore PostgreSQL và chạy migration trên database staging trước production.

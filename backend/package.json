@@ -40,7 +40,6 @@
     "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "@angular-devkit/core": "^22.2.5",
     "@nestjs/cli": "^11.0.24",
     "@nestjs/testing": "^11.2.3",
     "@types/express": "^5.0.6",
