@@ -217,10 +217,13 @@
 }
 
 .donation-stat strong {
+  max-width: 100%;
+  overflow: hidden;
   color: #5e4dcb;
-  font-size: 32px;
+  font-size: clamp(24px, 2vw, 32px);
   font-weight: 600;
   line-height: 42px;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

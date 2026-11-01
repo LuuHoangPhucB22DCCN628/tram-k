@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import {
@@ -12,6 +12,7 @@ import {
 } from '../../services/admin-donations-api.service';
 
 type MappingField = keyof StatementMapping;
+type AmountMode = 'SIGNED_AMOUNT' | 'SEPARATE_COLUMNS';
 
 @Component({
   selector: 'app-admin-donations-page',
@@ -28,7 +29,8 @@ export class AdminDonationsPage {
   protected readonly sheet = signal('');
   protected readonly headerRow = signal(1);
   protected readonly accountKey = signal('');
-  protected readonly mapping = signal<StatementMapping>({ date: -1, credit: -1 });
+  protected readonly amountMode = signal<AmountMode>('SIGNED_AMOUNT');
+  protected readonly mapping = signal<StatementMapping>({ date: -1, amount: -1 });
   protected readonly loading = signal(false);
   protected readonly importing = signal(false);
   protected readonly reviewing = signal(false);
@@ -38,13 +40,41 @@ export class AdminDonationsPage {
   protected readonly entries = signal<readonly AdminDonationEntry[]>([]);
   protected readonly selectedIds = signal<readonly string[]>([]);
   protected readonly reviewNote = signal('');
-  protected readonly mappingFields: readonly { readonly key: MappingField; readonly label: string; readonly required: boolean }[] = [
-    { key: 'date', label: 'Ngày giờ giao dịch', required: true },
-    { key: 'credit', label: 'Tiền vào', required: true },
-    { key: 'reference', label: 'Mã giao dịch', required: false },
-    { key: 'debit', label: 'Tiền ra', required: false },
-    { key: 'description', label: 'Nội dung', required: false },
-  ];
+  protected readonly mappingFields = computed<readonly {
+    readonly key: MappingField;
+    readonly label: string;
+    readonly required: boolean;
+  }[]>(() => this.amountMode() === 'SIGNED_AMOUNT'
+    ? [
+        { key: 'date', label: 'Ngày giờ giao dịch', required: true },
+        { key: 'amount', label: 'Số tiền có dấu', required: true },
+        { key: 'direction', label: 'Loại giao dịch', required: false },
+        { key: 'reference', label: 'Mã giao dịch', required: false },
+        { key: 'description', label: 'Nội dung', required: false },
+      ]
+    : [
+        { key: 'date', label: 'Ngày giờ giao dịch', required: true },
+        { key: 'credit', label: 'Tiền vào', required: true },
+        { key: 'debit', label: 'Tiền ra', required: false },
+        { key: 'reference', label: 'Mã giao dịch', required: false },
+        { key: 'description', label: 'Nội dung', required: false },
+      ]);
+  protected readonly importBlockReason = computed(() => {
+    const mapping = this.mapping();
+    if (!this.file()) return 'Hãy chọn tệp sao kê.';
+    if (!this.accountKey().trim()) return 'Hãy nhập mã tài khoản nhận tiền để chống nhập trùng.';
+    if (mapping.date < 0) return 'Hãy chọn cột ngày giờ giao dịch.';
+    if (this.amountMode() === 'SIGNED_AMOUNT' && (mapping.amount ?? -1) < 0) {
+      return 'Hãy chọn cột số tiền có dấu.';
+    }
+    if (this.amountMode() === 'SEPARATE_COLUMNS' && (mapping.credit ?? -1) < 0) {
+      return 'Hãy chọn cột tiền vào.';
+    }
+    const columns = Object.values(mapping).filter((value) => value >= 0);
+    if (new Set(columns).size !== columns.length) return 'Mỗi trường phải dùng một cột khác nhau.';
+    return '';
+  });
+  protected readonly canImport = computed(() => !this.importBlockReason());
   protected readonly formatVnd = (amount: string): string => new Intl.NumberFormat('vi-VN').format(BigInt(amount));
 
   constructor() { this.refresh(); }
@@ -79,15 +109,22 @@ export class AdminDonationsPage {
   protected updateMapping(field: MappingField, event: Event): void {
     const value = Number((event.target as HTMLSelectElement).value);
     const next = { ...this.mapping() };
-    if (value < 0 && field !== 'date' && field !== 'credit') delete next[field];
+    const required = field === 'date' ||
+      (this.amountMode() === 'SIGNED_AMOUNT' ? field === 'amount' : field === 'credit');
+    if (value < 0 && !required) delete next[field];
     else next[field] = value;
     this.mapping.set(next);
   }
 
+  protected changeAmountMode(event: Event): void {
+    this.amountMode.set((event.target as HTMLSelectElement).value as AmountMode);
+    this.guessMapping(this.amountMode());
+  }
+
   protected importStatement(): void {
     const file = this.file();
-    if (!file || !this.accountKey().trim() || this.mapping().date < 0 || this.mapping().credit < 0) {
-      this.error.set('Chọn tệp, nhập tài khoản nhận và ghép cột ngày giờ, tiền vào.');
+    if (!file || !this.canImport()) {
+      this.error.set('Chọn tệp, nhập mã tài khoản và ghép cột ngày giờ cùng cột số tiền.');
       return;
     }
     this.importing.set(true);
@@ -140,16 +177,25 @@ export class AdminDonationsPage {
     });
   }
 
-  private guessMapping(): void {
+  private guessMapping(preferredMode?: AmountMode): void {
     const headers = this.headers().map((header) => header.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
     const index = (pattern: RegExp) => headers.findIndex((header) => pattern.test(header));
     const date = index(/ngay|thoi gian|date|time/);
     const credit = index(/tien vao|ghi co|credit|amount in|so tien nhan/);
+    const amount = index(/(^|\b)(so tien|amount|gia tri)(\b|$)/);
     const reference = index(/ma giao dich|transaction|reference|so tham chieu/);
     const debit = index(/tien ra|ghi no|debit|amount out/);
+    const direction = index(/loai giao dich|transaction type|thu chi|dong tien/);
     const description = index(/noi dung|dien giai|description|memo/);
-    this.mapping.set({ date, credit, ...(reference >= 0 ? { reference } : {}),
-      ...(debit >= 0 ? { debit } : {}), ...(description >= 0 ? { description } : {}) });
+    const mode = preferredMode ?? (credit >= 0 || debit >= 0 ? 'SEPARATE_COLUMNS' : 'SIGNED_AMOUNT');
+    this.amountMode.set(mode);
+    this.mapping.set(mode === 'SIGNED_AMOUNT'
+      ? { date, amount, ...(direction >= 0 ? { direction } : {}),
+          ...(reference >= 0 ? { reference } : {}),
+          ...(description >= 0 ? { description } : {}) }
+      : { date, credit, ...(debit >= 0 ? { debit } : {}),
+          ...(reference >= 0 ? { reference } : {}),
+          ...(description >= 0 ? { description } : {}) });
   }
 
   private refresh(): void {

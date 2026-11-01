@@ -15,9 +15,11 @@ export interface StatementPreview {
 
 export interface StatementMapping {
   readonly date: number;
-  readonly credit: number;
+  readonly amount?: number;
+  readonly credit?: number;
   readonly reference?: number;
   readonly debit?: number;
+  readonly direction?: number;
   readonly description?: number;
 }
 
@@ -51,6 +53,7 @@ export interface PublicDonationSummary {
   }[];
   readonly totalCount: number;
   readonly totalAmountVnd: string;
+  readonly supportedPatientCount: number;
   readonly page: number;
   readonly limit: number;
 }
@@ -92,7 +95,7 @@ export class AdminDonationsApiService {
   }
 
   publicList(limit = 8, page = 1): Observable<PublicDonationSummary> {
-    if (!this.http) return of({ items: [], totalCount: 0, totalAmountVnd: '0', page, limit });
+    if (!this.http) return of({ items: [], totalCount: 0, totalAmountVnd: '0', supportedPatientCount: 0, page, limit });
     return this.http.get<ApiResponse<PublicDonationSummary>>(`${this.base}/donations/recent?limit=${limit}&page=${page}`)
       .pipe(map(({ data }) => data));
   }

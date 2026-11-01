@@ -39,8 +39,17 @@
         </label>
       </div>
       <p class="hint">Tệp có {{ data.totalRows }} dòng. Chọn cột tương ứng; các cột không có trong tệp có thể để trống.</p>
+      <div class="form-grid">
+        <label class="field"><span>Cách thể hiện số tiền</span>
+          <select [value]="amountMode()" (change)="changeAmountMode($event)">
+            <option value="SIGNED_AMOUNT">Một cột: số dương là tiền vào, số âm là tiền ra</option>
+            <option value="SEPARATE_COLUMNS">Hai cột riêng: tiền vào và tiền ra</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint">Tiền ra chỉ dùng để đối soát và sẽ không được đưa vào danh sách quyên góp chờ duyệt.</p>
       <div class="mapping-grid">
-        @for (field of mappingFields; track field.key) {
+        @for (field of mappingFields(); track field.key) {
           <label class="field"><span>{{ field.label }} @if (field.required) { * }</span>
             <select [value]="mapping()[field.key] ?? -1" (change)="updateMapping(field.key, $event)">
               <option value="-1">— Chưa chọn —</option>
@@ -55,8 +64,11 @@
           <tr><td>{{ headerRow() + $index + 1 }}</td>@for (header of headers(); track $index) { <td>{{ row[$index] }}</td> }</tr>
         }</tbody>
       </table></div>
-      <div class="actions"><button type="button" class="primary" [disabled]="importing() || mapping().date < 0 || mapping().credit < 0 || !accountKey().trim()"
+      <div class="actions"><button type="button" class="primary" [disabled]="importing() || !canImport()"
         (click)="importStatement()">{{ importing() ? 'Đang nhập...' : 'Nhập vào danh sách chờ duyệt' }}</button></div>
+      @if (importBlockReason(); as reason) {
+        <p class="hint" role="status">{{ reason }}</p>
+      }
     }
     @if (result(); as imported) {
       <div class="notice notice--success" role="status">

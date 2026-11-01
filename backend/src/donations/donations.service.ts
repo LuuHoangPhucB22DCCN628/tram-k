@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { DonationEntryStatus, RoleName, UserStatus } from "@prisma/client";
+import { DonationEntryStatus, RoleName, SupportProgramRegistrationStatus, UserStatus } from "@prisma/client";
 import { createHash } from "crypto";
 
 import { PrismaService } from "../prisma/prisma.service";
@@ -7,9 +7,11 @@ import { parseStatement, StatementFile } from "./statement-parser";
 
 interface ColumnMapping {
   readonly date: number;
-  readonly credit: number;
+  readonly amount?: number;
+  readonly credit?: number;
   readonly reference?: number;
   readonly debit?: number;
+  readonly direction?: number;
   readonly description?: number;
 }
 
@@ -56,13 +58,22 @@ export class DonationsService {
     }
     const mapping = options.mapping;
     const width = Math.max(...statement.rows.map((row) => row.length));
-    if (!mapping || !validColumn(mapping.date, width) || !validColumn(mapping.credit, width) ||
+    const hasSignedAmount = mapping?.amount !== undefined && validColumn(mapping.amount, width);
+    const hasCredit = mapping?.credit !== undefined && validColumn(mapping.credit, width);
+    if (!mapping || !validColumn(mapping.date, width) || (!hasSignedAmount && !hasCredit) ||
+        (mapping.amount !== undefined && !validColumn(mapping.amount, width)) ||
+        (mapping.credit !== undefined && !validColumn(mapping.credit, width)) ||
         (mapping.reference !== undefined && !validColumn(mapping.reference, width)) ||
         (mapping.debit !== undefined && !validColumn(mapping.debit, width)) ||
+        (mapping.direction !== undefined && !validColumn(mapping.direction, width)) ||
         (mapping.description !== undefined && !validColumn(mapping.description, width))) {
-      throw new BadRequestException("Vui lòng ghép đúng các cột ngày giờ và tiền vào.");
+      throw new BadRequestException("Vui lòng ghép cột ngày giờ và chọn một cột số tiền có dấu hoặc cột tiền vào.");
     }
-    const selectedColumns = [mapping.date, mapping.credit, mapping.reference, mapping.debit, mapping.description]
+    if (hasSignedAmount && (mapping.credit !== undefined || mapping.debit !== undefined)) {
+      throw new BadRequestException("Chỉ chọn một cách đọc số tiền: một cột có dấu hoặc hai cột tiền vào/tiền ra.");
+    }
+    const selectedColumns = [mapping.date, mapping.amount, mapping.credit, mapping.reference,
+      mapping.debit, mapping.direction, mapping.description]
       .filter((value): value is number => value !== undefined);
     if (new Set(selectedColumns).size !== selectedColumns.length) {
       throw new BadRequestException("Mỗi trường phải được ghép với một cột khác nhau.");
@@ -74,14 +85,17 @@ export class DonationsService {
     for (let index = headerRow; index < statement.rows.length; index += 1) {
       const row = statement.rows[index];
       if (row.every((cell) => !cell.trim())) continue;
-      const debit = mapping.debit === undefined ? null : parseDonationAmount(row[mapping.debit]);
-      const credit = parseDonationAmount(row[mapping.credit]);
-      if ((!credit || credit === 0n) && debit && debit > 0n) { outgoingCount += 1; continue; }
       const occurredAt = parseDonationDate(row[mapping.date]);
-      if (!occurredAt || !credit || credit <= 0n || (debit && debit > 0n)) {
+      const amount = this.moneyIn(row, mapping);
+      if (amount.kind === "OUTGOING") {
+        outgoingCount += 1;
+        continue;
+      }
+      if (!occurredAt || amount.kind !== "INCOMING") {
         errors.push({ row: index + 1, message: "Ngày giờ hoặc số tiền vào không hợp lệ." });
         continue;
       }
+      const credit = amount.value;
       const reference = mapping.reference === undefined ? "" : (row[mapping.reference] || "").trim();
       const description = mapping.description === undefined ? "" : (row[mapping.description] || "").trim();
       const keyInput = reference ? `${accountKey}|ref|${reference.toLowerCase()}` :
@@ -108,6 +122,35 @@ export class DonationsService {
       return { batchId: batch.id, addedCount: inserted.count };
     });
     return { ...result, duplicateCount: accepted.length - result.addedCount, outgoingCount, errors, pendingReview: result.addedCount };
+  }
+
+  private moneyIn(
+    row: readonly string[],
+    mapping: ColumnMapping,
+  ): { readonly kind: "INCOMING"; readonly value: bigint } |
+    { readonly kind: "OUTGOING" | "INVALID" } {
+    if (mapping.amount !== undefined) {
+      const amount = parseSignedDonationAmount(row[mapping.amount]);
+      if (amount === null || amount === 0n) return { kind: "INVALID" };
+      const direction = mapping.direction === undefined
+        ? ""
+        : normalizeDirection(row[mapping.direction]);
+      if (direction === "OUTGOING") return { kind: "OUTGOING" };
+      if (direction === "INCOMING") {
+        return amount > 0n ? { kind: "INCOMING", value: amount } : { kind: "INVALID" };
+      }
+      return amount > 0n
+        ? { kind: "INCOMING", value: amount }
+        : { kind: "OUTGOING" };
+    }
+
+    const credit = mapping.credit === undefined ? null : parseDonationAmount(row[mapping.credit]);
+    const debit = mapping.debit === undefined ? 0n : parseDonationAmount(row[mapping.debit]);
+    if (credit === null || debit === null || (credit > 0n && debit > 0n)) return { kind: "INVALID" };
+    if (debit > 0n) return { kind: "OUTGOING" };
+    return credit && credit > 0n
+      ? { kind: "INCOMING", value: credit }
+      : { kind: "INVALID" };
   }
 
   async listAdmin(adminId: string, status: DonationEntryStatus = DonationEntryStatus.PENDING) {
@@ -143,16 +186,30 @@ export class DonationsService {
   async publicList(limit = 8, page = 1) {
     const take = Number.isInteger(limit) ? Math.min(Math.max(limit, 1), 50) : 8;
     const safePage = Number.isInteger(page) ? Math.min(Math.max(page, 1), 10000) : 1;
-    const [entries, totals] = await Promise.all([
+    const [entries, totals, supportedPatients] = await Promise.all([
       this.prisma.donationEntry.findMany({ where: { status: DonationEntryStatus.CONFIRMED },
         orderBy: [{ occurredAt: "desc" }, { id: "desc" }], take, skip: (safePage - 1) * take,
         select: { id: true, occurredAt: true, amountVnd: true } }),
       this.prisma.donationEntry.aggregate({ where: { status: DonationEntryStatus.CONFIRMED },
         _count: { id: true }, _sum: { amountVnd: true } }),
+      this.prisma.supportProgramRegistration.findMany({
+        where: {
+          status: {
+            in: [
+              SupportProgramRegistrationStatus.CONFIRMED,
+              SupportProgramRegistrationStatus.ATTENDED,
+            ],
+          },
+          user: { role: { name: RoleName.PATIENT } },
+        },
+        distinct: ["userId"],
+        select: { userId: true },
+      }),
     ]);
     return {
       items: entries.map((entry) => ({ id: entry.id, name: "Người quyên góp ẩn danh", occurredAt: entry.occurredAt, amountVnd: entry.amountVnd.toString() })),
       totalCount: totals._count.id, totalAmountVnd: (totals._sum.amountVnd ?? 0n).toString(),
+      supportedPatientCount: supportedPatients.length,
       page: safePage, limit: take,
     };
   }
@@ -176,6 +233,28 @@ export function parseDonationAmount(raw: string | undefined): bigint | null {
   if (/[.,]\d{1,2}$/.test(withoutCents)) return null;
   const digits = withoutCents.replace(/[.,]/g, "");
   return /^\d+$/.test(digits) ? BigInt(digits) : null;
+}
+
+export function parseSignedDonationAmount(raw: string | undefined): bigint | null {
+  const source = (raw || "").trim();
+  const negativeByParentheses = /^\(.*\)$/.test(source);
+  const unwrapped = negativeByParentheses ? source.slice(1, -1) : source;
+  const negative = negativeByParentheses || /^-/.test(unwrapped);
+  const positive = /^\+/.test(unwrapped);
+  const amount = parseDonationAmount(unwrapped.replace(/^[+-]/, ""));
+  if (amount === null) return null;
+  return negative ? -amount : positive ? amount : amount;
+}
+
+function normalizeDirection(raw: string | undefined): "INCOMING" | "OUTGOING" | "" {
+  const value = (raw || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .toLowerCase();
+  if (/tien\s*ra|giai ngan|chi\s|ghi no|debit|withdraw/.test(value)) return "OUTGOING";
+  if (/tien\s*vao|ung ho|ghi co|credit|deposit|thu\s/.test(value)) return "INCOMING";
+  return "";
 }
 
 export function parseDonationDate(raw: string | undefined): Date | null {

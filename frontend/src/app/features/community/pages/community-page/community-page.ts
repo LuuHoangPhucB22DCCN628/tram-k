@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { RevealDirective } from '../../../../shared/directives/reveal.directive';
 import { CommunityLoveTitle } from '../../components/community-love-title/community-love-title';
 import { AdminDonationsApiService, PublicDonationSummary } from '@features/admin/services/admin-donations-api.service';
+import { formatCompactCount, formatCompactVnd } from '@shared/utils/compact-number';
 
 interface HairLibraryCard {
   readonly title: string;
@@ -17,6 +18,7 @@ interface DonationStat {
   readonly value: string;
   readonly label: string;
   readonly icon: string;
+  readonly exactValue: string;
 }
 
 interface DonationRow {
@@ -78,19 +80,30 @@ export class CommunityPage {
 
   protected readonly donationStats = computed<readonly DonationStat[]>(() => [
     {
-      value: this.donationSummary() ? `${new Intl.NumberFormat('vi-VN').format(BigInt(this.donationSummary()!.totalAmountVnd))} đ` : '—',
+      value: this.donationSummary() ? formatCompactVnd(this.donationSummary()!.totalAmountVnd) : '—',
       label: 'Tổng đóng góp',
       icon: '/assets/images/community/community-stat-total.svg',
+      exactValue: this.donationSummary()
+        ? `${new Intl.NumberFormat('vi-VN').format(BigInt(this.donationSummary()!.totalAmountVnd))} đ`
+        : 'Chưa tải được dữ liệu',
     },
     {
-      value: this.donationSummary() ? new Intl.NumberFormat('vi-VN').format(this.donationSummary()!.totalCount) : '—',
+      value: this.donationSummary() ? formatCompactCount(this.donationSummary()!.totalCount) : '—',
       label: 'Lượt quyên góp',
       icon: '/assets/images/community/community-stat-donations.svg',
+      exactValue: this.donationSummary()
+        ? `${new Intl.NumberFormat('vi-VN').format(this.donationSummary()!.totalCount)} lượt đã xác nhận`
+        : 'Chưa tải được dữ liệu',
     },
     {
-      value: '—',
+      value: this.donationSummary()
+        ? formatCompactCount(this.donationSummary()!.supportedPatientCount, true)
+        : '—',
       label: 'Bệnh nhân được hỗ trợ',
       icon: '/assets/images/community/community-stat-patients.svg',
+      exactValue: this.donationSummary()
+        ? `${new Intl.NumberFormat('vi-VN').format(this.donationSummary()!.supportedPatientCount)} bệnh nhân có đăng ký hỗ trợ được xác nhận`
+        : 'Chưa tải được dữ liệu',
     },
   ]);
 

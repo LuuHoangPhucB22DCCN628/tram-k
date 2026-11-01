@@ -74,10 +74,10 @@
       <div class="donation-main" appReveal="left">
         <div class="donation-stats" aria-label="Số liệu đóng góp">
           @for (stat of donationStats(); track stat.label) {
-            <article class="donation-stat">
+            <article class="donation-stat" [attr.aria-label]="stat.label + ': ' + stat.exactValue">
               <img [src]="stat.icon" alt="" aria-hidden="true" width="86" height="86" />
               <div>
-                <strong>{{ stat.value }}</strong>
+                <strong [attr.title]="stat.exactValue">{{ stat.value }}</strong>
                 <span>{{ stat.label }}</span>
               </div>
             </article>
