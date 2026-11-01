@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { catchError, map, Observable, of, tap } from 'rxjs';
 
@@ -20,7 +20,8 @@ export interface CharityProgramRegistration {
   readonly decisionReason?: string;
 }
 
-export type CharityProgramRegistrationResult = 'CREATED' | 'DUPLICATE' | 'FULL' | 'ERROR';
+export type CharityProgramRegistrationResult =
+  'CREATED' | 'DUPLICATE' | 'FULL' | 'CLOSED' | 'UNAVAILABLE' | 'ERROR';
 
 interface ApiResponse<T> {
   readonly success: true;
@@ -45,7 +46,7 @@ export class CharityProgramRegistrationService {
     this.mineLoaded = true;
     this.http
       .get<ApiResponse<readonly CharityProgramRegistration[]>>(
-        `${this.apiBaseUrl}/support-program-registrations/mine`,
+        `${this.apiBaseUrl}/programs/me/registrations`,
       )
       .pipe(catchError(() => of(null)))
       .subscribe((response) => {
@@ -62,7 +63,7 @@ export class CharityProgramRegistrationService {
     this.loadedPrograms.add(programId);
     this.http
       .get<ApiResponse<readonly CharityProgramRegistration[]>>(
-        `${this.apiBaseUrl}/support-program-registrations/program/${encodeURIComponent(programId)}`,
+        `${this.apiBaseUrl}/programs/${encodeURIComponent(programId)}/registrations`,
       )
       .pipe(catchError(() => of(null)))
       .subscribe((response) => {
@@ -86,8 +87,9 @@ export class CharityProgramRegistrationService {
     }
     return this.http
       .post<ApiResponse<CharityProgramRegistration>>(
-        `${this.apiBaseUrl}/support-program-registrations/program/${encodeURIComponent(programId)}`,
+        `${this.apiBaseUrl}/programs/${encodeURIComponent(programId)}/registrations`,
         {},
+        { headers: this.idempotencyHeaders() },
       )
       .pipe(
         tap((response) => this.upsertRegistration(response.data)),
@@ -99,6 +101,10 @@ export class CharityProgramRegistrationService {
             ? 'FULL'
             : message.includes('đã đăng ký')
               ? 'DUPLICATE'
+              : message.includes('thời gian đăng ký')
+                ? 'CLOSED'
+                : message.includes('không còn tiếp nhận') || message.includes('Không tìm thấy')
+                  ? 'UNAVAILABLE'
               : 'ERROR';
           return of(result);
         }),
@@ -108,8 +114,10 @@ export class CharityProgramRegistrationService {
   unregisterRemote(programId: string, userId: string): Observable<boolean> {
     if (!this.http || !this.apiBaseUrl) return of(this.unregister(programId, userId));
     return this.http
-      .delete<ApiResponse<{ readonly cancelled: boolean }>>(
-        `${this.apiBaseUrl}/support-program-registrations/program/${encodeURIComponent(programId)}`,
+      .post<ApiResponse<{ readonly cancelled: boolean }>>(
+        `${this.apiBaseUrl}/programs/me/registrations/${encodeURIComponent(programId)}/cancel`,
+        {},
+        { headers: this.idempotencyHeaders() },
       )
       .pipe(
         tap(() => this.removeRegistration(programId, userId)),
@@ -287,8 +295,9 @@ export class CharityProgramRegistrationService {
     }
     return this.http
       .patch<ApiResponse<CharityProgramRegistration>>(
-        `${this.apiBaseUrl}/support-program-registrations/program/${encodeURIComponent(programId)}/member/${encodeURIComponent(userId)}`,
+        `${this.apiBaseUrl}/programs/${encodeURIComponent(programId)}/registrations/${encodeURIComponent(userId)}/attendance`,
         { status, decisionReason: decisionReason || undefined },
+        { headers: this.idempotencyHeaders() },
       )
       .pipe(
         tap((response) => this.upsertRegistration(response.data)),
@@ -315,9 +324,16 @@ export class CharityProgramRegistrationService {
   }
 
   private errorMessage(error: HttpErrorResponse): string {
-    const body = error.error as { readonly message?: string | readonly string[] } | null;
-    const message = body?.message;
+    const body = error.error as {
+      readonly message?: string | readonly string[];
+      readonly error?: { readonly message?: string | readonly string[] };
+    } | null;
+    const message = body?.error?.message ?? body?.message;
     return typeof message === 'string' ? message : (message?.join(' ') ?? '');
+  }
+
+  private idempotencyHeaders(): HttpHeaders {
+    return new HttpHeaders({ 'x-idempotency-key': crypto.randomUUID() });
   }
 
   private read(): readonly CharityProgramRegistration[] {

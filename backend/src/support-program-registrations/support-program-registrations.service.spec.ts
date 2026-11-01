@@ -18,7 +18,9 @@ import { SupportProgramRegistrationsService } from "./support-program-registrati
 describe("SupportProgramRegistrationsService", () => {
   const transaction = {
     $queryRaw: jest.fn(),
-    program: { findUnique: jest.fn() },
+    managedResource: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn() },
+    program: { findUnique: jest.fn(), upsert: jest.fn() },
     supportProgramRegistration: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -40,6 +42,7 @@ describe("SupportProgramRegistrationsService", () => {
     }),
     user: { findUnique: jest.fn() },
     program: { findUnique: jest.fn() },
+    managedResource: { findUnique: jest.fn() },
     supportProgramRegistration: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
@@ -96,6 +99,8 @@ describe("SupportProgramRegistrationsService", () => {
     });
 
     transaction.$queryRaw.mockResolvedValue([mockProgramRaw]);
+    transaction.managedResource.findUnique.mockResolvedValue(null);
+    (prisma.managedResource.findUnique as jest.Mock).mockResolvedValue(null);
     transaction.program.findUnique.mockResolvedValue(mockProgramPrisma);
     (prisma.program.findUnique as jest.Mock).mockResolvedValue(mockProgramPrisma);
 

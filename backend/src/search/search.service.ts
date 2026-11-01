@@ -182,7 +182,13 @@ export class SearchService {
         by: ["programId"],
         where: {
           programId: { in: programIds },
-          status: { not: SupportProgramRegistrationStatus.REJECTED },
+          status: {
+            notIn: [
+              SupportProgramRegistrationStatus.CANCELLED,
+              SupportProgramRegistrationStatus.EXPIRED,
+              SupportProgramRegistrationStatus.NO_SHOW,
+            ],
+          },
         },
         _count: { _all: true },
       })

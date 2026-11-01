@@ -514,9 +514,7 @@ export class AiAssistantService {
       disclaimer: DISCLAIMER,
       sources: sources.length
         ? sources.map(({ title, link, type }) => ({ title, link, type }))
-        : intent === "SUPPORT_PROGRAM"
-          ? [{ title: "Các chương trình hỗ trợ", link: "/cong-dong/chuong-trinh-ho-tro", type: "SUPPORT_PROGRAM" }]
-          : [],
+        : this.fallbackSources(intent),
       suggestedQuestions: DEFAULT_SUGGESTIONS,
     };
   }

@@ -163,6 +163,10 @@ export class CommunitySupportProgramsPage {
               ? 'Bạn đã đăng ký chương trình này.'
               : result === 'FULL'
                 ? 'Chương trình đã đủ số lượng đăng ký.'
+                : result === 'CLOSED'
+                  ? 'Chương trình hiện không trong thời gian nhận đăng ký.'
+                  : result === 'UNAVAILABLE'
+                    ? 'Chương trình không còn tiếp nhận đăng ký.'
                 : 'Chưa thể gửi đăng ký. Vui lòng thử lại.',
         );
       });

@@ -6,10 +6,12 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import {
+  ManagedResourceStatus,
   NotificationKind,
   Prisma,
   ProgramStatus,
   RoleName,
+  SearchDocumentType,
   SupportProgramRegistrationStatus,
   UserStatus,
   PartnerStatus,
@@ -54,6 +56,8 @@ export class SupportProgramRegistrationsService {
     const now = new Date();
 
     return this.prisma.$transaction(async (transaction) => {
+      await this.syncPublishedManagedProgram(transaction, programId);
+
       // 1. Khóa bảng Program để chống tranh chấp (Race Condition)
       const programs = await transaction.$queryRaw<any[]>`
         SELECT * FROM "programs"
@@ -305,6 +309,7 @@ export class SupportProgramRegistrationsService {
 
   private async assertProgramManager(actor: AuthenticatedUser, programId: string) {
     const user = await this.activeUser(actor.id);
+    await this.syncPublishedManagedProgram(this.prisma, programId);
     const program = await this.prisma.program.findUnique({
       where: { id: programId },
     });
@@ -320,6 +325,104 @@ export class SupportProgramRegistrationsService {
       throw new ForbiddenException("Bạn không có quyền quản lý đăng ký của chương trình này.");
     }
     return program;
+  }
+
+  private async syncPublishedManagedProgram(
+    client: Pick<Prisma.TransactionClient, "managedResource" | "program" | "user">,
+    programId: string,
+  ): Promise<void> {
+    const resource = await client.managedResource.findUnique({
+      where: {
+        type_sourceId: {
+          type: SearchDocumentType.SUPPORT_PROGRAM,
+          sourceId: programId,
+        },
+      },
+    });
+    if (!resource || resource.status !== ManagedResourceStatus.PUBLISHED) return;
+    if (!resource.payload || typeof resource.payload !== "object" || Array.isArray(resource.payload)) {
+      return;
+    }
+
+    const payload = resource.payload as Record<string, unknown>;
+    const schedule = parseStructuredSupportSchedule(payload);
+    const ownerId = payload["ownerId"];
+    if (!schedule || typeof ownerId !== "string" || !ownerId) return;
+
+    const owner = await client.user.findUnique({
+      where: { id: ownerId },
+      select: {
+        partnerMembership: { select: { id: true, status: true } },
+      },
+    });
+    if (!owner?.partnerMembership || owner.partnerMembership.status !== PartnerStatus.ACTIVE) return;
+
+    const startAt = this.vietnamDateTime(schedule.startsOn, schedule.startTime);
+    const endAt = this.vietnamDateTime(
+      schedule.scheduleType === "WEEKLY" ? (schedule.endsOn ?? schedule.startsOn) : schedule.startsOn,
+      schedule.endTime,
+    );
+    if (!startAt || !endAt || endAt <= startAt) return;
+
+    const capacity = payload["capacity"];
+    const latitude = payload["latitude"];
+    const longitude = payload["longitude"];
+    const eligibilityNote = payload["eligibilityNote"];
+    const registrationOpenAt = resource.createdAt < endAt
+      ? resource.createdAt
+      : new Date(endAt.getTime() - 1);
+
+    await client.program.upsert({
+      where: { id: programId },
+      create: {
+        id: programId,
+        ownerPartnerId: owner.partnerMembership.id,
+        title: resource.title,
+        description: resource.description,
+        address: typeof payload["address"] === "string" ? payload["address"] : "Chưa cập nhật",
+        latitude: typeof latitude === "number" && Number.isFinite(latitude) ? latitude : 0,
+        longitude: typeof longitude === "number" && Number.isFinite(longitude) ? longitude : 0,
+        conditions: typeof eligibilityNote === "string" && eligibilityNote.trim()
+          ? eligibilityNote.trim()
+          : null,
+        registrationOpenAt,
+        registrationCloseAt: endAt,
+        startAt,
+        endAt,
+        capacity: typeof capacity === "number" && Number.isInteger(capacity) && capacity > 0
+          ? capacity
+          : 1,
+        status: ProgramStatus.PUBLISHED,
+        publishedAt: resource.publishedAt,
+      },
+      update: {
+        ownerPartnerId: owner.partnerMembership.id,
+        title: resource.title,
+        description: resource.description,
+        address: typeof payload["address"] === "string" ? payload["address"] : "Chưa cập nhật",
+        latitude: typeof latitude === "number" && Number.isFinite(latitude) ? latitude : 0,
+        longitude: typeof longitude === "number" && Number.isFinite(longitude) ? longitude : 0,
+        conditions: typeof eligibilityNote === "string" && eligibilityNote.trim()
+          ? eligibilityNote.trim()
+          : null,
+        registrationOpenAt,
+        registrationCloseAt: endAt,
+        startAt,
+        endAt,
+        capacity: typeof capacity === "number" && Number.isInteger(capacity) && capacity > 0
+          ? capacity
+          : 1,
+        status: ProgramStatus.PUBLISHED,
+        publishedAt: resource.publishedAt,
+        deletedAt: null,
+        deletedById: null,
+      },
+    });
+  }
+
+  private vietnamDateTime(date: string, time: string): Date | null {
+    const value = new Date(`${date}T${time}:00+07:00`);
+    return Number.isNaN(value.getTime()) ? null : value;
   }
 
   private async activeUser(userId: string) {
