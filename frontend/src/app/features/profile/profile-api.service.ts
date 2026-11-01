@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, map, Observable, of, throwError } from 'rxjs';
 
@@ -17,8 +17,9 @@ interface ApiErrorResponse {
   readonly error?: { readonly message?: string | readonly string[] };
 }
 
-interface RemoteProfile extends Omit<MemberProfile, 'birthYear'> {
+interface RemoteProfile extends Omit<MemberProfile, 'birthYear' | 'avatarDataUrl'> {
   readonly birthYear: number | null;
+  readonly avatarUrl: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -54,18 +55,22 @@ export class ProfileApiService {
       return of(saved);
     }
     return this.http
-      .patch<ApiSuccessResponse<RemoteProfile>>(`${this.apiBaseUrl}/profile/me`, {
-        expectedVersion: profile.version,
-        displayName: profile.displayName,
-        phone: profile.phone,
-        city: profile.city,
-        birthYear: profile.birthYear ? Number(profile.birthYear) : null,
-        bio: profile.bio,
-        avatarDataUrl: profile.avatarDataUrl,
-        visibility: profile.visibility,
-        showEmail: profile.showEmail,
-        allowComments: profile.allowComments,
-      })
+      .patch<ApiSuccessResponse<RemoteProfile>>(
+        `${this.apiBaseUrl}/profile/me`,
+        {
+          expectedVersion: profile.version,
+          displayName: profile.displayName,
+          phone: profile.phone,
+          city: profile.city,
+          birthYear: profile.birthYear ? Number(profile.birthYear) : null,
+          bio: profile.bio,
+          avatarUrl: profile.avatarDataUrl,
+          visibility: profile.visibility,
+          showEmail: profile.showEmail,
+          allowComments: profile.allowComments,
+        },
+        { headers: this.idempotencyHeaders() },
+      )
       .pipe(
         map(({ data }) => this.fromRemote(data)),
         catchError((error: HttpErrorResponse) => throwError(() => this.mapError(error))),
@@ -73,10 +78,16 @@ export class ProfileApiService {
   }
 
   private fromRemote(profile: RemoteProfile): MemberProfile {
+    const { avatarUrl, ...rest } = profile;
     return {
-      ...profile,
+      ...rest,
       birthYear: profile.birthYear === null ? '' : String(profile.birthYear),
+      avatarDataUrl: avatarUrl,
     };
+  }
+
+  private idempotencyHeaders(): HttpHeaders {
+    return new HttpHeaders({ 'x-idempotency-key': crypto.randomUUID() });
   }
 
   private mapError(error: HttpErrorResponse): ProfileApiError {

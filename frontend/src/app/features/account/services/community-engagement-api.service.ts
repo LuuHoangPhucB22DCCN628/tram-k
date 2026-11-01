@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of } from 'rxjs';
 
@@ -29,6 +29,9 @@ interface RemoteComment {
   readonly updatedAt: string;
   readonly replies?: readonly RemoteComment[];
 }
+interface RemoteCommentsPage {
+  readonly items: readonly RemoteComment[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class CommunityEngagementApiService {
@@ -40,10 +43,10 @@ export class CommunityEngagementApiService {
   listComments(sourceKey: string): Observable<readonly MemberComment[] | null> {
     if (!this.http || !this.base) return of(null);
     return this.http
-      .get<ApiResponse<readonly RemoteComment[]>>(`${this.storyUrl(sourceKey)}/comments`)
+      .get<ApiResponse<RemoteCommentsPage>>(`${this.storyUrl(sourceKey)}/comments`)
       .pipe(
         map(({ data }) =>
-          data.flatMap((root) => [
+          data.items.flatMap((root) => [
             this.mapComment(root),
             ...(root.replies ?? []).map((reply) => this.mapComment(reply)),
           ]),
@@ -99,14 +102,15 @@ export class CommunityEngagementApiService {
       this.lastCommentError.set('Chưa kết nối được máy chủ. Vui lòng thử lại sau.');
       return of(null);
     }
+    const idempotencyKey = input.idempotencyKey ?? crypto.randomUUID();
     return this.http
       .post<ApiResponse<RemoteComment>>(`${this.storyUrl(sourceKey)}/comments`, {
         content: input.content,
         sourceTitle: input.sourceTitle,
         sourcePath: input.sourcePath,
         ...(input.parentId ? { parentId: input.parentId } : {}),
-        idempotencyKey: input.idempotencyKey ?? crypto.randomUUID(),
-      })
+        idempotencyKey,
+      }, { headers: this.idempotencyHeaders(idempotencyKey) })
       .pipe(
         map(({ data }) => this.mapComment(data)),
         catchError((error: HttpErrorResponse) => {
@@ -132,10 +136,12 @@ export class CommunityEngagementApiService {
 
   updateComment(commentId: string, content: string): Observable<MemberComment | null> {
     if (!this.http || !this.base) return of(null);
+    const idempotencyKey = crypto.randomUUID();
     return this.http
       .patch<ApiResponse<RemoteComment>>(
         `${this.base}/community/stories/comments/${encodeURIComponent(commentId)}`,
         { content },
+        { headers: this.idempotencyHeaders(idempotencyKey) },
       )
       .pipe(
         map(({ data }) => this.mapComment(data)),
@@ -145,9 +151,11 @@ export class CommunityEngagementApiService {
 
   removeComment(commentId: string): Observable<boolean> {
     if (!this.http || !this.base) return of(false as const);
+    const idempotencyKey = crypto.randomUUID();
     return this.http
       .delete<ApiResponse<RemoteComment>>(
         `${this.base}/community/stories/comments/${encodeURIComponent(commentId)}`,
+        { headers: this.idempotencyHeaders(idempotencyKey) },
       )
       .pipe(
         map(({ data }) => !!data.deletedAt),
@@ -182,10 +190,12 @@ export class CommunityEngagementApiService {
     type: CommunityReactionType,
   ): Observable<CommunityReactionType | null | false> {
     if (!this.http || !this.base) return of(false as const);
+    const idempotencyKey = crypto.randomUUID();
     return this.http
       .post<ApiResponse<{ readonly type: CommunityReactionType } | null>>(
         `${this.storyUrl(sourceKey)}/reactions/toggle`,
         { type },
+        { headers: this.idempotencyHeaders(idempotencyKey) },
       )
       .pipe(
         map(({ data }) => data?.type ?? null),
@@ -211,6 +221,10 @@ export class CommunityEngagementApiService {
 
   private storyUrl(sourceKey: string): string {
     return `${this.base}/community/stories/${encodeURIComponent(sourceKey)}`;
+  }
+
+  private idempotencyHeaders(key: string): HttpHeaders {
+    return new HttpHeaders({ 'x-idempotency-key': key });
   }
 
   private mapComment(value: RemoteComment): MemberComment {

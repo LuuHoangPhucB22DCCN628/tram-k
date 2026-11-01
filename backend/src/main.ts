@@ -9,8 +9,9 @@ import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
-  // Ảnh đại diện 1 MB được gửi dưới dạng base64 (~1,4 MB). Chỉ nâng giới hạn cho hồ sơ.
-  app.use("/profile/me", json({ limit: "2mb" }));
+  // Parse JSON cho toàn bộ API; avatar base64 tối đa 1 MB (~1,4 MB payload).
+  // Nest không tự gắn parser khi chạy cùng cấu hình hiện tại, khiến @Body() nhận {}.
+  app.use(json({ limit: "2mb" }));
   const config = app.get(ConfigService);
   const port = config.get<number>("PORT", 3000);
   const configuredOrigins = config

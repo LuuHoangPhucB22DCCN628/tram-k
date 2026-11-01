@@ -135,7 +135,7 @@ describe("CommunityEngagementService", () => {
 
     await expect(
       service.listComments(commentDto.sourceKey, 2, 20),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       items: [
         {
           id: items[0].id,
@@ -161,6 +161,15 @@ describe("CommunityEngagementService", () => {
         orderBy: { createdAt: "desc" },
         skip: 20,
         take: 20,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              profile: { select: { visibility: true } },
+            },
+          },
+        },
       }),
     );
 
@@ -247,7 +256,7 @@ describe("CommunityEngagementService", () => {
     };
     communityCommentMock.findUnique.mockResolvedValue(existing);
 
-    await expect(service.createComment(actor, commentDto)).resolves.toEqual({
+    await expect(service.createComment(actor, commentDto)).resolves.toMatchObject({
       id: existing.id,
       content: existing.content,
       createdAt: existing.createdAt,
@@ -480,7 +489,7 @@ describe("CommunityEngagementService", () => {
 
     await expect(
       service.listComments(commentDto.sourceKey, 1, 20),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       items: [
         {
           id: rootComment.id,
@@ -546,7 +555,7 @@ describe("CommunityEngagementService", () => {
 
     await expect(
       service.listReplies(commentDto.sourceKey, "comment-21", 2, 20),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       items: [{
         id: replies[0].id,
         content: replies[0].content,

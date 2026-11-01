@@ -57,7 +57,7 @@ describe('AuthApiService', () => {
     });
   });
 
-  it('falls back to local demo auth only in development when the API is unavailable', async () => {
+  it('does not create a local demo session when mock fallback is disabled', async () => {
     const resultPromise = firstValueFrom(
       TestBed.inject(AuthApiService).login(
         { email: 'phuc@tramk.vn', password: 'Matkhau123', rememberMe: false },
@@ -68,7 +68,10 @@ describe('AuthApiService', () => {
       .expectOne('http://localhost:3000/auth/login')
       .error(new ProgressEvent('network error'));
 
-    await expect(resultPromise).resolves.toMatchObject({ authMode: 'LOCAL' });
+    await expect(resultPromise).rejects.toMatchObject({
+      code: 'INVALID_CREDENTIALS',
+      message: 'Không thể xác thực tài khoản.',
+    });
   });
 
   it('does not create a demo session when the backend rejects the login', async () => {

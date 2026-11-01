@@ -17,6 +17,12 @@ import { ToggleCommunityReactionDto } from "./dto/toggle-community-reaction.dto"
 import { UpdateCommunityCommentDto } from "./dto/update-community-comment.dto";
 import { AuthenticatedUser } from "../auth/auth-user.interface";
 
+const communityCommentUserSelect = {
+  id: true,
+  fullName: true,
+  profile: { select: { visibility: true } },
+} as const;
+
 @Injectable()
 export class CommunityEngagementService {
   constructor(private readonly prisma: PrismaService) { }
@@ -28,7 +34,7 @@ export class CommunityEngagementService {
       this.prisma.communityComment.findMany({
         where: { sourceKey, parentId: null },
         include: {
-          user: { select: { id: true, fullName: true } }
+          user: { select: communityCommentUserSelect }
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -47,7 +53,7 @@ export class CommunityEngagementService {
             parentId: comment.id,
           },
           include: {
-            user: { select: { id: true, fullName: true } }
+            user: { select: communityCommentUserSelect }
           },
           orderBy: { createdAt: "asc" },
           take: 6,
@@ -74,8 +80,15 @@ export class CommunityEngagementService {
 
     return {
       id: comment.id,
+      userId: comment.userId,
+      sourceKey: comment.sourceKey,
+      sourceTitle: comment.sourceTitle,
+      sourcePath: comment.sourcePath,
+      parentId: comment.parentId,
       content: isHidden ? "[Bình luận đã bị ẩn hoặc xóa]" : comment.content,
       createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      deletedAt: comment.deletedAt,
       user: isHidden ? null : comment.user,
       status: isHidden ? "HIDDEN" : comment.status,
     };
@@ -84,7 +97,7 @@ export class CommunityEngagementService {
   async listMineComments(userId: string) {
     return this.prisma.communityComment.findMany({
       where: { userId, deletedAt: null },
-      include: { user: { select: { id: true, fullName: true } } },
+      include: { user: { select: communityCommentUserSelect } },
       orderBy: { createdAt: "desc" },
       take: 200,
     });
@@ -94,7 +107,7 @@ export class CommunityEngagementService {
     await this.requireAdmin(adminId);
     return this.prisma.communityComment.findMany({
       where: { deletedAt: null },
-      include: { user: { select: { id: true, fullName: true } } },
+      include: { user: { select: communityCommentUserSelect } },
       orderBy: { createdAt: "desc" },
       take: 200,
     });
@@ -138,7 +151,7 @@ export class CommunityEngagementService {
       this.prisma.communityComment.findMany({
         where,
         include: {
-          user: { select: { id: true, fullName: true } },
+          user: { select: communityCommentUserSelect },
         },
         orderBy: { createdAt: "asc" },
         skip,
@@ -164,7 +177,8 @@ export class CommunityEngagementService {
     const existing = await this.prisma.communityComment.findUnique({
       where: {
         userId_idempotencyKey: { userId: actor.id, idempotencyKey: dto.idempotencyKey }
-      }
+      },
+      include: { user: { select: communityCommentUserSelect } },
     });
 
     if (existing) {
@@ -195,7 +209,7 @@ export class CommunityEngagementService {
     if (dto.parentId) {
       parentComment = await this.prisma.communityComment.findUnique({
         where: { id: dto.parentId },
-        include: { user: { select: { id: true, fullName: true } } }
+        include: { user: { select: communityCommentUserSelect } }
       });
 
       if (!parentComment || parentComment.deletedAt !== null || parentComment.status !== "PUBLISHED") {
@@ -224,7 +238,8 @@ export class CommunityEngagementService {
           content: dto.content,
           idempotencyKey: dto.idempotencyKey,
           status: "PUBLISHED",
-        }
+        },
+        include: { user: { select: communityCommentUserSelect } },
       });
 
       await transaction.auditLog.create({
@@ -284,6 +299,7 @@ export class CommunityEngagementService {
           version: { increment: 1 },
           contentVersion: { increment: 1 },
         },
+        include: { user: { select: communityCommentUserSelect } },
       });
 
       await transaction.auditLog.create({

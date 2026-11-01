@@ -87,10 +87,20 @@ export class AuthService {
     this.ipHashSecret = config.getOrThrow<string>("IP_HASH_SECRET");
     this.termsVersion = config.get<string>("TERMS_VERSION") ?? "2026-10-03";
     this.privacyVersion = config.get<string>("PRIVACY_VERSION") ?? "2026-10-03";
-    this.verificationEmailAvailable =
-      config.get<string>("EMAIL_DELIVERY_MODE", "log") === "webhook" &&
+    const deliveryMode = config.get<"log" | "webhook" | "smtp">(
+      "EMAIL_DELIVERY_MODE",
+      "log",
+    );
+    const webhookConfigured =
+      deliveryMode === "webhook" &&
       !!config.get<string>("EMAIL_WEBHOOK_URL") &&
       !!config.get<string>("EMAIL_WEBHOOK_TOKEN");
+    const smtpConfigured =
+      deliveryMode === "smtp" &&
+      !!config.get<string>("SMTP_HOST") &&
+      !!config.get<string>("SMTP_USER") &&
+      !!config.get<string>("SMTP_PASS");
+    this.verificationEmailAvailable = webhookConfigured || smtpConfigured;
   }
 
   async register(dto: RegisterDto, context: AuthRequestContext = {}) {
@@ -342,7 +352,7 @@ export class AuthService {
     const rawToken = randomBytes(32).toString("base64url");
 
     await this.prisma.$transaction(async (transaction) => {
-      await transaction.$queryRaw`
+      await transaction.$executeRaw`
         SELECT pg_advisory_xact_lock(42, hashtext(${user.id}))`;
 
       const since = new Date(Date.now() - 60 * 60 * 1000);
@@ -1053,7 +1063,7 @@ export class AuthService {
     authVersion: number;
     role: { name: RoleName };
     partnerMembership: unknown;
-    profile?: { avatarDataUrl: string | null } | null;
+    profile?: { avatarUrl: string | null } | null;
   }) {
     const role = user.partnerMembership ? RoleName.PARTNER : user.role.name;
     return {
@@ -1063,7 +1073,7 @@ export class AuthService {
         email: user.email,
         role,
         status: user.status,
-        avatarUrl: user.profile?.avatarDataUrl ?? undefined,
+        avatarUrl: user.profile?.avatarUrl ?? undefined,
       },
       accessToken: this.signToken({
         id: user.id,

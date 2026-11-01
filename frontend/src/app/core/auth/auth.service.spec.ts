@@ -41,7 +41,7 @@ describe('AuthService', () => {
     expect(sessionStorage.getItem('tram-k.auth.session')).not.toContain('mock-access');
   });
 
-  it('should restore a valid remembered session', () => {
+  it('should restore a valid remembered remote session', async () => {
     localStorage.setItem(
       'tram-k.auth.persistent',
       JSON.stringify({
@@ -52,6 +52,7 @@ describe('AuthService', () => {
           role: 'PATIENT',
         },
         rememberMe: true,
+        authMode: 'REMOTE',
         sessionExpiresAt: Date.now() + 60_000,
       }),
     );
@@ -60,7 +61,7 @@ describe('AuthService', () => {
 
     expect(auth.isAuthenticated()).toBe(true);
     expect(auth.currentUser()?.email).toBe('phuc@tramk.vn');
-    expect(auth.accessToken()).toContain('mock-access');
+    await vi.waitFor(() => expect(auth.accessToken()).toContain('mock-access'));
   });
 
   it('should update the display name without changing the stored session expiry', () => {

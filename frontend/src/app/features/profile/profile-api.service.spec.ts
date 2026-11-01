@@ -52,7 +52,10 @@ describe('ProfileApiService', () => {
       'http://localhost:3000/profile/me',
     );
     expect(request.request.method).toBe('GET');
-    request.flush({ success: true, data: { ...profile, birthYear: 1994 } });
+    request.flush({
+      success: true,
+      data: { ...profile, avatarDataUrl: undefined, avatarUrl: null, birthYear: 1994 },
+    });
 
     await expect(resultPromise).resolves.toEqual(profile);
   });
@@ -65,10 +68,23 @@ describe('ProfileApiService', () => {
       'http://localhost:3000/profile/me',
     );
     expect(request.request.method).toBe('PATCH');
-    expect(request.request.body).toEqual(
-      expect.objectContaining({ expectedVersion: 3, birthYear: 1994 }),
+    expect(request.request.headers.get('x-idempotency-key')).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     );
-    request.flush({ success: true, data: { ...profile, version: 4, birthYear: 1994 } });
+    expect(request.request.body).toEqual(
+      expect.objectContaining({ expectedVersion: 3, birthYear: 1994, avatarUrl: null }),
+    );
+    expect(request.request.body).not.toHaveProperty('avatarDataUrl');
+    request.flush({
+      success: true,
+      data: {
+        ...profile,
+        avatarDataUrl: undefined,
+        avatarUrl: null,
+        version: 4,
+        birthYear: 1994,
+      },
+    });
 
     await expect(resultPromise).resolves.toEqual({ ...profile, version: 4 });
   });

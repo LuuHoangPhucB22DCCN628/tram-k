@@ -207,7 +207,9 @@ export class AuthApiService {
           throwError(() =>
             this.mapError(
               error,
-              error.status === 409
+              error.status === 401
+                ? 'SESSION_EXPIRED'
+                : error.status === 409
                 ? 'EMAIL_CHANGE_CONFLICT'
                 : error.status === 429
                   ? 'EMAIL_CHANGE_RATE_LIMITED'

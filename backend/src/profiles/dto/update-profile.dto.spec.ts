@@ -16,24 +16,13 @@ describe("UpdateProfileDto", () => {
     allowComments: true,
   };
 
-  it("accepts a valid HTTPS avatar URL", async () => {
+  it("accepts an avatar data URL for service-level validation", async () => {
     const dto = Object.assign(new UpdateProfileDto(), {
       ...validProfile,
-      avatarUrl: "https://cdn.example.com/avatar.jpg",
+      avatarUrl: "data:image/png;base64,YWJj",
     });
 
     await expect(validate(dto)).resolves.toHaveLength(0);
-  });
-
-  it("rejects malformed avatar URLs", async () => {
-    const dto = Object.assign(new UpdateProfileDto(), {
-      ...validProfile,
-      avatarUrl: "not-a-url",
-    });
-
-    const errors = await validate(dto);
-
-    expect(errors.map(({ property }) => property)).toContain("avatarUrl");
   });
 
   it("allows a missing or null avatar URL", async () => {

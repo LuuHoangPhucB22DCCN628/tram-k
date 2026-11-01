@@ -142,8 +142,8 @@ describe("ProfilesService", () => {
     expect(transaction.userProfile.create).not.toHaveBeenCalled();
   });
 
-  it("accepts and returns an avatar URL, and records its presence in the audit", async () => {
-    const avatarUrl = "https://cdn.example.com/avatars/user-1.jpg";
+  it("accepts and returns an optimized avatar data URL, and records its presence in the audit", async () => {
+    const avatarUrl = "data:image/png;base64,YWJj";
     const profileUser = { ...user, profile: null };
     transaction.user.findFirst.mockResolvedValue(profileUser);
     transaction.user.findUnique.mockResolvedValue({
@@ -166,6 +166,16 @@ describe("ProfilesService", () => {
         after: expect.objectContaining({ hasAvatar: true }),
       }),
     });
+  });
+
+  it("rejects an unsupported avatar value before opening a transaction", async () => {
+    await expect(
+      service.updateOwnProfile("user-1", {
+        ...update,
+        avatarUrl: "https://cdn.example.com/avatar.jpg",
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it("rejects a stale expectedVersion without updating data", async () => {

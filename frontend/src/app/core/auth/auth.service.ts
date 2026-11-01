@@ -1,7 +1,18 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { catchError, finalize, map, Observable, of, shareReplay, tap } from 'rxjs';
+import {
+  catchError,
+  finalize,
+  map,
+  Observable,
+  of,
+  shareReplay,
+  tap,
+  throwError,
+} from 'rxjs';
 
 import { AuthApiService } from './auth-api.service';
+import { AuthApiError } from './auth.models';
+import { environment } from '@environments/environment';
 import type {
   AuthResult,
   AuthMode,
@@ -67,7 +78,14 @@ export class AuthService {
     newEmail: string,
     currentPassword: string,
   ): Observable<EmailChangeRequestResult> {
-    return this.api.requestEmailChange(newEmail, currentPassword, this.authModeState());
+    return this.api.requestEmailChange(newEmail, currentPassword, this.authModeState()).pipe(
+      catchError((error: unknown) => {
+        if (error instanceof AuthApiError && error.code === 'SESSION_EXPIRED') {
+          this.clearSession();
+        }
+        return throwError(() => error);
+      }),
+    );
   }
 
   verifyEmailChange(token: string): Observable<EmailChangeVerificationResult> {
@@ -145,6 +163,11 @@ export class AuthService {
   private restoreSession(): void {
     const storedSession = this.storage.read();
     if (!storedSession) return;
+
+    if ((storedSession.authMode ?? 'LOCAL') === 'LOCAL' && !environment.useMockAuthFallback) {
+      this.storage.clear();
+      return;
+    }
 
     if (storedSession.sessionExpiresAt <= Date.now()) {
       this.storage.clear();

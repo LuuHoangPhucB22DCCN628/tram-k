@@ -28,7 +28,7 @@ const registerDto = {
 describe("AuthService", () => {
   let storedUser: Record<string, unknown> | null;
   const transaction = {
-    $queryRaw: jest.fn(),
+    $executeRaw: jest.fn(),
     role: { upsert: jest.fn() },
     user: {
       findUnique: jest.fn(),
@@ -76,7 +76,17 @@ describe("AuthService", () => {
     getOrThrow: jest.fn(
       (key: string) => `${key}-test-secret-with-at-least-32-characters`,
     ),
-    get: jest.fn(() => "2026-10-03"),
+    get: jest.fn((key: string, defaultValue?: unknown) => {
+      const values: Record<string, unknown> = {
+        TERMS_VERSION: "2026-10-03",
+        PRIVACY_VERSION: "2026-10-03",
+        EMAIL_DELIVERY_MODE: "smtp",
+        SMTP_HOST: "smtp.example.com",
+        SMTP_USER: "sender@example.com",
+        SMTP_PASS: "test-app-password",
+      };
+      return values[key] ?? defaultValue;
+    }),
   } as unknown as ConfigService;
   const outboxCrypto = {
     encrypt: jest.fn((value: string) => `encrypted:${value.length}`),
@@ -108,7 +118,7 @@ describe("AuthService", () => {
     });
     transaction.user.update.mockResolvedValue({});
     transaction.user.updateMany.mockResolvedValue({ count: 1 });
-    transaction.$queryRaw.mockResolvedValue([]);
+    transaction.$executeRaw.mockResolvedValue(1);
     transaction.authToken.count.mockResolvedValue(0);
     transaction.authToken.findFirst.mockResolvedValue(null);
     transaction.authToken.create.mockResolvedValue({ id: "token-1" });
@@ -341,7 +351,7 @@ describe("AuthService", () => {
       service.resendVerification("AN@EXAMPLE.COM"),
     ).resolves.toEqual({ accepted: true });
 
-    expect(transaction.$queryRaw).toHaveBeenCalled();
+    expect(transaction.$executeRaw).toHaveBeenCalled();
     expect(transaction.authToken.count).toHaveBeenCalledWith({
       where: {
         userId: "user-1",
@@ -388,17 +398,17 @@ describe("AuthService", () => {
     expect(transaction.outboxEvent.create).not.toHaveBeenCalled();
   });
 
-  it("refuses login until the email is verified", async () => {
+  it("allows a pending account to sign in so it can request verification again", async () => {
     await service.register(registerDto);
     prismaMock.user.findUnique.mockResolvedValue(storedUser);
 
-    await expect(
-      service.login({
-        email: registerDto.email,
-        password,
-        portal: "PUBLIC",
-      }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    const result = await service.login({
+      email: registerDto.email,
+      password,
+      portal: "PUBLIC",
+    });
+
+    expect(result.user.status).toBe(UserStatus.PENDING_VERIFY);
   });
 
   it("issues a signed 15-minute token only for an active account", async () => {
@@ -758,7 +768,7 @@ describe("AuthService", () => {
       service.resendVerification("an@example.com"),
     ).rejects.toBeInstanceOf(HttpException);
 
-    expect(transaction.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(transaction.$executeRaw).toHaveBeenCalledTimes(1);
     expect(transaction.authToken.count).toHaveBeenCalledWith({
       where: {
         userId: "user-1",
@@ -786,7 +796,7 @@ describe("AuthService", () => {
       service.resendVerification("AN@EXAMPLE.COM"),
     ).resolves.toEqual({ accepted: true });
 
-    expect(transaction.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(transaction.$executeRaw).toHaveBeenCalledTimes(1);
     expect(transaction.authToken.count).toHaveBeenCalledWith({
       where: {
         userId: "user-1",
